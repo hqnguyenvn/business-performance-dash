@@ -1,5 +1,5 @@
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,17 @@ import {
   TableRow,
   TableCell
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface MasterData {
   id: string;
@@ -45,6 +56,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
   companies = [] 
 }) => {
   const { toast } = useToast();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
@@ -69,6 +81,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       title: "Deleted",
       description: "Item successfully deleted",
     });
+    setDeleteId(null);
   }, [setter, toast]);
 
   const saveData = useCallback(() => {
@@ -172,14 +185,34 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 text-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteItem(item.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this item? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteItem(item.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
