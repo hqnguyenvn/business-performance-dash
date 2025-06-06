@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save } from "lucide-react";
+import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
 import {
@@ -114,6 +114,13 @@ const Revenues = () => {
   // Add delete confirmation state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [revenueToDelete, setRevenueToDelete] = useState<string | null>(null);
+
+  // Add clone dialog states
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
+  const [sourceYear, setSourceYear] = useState<string>(currentYear.toString());
+  const [sourceMonth, setSourceMonth] = useState<string>("1");
+  const [targetYear, setTargetYear] = useState<string>(currentYear.toString());
+  const [targetMonth, setTargetMonth] = useState<string>("2");
 
   // Master data - load from localStorage instead of hardcoded values
   const [customers, setCustomers] = useState<MasterData[]>([]);
@@ -351,6 +358,71 @@ const Revenues = () => {
     });
   };
 
+  const handleCloneData = () => {
+    setIsCloneDialogOpen(true);
+    // Reset to defaults when opening
+    setSourceYear(currentYear.toString());
+    setSourceMonth("1");
+    setTargetYear(currentYear.toString());
+    setTargetMonth("2");
+  };
+
+  const handleSourceYearChange = (value: string) => {
+    setSourceYear(value);
+    setTargetYear(value); // Target year follows source year
+  };
+
+  const handleSourceMonthChange = (value: string) => {
+    setSourceMonth(value);
+    const nextMonth = parseInt(value) + 1;
+    if (nextMonth <= 12) {
+      setTargetMonth(nextMonth.toString());
+    } else {
+      setTargetMonth("1");
+      const nextYear = parseInt(sourceYear) + 1;
+      setTargetYear(nextYear.toString());
+    }
+  };
+
+  const handleCloneAndInsert = () => {
+    const sourceYearNum = parseInt(sourceYear);
+    const sourceMonthNum = parseInt(sourceMonth);
+    const targetYearNum = parseInt(targetYear);
+    const targetMonthNum = parseInt(targetMonth);
+
+    // Find source data
+    const sourceData = revenues.filter(revenue => 
+      revenue.year === sourceYearNum && revenue.month === sourceMonthNum
+    );
+
+    if (sourceData.length === 0) {
+      toast({
+        title: "No source data found",
+        description: `No revenue data found for ${MONTHS.find(m => m.value === sourceMonthNum)?.label} ${sourceYearNum}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Clone data with new year/month
+    const clonedData = sourceData.map(revenue => ({
+      ...revenue,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9), // Generate unique ID
+      year: targetYearNum,
+      month: targetMonthNum
+    }));
+
+    // Add cloned data to revenues
+    setRevenues(prev => [...prev, ...clonedData]);
+    setHasUnsavedChanges(true);
+    setIsCloneDialogOpen(false);
+
+    toast({
+      title: "Data cloned successfully",
+      description: `Cloned ${clonedData.length} records from ${MONTHS.find(m => m.value === sourceMonthNum)?.label} ${sourceYearNum} to ${MONTHS.find(m => m.value === targetMonthNum)?.label} ${targetYearNum}`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
@@ -439,7 +511,13 @@ const Revenues = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Revenue Data ({tableFilteredRevenues.length} records)</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Revenue Data ({tableFilteredRevenues.length} records)</CardTitle>
+              <Button variant="outline" onClick={handleCloneData}>
+                <Copy className="h-4 w-4 mr-2" />
+                Clone Data
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -1140,6 +1218,92 @@ const Revenues = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Clone Data Dialog */}
+        <Dialog open={isCloneDialogOpen} onOpenChange={setIsCloneDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Clone Revenue Data</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Source Data</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Year</label>
+                    <Select value={sourceYear} onValueChange={handleSourceYearChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map(year => (
+                          <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Month</label>
+                    <Select value={sourceMonth} onValueChange={handleSourceMonthChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map(month => (
+                          <SelectItem key={month.value} value={month.value.toString()}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Target Data</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Year</label>
+                    <Select value={targetYear} onValueChange={setTargetYear}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map(year => (
+                          <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500">Month</label>
+                    <Select value={targetMonth} onValueChange={setTargetMonth}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map(month => (
+                          <SelectItem key={month.value} value={month.value.toString()}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsCloneDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCloneAndInsert}>
+                Clone & Insert
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
