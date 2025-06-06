@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -476,10 +477,16 @@ const Revenues = () => {
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <NumberInput
-                            value={revenue.offshoreUnitPrice}
-                            onChange={(value) => updateRevenue(revenue.id, 'offshoreUnitPrice', value)}
-                            className="border-0 p-1 h-8"
+                          <Input
+                            value={formatNumber(revenue.offshoreUnitPrice)}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/,/g, '');
+                              const numValue = parseFloat(value);
+                              if (!isNaN(numValue) || value === '') {
+                                updateRevenue(revenue.id, 'offshoreUnitPrice', numValue || 0);
+                              }
+                            }}
+                            className="border-0 p-1 h-8 text-right"
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
