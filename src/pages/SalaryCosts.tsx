@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Download, Trash2, Eye, Edit, MoreHorizontal } from "lucide-react";
+import { Users, Plus, Download, Trash2, Eye, Edit, MoreHorizontal, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber } from "@/lib/format";
@@ -78,6 +78,19 @@ const SalaryCosts = () => {
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [costToDelete, setCostToDelete] = useState<string | null>(null);
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedSalaryCosts = localStorage.getItem('salaryCosts');
+    if (savedSalaryCosts) {
+      setSalaryCosts(JSON.parse(savedSalaryCosts));
+    }
+  }, []);
+
+  // Save data to localStorage whenever salaryCosts change
+  useEffect(() => {
+    localStorage.setItem('salaryCosts', JSON.stringify(salaryCosts));
+  }, [salaryCosts]);
 
   // Get unique years from cost data, including current year
   const currentYear = new Date().getFullYear();
@@ -146,6 +159,14 @@ const SalaryCosts = () => {
     }
   };
 
+  const saveAllData = () => {
+    localStorage.setItem('salaryCosts', JSON.stringify(salaryCosts));
+    toast({
+      title: "Save All Data",
+      description: "All salary cost data has been saved successfully",
+    });
+  };
+
   const exportToCSV = () => {
     toast({
       title: "Export Data",
@@ -202,6 +223,10 @@ const SalaryCosts = () => {
             <Button variant="outline" onClick={exportToCSV}>
               <Download className="h-4 w-4 mr-2" />
               Export CSV
+            </Button>
+            <Button variant="outline" onClick={saveAllData}>
+              <Save className="h-4 w-4 mr-2" />
+              Save All
             </Button>
             <Button onClick={addNewRow}>
               <Plus className="h-4 w-4 mr-2" />
