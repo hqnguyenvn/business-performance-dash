@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -315,7 +316,7 @@ const Revenues = () => {
             <div className="space-y-4">
               {/* Year and Month Filter in same row */}
               <div className="flex items-start gap-8">
-                {/* Year Filter */}
+                {/* Year Filter - removed the label text */}
                 <div className="flex items-center gap-4">
                   <Select value={selectedYear} onValueChange={handleYearChange}>
                     <SelectTrigger className="w-32">
@@ -329,7 +330,7 @@ const Revenues = () => {
                   </Select>
                 </div>
 
-                {/* Month Filter */}
+                {/* Month Filter - removed the label text */}
                 <div className="flex-1">
                   <div className="grid grid-cols-6 gap-4">
                     {MONTHS.map(month => (
