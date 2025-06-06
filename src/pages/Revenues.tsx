@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -312,31 +311,6 @@ const Revenues = () => {
       setIsDeleteDialogOpen(false);
       setRevenueToDelete(null);
     }
-  };
-
-  const handleYearChange = (value: string) => {
-    setSelectedYear(value);
-  };
-
-  const handleMonthToggle = (monthValue: number) => {
-    setSelectedMonths(prev => {
-      const newMonths = prev.includes(monthValue) 
-        ? prev.filter(m => m !== monthValue)
-        : [...prev, monthValue].sort();
-      return newMonths;
-    });
-  };
-
-  const handleView = (revenue: Revenue) => {
-    setSelectedRevenue(revenue);
-    setDialogMode('view');
-    setIsDialogOpen(true);
-  };
-
-  const handleEdit = (revenue: Revenue) => {
-    setSelectedRevenue(revenue);
-    setDialogMode('edit');
-    setIsDialogOpen(true);
   };
 
   const handleSave = () => {
