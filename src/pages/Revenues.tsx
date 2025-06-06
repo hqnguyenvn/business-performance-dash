@@ -31,6 +31,13 @@ interface Revenue {
   notes: string;
 }
 
+interface MasterData {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const Revenues = () => {
@@ -38,6 +45,33 @@ const Revenues = () => {
   const [revenues, setRevenues] = useState<Revenue[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
+
+  // Master data - in a real app, this would come from a shared context or API
+  const [customers] = useState<MasterData[]>([
+    { id: "1", code: "CUST001", name: "Công ty ABC Technology", description: "Khách hàng VIP" },
+    { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Khách hàng thường xuyên" },
+  ]);
+
+  const [divisions] = useState<MasterData[]>([
+    { id: "1", code: "DIV001", name: "Phòng Phát triển", description: "Bộ phận R&D" },
+    { id: "2", code: "DIV002", name: "Phòng Kinh doanh", description: "Bộ phận Sales" },
+  ]);
+
+  const [projects] = useState<MasterData[]>([
+    { id: "1", code: "PRJ001", name: "Dự án ERP", description: "Hệ thống quản lý tổng thể" },
+    { id: "2", code: "PRJ002", name: "Dự án CRM", description: "Quản lý khách hàng" },
+  ]);
+
+  const [projectTypes] = useState<MasterData[]>([
+    { id: "1", code: "TYPE001", name: "Phát triển mới", description: "Dự án phát triển từ đầu" },
+    { id: "2", code: "TYPE002", name: "Bảo trì", description: "Bảo trì hệ thống hiện tại" },
+  ]);
+
+  const [currencies] = useState<MasterData[]>([
+    { id: "1", code: "USD", name: "US Dollar", description: "Đô la Mỹ" },
+    { id: "2", code: "VND", name: "Vietnam Dong", description: "Đồng Việt Nam" },
+    { id: "3", code: "JPY", name: "Japanese Yen", description: "Yên Nhật" },
+  ]);
 
   const addNewRow = () => {
     const newRevenue: Revenue = {
@@ -54,7 +88,7 @@ const Revenues = () => {
       originalUnitPrice: 0,
       chargeByJapan: 0,
       offshoreUnitPrice: 0,
-      currency: "USD",
+      currency: "",
       year: parseInt(selectedYear),
       month: selectedMonth,
       bmm: 0,
@@ -166,11 +200,21 @@ const Revenues = () => {
                     revenues.map((revenue) => (
                       <tr key={revenue.id} className="hover:bg-gray-50">
                         <td className="border border-gray-300 p-1">
-                          <Input
+                          <Select
                             value={revenue.customerID}
-                            onChange={(e) => updateRevenue(revenue.id, 'customerID', e.target.value)}
-                            className="border-0 p-1 h-8"
-                          />
+                            onValueChange={(value) => updateRevenue(revenue.id, 'customerID', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Chọn KH" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {customers.map(customer => (
+                                <SelectItem key={customer.id} value={customer.code}>
+                                  {customer.code} - {customer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
@@ -180,18 +224,38 @@ const Revenues = () => {
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
+                          <Select
                             value={revenue.division}
-                            onChange={(e) => updateRevenue(revenue.id, 'division', e.target.value)}
-                            className="border-0 p-1 h-8"
-                          />
+                            onValueChange={(value) => updateRevenue(revenue.id, 'division', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Chọn BP" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {divisions.map(division => (
+                                <SelectItem key={division.id} value={division.code}>
+                                  {division.code} - {division.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
+                          <Select
                             value={revenue.projectCode}
-                            onChange={(e) => updateRevenue(revenue.id, 'projectCode', e.target.value)}
-                            className="border-0 p-1 h-8"
-                          />
+                            onValueChange={(value) => updateRevenue(revenue.id, 'projectCode', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Chọn DA" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projects.map(project => (
+                                <SelectItem key={project.id} value={project.code}>
+                                  {project.code} - {project.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
@@ -201,11 +265,21 @@ const Revenues = () => {
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
+                          <Select
                             value={revenue.projectType}
-                            onChange={(e) => updateRevenue(revenue.id, 'projectType', e.target.value)}
-                            className="border-0 p-1 h-8"
-                          />
+                            onValueChange={(value) => updateRevenue(revenue.id, 'projectType', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Chọn loại" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {projectTypes.map(type => (
+                                <SelectItem key={type.id} value={type.code}>
+                                  {type.code} - {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
@@ -229,12 +303,14 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'currency', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue />
+                              <SelectValue placeholder="Tiền tệ" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="USD">USD</SelectItem>
-                              <SelectItem value="VND">VND</SelectItem>
-                              <SelectItem value="JPY">JPY</SelectItem>
+                              {currencies.map(currency => (
+                                <SelectItem key={currency.id} value={currency.code}>
+                                  {currency.code} - {currency.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </td>
