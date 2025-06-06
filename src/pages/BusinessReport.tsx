@@ -1,12 +1,12 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Download, Calculator } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatNumber } from "@/lib/format";
 
 interface BusinessData {
   year: number;
@@ -86,16 +86,16 @@ const BusinessReport = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="bg-white">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">
-                  {totalRevenue.toLocaleString()} VND
+                <div className="text-2xl font-bold text-blue-600 text-right">
+                  {formatNumber(totalRevenue)} VND
                 </div>
                 <p className="text-sm text-gray-600">Total Revenue {selectedYear}</p>
               </CardContent>
             </Card>
             <Card className="bg-white">
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">
-                  {totalNetProfit.toLocaleString()} VND
+                <div className="text-2xl font-bold text-green-600 text-right">
+                  {formatNumber(totalNetProfit)} VND
                 </div>
                 <p className="text-sm text-gray-600">Total Net Profit</p>
               </CardContent>
@@ -106,7 +106,6 @@ const BusinessReport = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-white">
               <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block">Year:</label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Year" />
@@ -121,13 +120,12 @@ const BusinessReport = () => {
             </Card>
             <Card className="bg-white">
               <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block">Income Tax:</label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={incomeTaxRate}
-                    onChange={(e) => setIncomeTaxRate(parseFloat(e.target.value) || 5)}
+                    onChange={setIncomeTaxRate}
                     className="flex-1"
+                    placeholder="Income Tax"
                   />
                   <span className="text-sm">%</span>
                 </div>
@@ -135,13 +133,12 @@ const BusinessReport = () => {
             </Card>
             <Card className="bg-white">
               <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block">Bonus:</label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={bonusRate}
-                    onChange={(e) => setBonusRate(parseFloat(e.target.value) || 15)}
+                    onChange={setBonusRate}
                     className="flex-1"
+                    placeholder="Bonus"
                   />
                   <span className="text-sm">%</span>
                 </div>
@@ -176,25 +173,25 @@ const BusinessReport = () => {
                     <tr key={data.month} className="hover:bg-gray-50">
                       <td className="border border-gray-300 p-2 font-medium">{data.month}</td>
                       <td className="border border-gray-300 p-2 text-right">
-                        {data.revenue.toLocaleString()}
+                        {formatNumber(data.revenue)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right">
-                        {data.cost.toLocaleString()}
+                        {formatNumber(data.cost)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right text-green-600">
-                        {data.grossProfit.toLocaleString()}
+                        {formatNumber(data.grossProfit)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right">
-                        {data.incomeTax.toLocaleString()}
+                        {formatNumber(data.incomeTax)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right">
-                        {data.bonus.toLocaleString()}
+                        {formatNumber(data.bonus)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right">
-                        {data.totalCost.toLocaleString()}
+                        {formatNumber(data.totalCost)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right text-blue-600 font-medium">
-                        {data.netProfit.toLocaleString()}
+                        {formatNumber(data.netProfit)}
                       </td>
                       <td className="border border-gray-300 p-2 text-right">
                         {data.grossProfitPercent.toFixed(1)}%

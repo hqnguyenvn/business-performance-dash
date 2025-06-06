@@ -1,14 +1,15 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatNumber } from "@/lib/format";
 
 interface Revenue {
   id: string;
@@ -336,13 +337,13 @@ const Revenues = () => {
                     <th className="border border-gray-300 p-2 text-left font-medium">Project Code</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Project Name</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Project Type</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Year</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">BMM</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Unit Price</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Unit Price</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Currency</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Original Revenue</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">VND Revenue</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Original Revenue</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">VND Revenue</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Actions</th>
                   </tr>
@@ -450,10 +451,9 @@ const Revenues = () => {
                           </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
-                            type="number"
+                          <NumberInput
                             value={revenue.year}
-                            onChange={(e) => updateRevenue(revenue.id, 'year', parseInt(e.target.value) || currentYear)}
+                            onChange={(value) => updateRevenue(revenue.id, 'year', value || currentYear)}
                             className="border-0 p-1 h-8"
                           />
                         </td>
@@ -475,18 +475,16 @@ const Revenues = () => {
                           </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
-                            type="number"
+                          <NumberInput
                             value={revenue.bmm}
-                            onChange={(e) => updateRevenue(revenue.id, 'bmm', parseFloat(e.target.value) || 0)}
+                            onChange={(value) => updateRevenue(revenue.id, 'bmm', value)}
                             className="border-0 p-1 h-8"
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
-                            type="number"
+                          <NumberInput
                             value={revenue.offshoreUnitPrice}
-                            onChange={(e) => updateRevenue(revenue.id, 'offshoreUnitPrice', parseFloat(e.target.value) || 0)}
+                            onChange={(value) => updateRevenue(revenue.id, 'offshoreUnitPrice', value)}
                             className="border-0 p-1 h-8"
                           />
                         </td>
@@ -509,16 +507,16 @@ const Revenues = () => {
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={revenue.originalRevenue.toLocaleString()}
+                            value={formatNumber(revenue.originalRevenue)}
                             readOnly
-                            className="border-0 p-1 h-8 bg-gray-50"
+                            className="border-0 p-1 h-8 bg-gray-50 text-right"
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={revenue.vndRevenue.toLocaleString()}
+                            value={formatNumber(revenue.vndRevenue)}
                             readOnly
-                            className="border-0 p-1 h-8 bg-gray-50"
+                            className="border-0 p-1 h-8 bg-gray-50 text-right"
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
@@ -705,12 +703,11 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Year</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.year}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.year}</div>
                   ) : (
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={selectedRevenue.year}
-                      onChange={(e) => setSelectedRevenue({...selectedRevenue, year: parseInt(e.target.value) || currentYear})}
+                      onChange={(value) => setSelectedRevenue({...selectedRevenue, year: value || currentYear})}
                     />
                   )}
                 </div>
@@ -743,12 +740,11 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">BMM</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.bmm}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.bmm}</div>
                   ) : (
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={selectedRevenue.bmm}
-                      onChange={(e) => setSelectedRevenue({...selectedRevenue, bmm: parseFloat(e.target.value) || 0})}
+                      onChange={(value) => setSelectedRevenue({...selectedRevenue, bmm: value})}
                     />
                   )}
                 </div>
@@ -756,12 +752,11 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Unit Price</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.offshoreUnitPrice}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.offshoreUnitPrice}</div>
                   ) : (
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={selectedRevenue.offshoreUnitPrice}
-                      onChange={(e) => setSelectedRevenue({...selectedRevenue, offshoreUnitPrice: parseFloat(e.target.value) || 0})}
+                      onChange={(value) => setSelectedRevenue({...selectedRevenue, offshoreUnitPrice: value})}
                     />
                   )}
                 </div>
@@ -791,12 +786,12 @@ const Revenues = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Original Revenue</label>
-                  <div className="p-2 bg-gray-50 rounded">{selectedRevenue.originalRevenue.toLocaleString()}</div>
+                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.originalRevenue)}</div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">VND Revenue</label>
-                  <div className="p-2 bg-gray-50 rounded">{selectedRevenue.vndRevenue.toLocaleString()}</div>
+                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.vndRevenue)}</div>
                 </div>
 
                 <div className="space-y-2 col-span-2">
