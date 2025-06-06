@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, Plus, Download, Eye, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,7 +26,7 @@ interface Revenue {
   offshoreUnitPrice: number;
   currency: string;
   year: number;
-  month: string;
+  month: number;
   bmm: number;
   originalRevenue: number;
   vndRevenue: number;
@@ -39,13 +40,32 @@ interface MasterData {
   description?: string;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  { value: 1, label: "Tháng 1" },
+  { value: 2, label: "Tháng 2" },
+  { value: 3, label: "Tháng 3" },
+  { value: 4, label: "Tháng 4" },
+  { value: 5, label: "Tháng 5" },
+  { value: 6, label: "Tháng 6" },
+  { value: 7, label: "Tháng 7" },
+  { value: 8, label: "Tháng 8" },
+  { value: 9, label: "Tháng 9" },
+  { value: 10, label: "Tháng 10" },
+  { value: 11, label: "Tháng 11" },
+  { value: 12, label: "Tháng 12" },
+];
 
 const Revenues = () => {
   const { toast } = useToast();
   const [revenues, setRevenues] = useState<Revenue[]>([]);
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
+  
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
+  
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(
+    Array.from({ length: currentMonth }, (_, i) => i + 1)
+  );
   const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
@@ -82,6 +102,16 @@ const Revenues = () => {
     { id: "3", code: "JPY", name: "Japanese Yen", description: "Yên Nhật" },
   ]);
 
+  // Get unique years from revenue data
+  const availableYears = Array.from(new Set(revenues.map(r => r.year))).sort((a, b) => b - a);
+  const yearOptions = availableYears.length > 0 ? availableYears : [currentYear];
+
+  // Filter revenues based on selected year and months
+  const filteredRevenues = revenues.filter(revenue => 
+    revenue.year === parseInt(selectedYear) && 
+    selectedMonths.includes(revenue.month)
+  );
+
   const addNewRow = () => {
     const newRevenue: Revenue = {
       id: Date.now().toString(),
@@ -98,8 +128,8 @@ const Revenues = () => {
       chargeByJapan: 0,
       offshoreUnitPrice: 0,
       currency: "",
-      year: parseInt(selectedYear),
-      month: selectedMonth,
+      year: currentYear,
+      month: currentMonth,
       bmm: 0,
       originalRevenue: 0,
       vndRevenue: 0,
@@ -121,6 +151,14 @@ const Revenues = () => {
       }
       return revenue;
     }));
+  };
+
+  const handleMonthToggle = (monthValue: number) => {
+    setSelectedMonths(prev => 
+      prev.includes(monthValue) 
+        ? prev.filter(m => m !== monthValue)
+        : [...prev, monthValue].sort()
+    );
   };
 
   const handleView = (revenue: Revenue) => {
@@ -183,33 +221,56 @@ const Revenues = () => {
       />
 
       <div className="p-6">
-        <Card className="bg-white">
+        {/* Filter Section */}
+        <Card className="bg-white mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Dữ liệu Doanh thu</CardTitle>
-              <div className="flex gap-4">
+            <CardTitle>Bộ lọc dữ liệu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Year Filter */}
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium w-16">Năm:</label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Năm" />
+                    <SelectValue placeholder="Chọn năm" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[2023, 2024, 2025].map(year => (
+                    {yearOptions.map(year => (
                       <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Tháng" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map(month => (
-                      <SelectItem key={month} value={month}>{month}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              </div>
+
+              {/* Month Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tháng:</label>
+                <div className="grid grid-cols-6 gap-4">
+                  {MONTHS.map(month => (
+                    <div key={month.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`month-${month.value}`}
+                        checked={selectedMonths.includes(month.value)}
+                        onCheckedChange={() => handleMonthToggle(month.value)}
+                      />
+                      <label 
+                        htmlFor={`month-${month.value}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {month.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white">
+          <CardHeader>
+            <CardTitle>Dữ liệu Doanh thu</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -222,6 +283,8 @@ const Revenues = () => {
                     <th className="border border-gray-300 p-2 text-left font-medium">Mã DA</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Tên DA</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Loại DA</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Năm</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Tháng</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">BMM</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Đơn giá</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Tiền tệ</th>
@@ -232,14 +295,14 @@ const Revenues = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {revenues.length === 0 ? (
+                  {filteredRevenues.length === 0 ? (
                     <tr>
-                      <td colSpan={13} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
                         Chưa có dữ liệu. Nhấn "Thêm dòng" để bắt đầu nhập liệu.
                       </td>
                     </tr>
                   ) : (
-                    revenues.map((revenue) => (
+                    filteredRevenues.map((revenue) => (
                       <tr key={revenue.id} className="hover:bg-gray-50">
                         <td className="border border-gray-300 p-1">
                           <Select
@@ -328,6 +391,31 @@ const Revenues = () => {
                               {projectTypes.map(type => (
                                 <SelectItem key={type.id} value={type.code}>
                                   {type.code} - {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="border border-gray-300 p-1">
+                          <Input
+                            type="number"
+                            value={revenue.year}
+                            onChange={(e) => updateRevenue(revenue.id, 'year', parseInt(e.target.value) || currentYear)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </td>
+                        <td className="border border-gray-300 p-1">
+                          <Select
+                            value={revenue.month.toString()}
+                            onValueChange={(value) => updateRevenue(revenue.id, 'month', parseInt(value))}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Tháng" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {MONTHS.map(month => (
+                                <SelectItem key={month.value} value={month.value.toString()}>
+                                  {month.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -554,6 +642,44 @@ const Revenues = () => {
                         {projectTypes.map(type => (
                           <SelectItem key={type.id} value={type.code}>
                             {type.code} - {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Năm</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.year}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={selectedRevenue.year}
+                      onChange={(e) => setSelectedRevenue({...selectedRevenue, year: parseInt(e.target.value) || currentYear})}
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tháng</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">
+                      {MONTHS.find(m => m.value === selectedRevenue.month)?.label}
+                    </div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.month.toString()}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, month: parseInt(value)})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tháng" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map(month => (
+                          <SelectItem key={month.value} value={month.value.toString()}>
+                            {month.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
