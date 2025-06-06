@@ -15,7 +15,15 @@ import BusinessReport from "./pages/BusinessReport";
 import CustomerReport from "./pages/CustomerReport";
 import Settings from "./pages/Settings";
 
-const queryClient = new QueryClient();
+// Create QueryClient with default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
