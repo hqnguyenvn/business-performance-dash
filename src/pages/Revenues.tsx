@@ -103,6 +103,10 @@ const Revenues = () => {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
   
+  // Calculate previous month for default source data
+  const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const sourceDefaultYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
@@ -117,10 +121,10 @@ const Revenues = () => {
 
   // Add clone dialog states
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
-  const [sourceYear, setSourceYear] = useState<string>(currentYear.toString());
-  const [sourceMonth, setSourceMonth] = useState<string>("1");
+  const [sourceYear, setSourceYear] = useState<string>(sourceDefaultYear.toString());
+  const [sourceMonth, setSourceMonth] = useState<string>(previousMonth.toString());
   const [targetYear, setTargetYear] = useState<string>(currentYear.toString());
-  const [targetMonth, setTargetMonth] = useState<string>("2");
+  const [targetMonth, setTargetMonth] = useState<string>(currentMonth.toString());
 
   // Master data - load from localStorage instead of hardcoded values
   const [customers, setCustomers] = useState<MasterData[]>([]);
@@ -360,11 +364,11 @@ const Revenues = () => {
 
   const handleCloneData = () => {
     setIsCloneDialogOpen(true);
-    // Reset to defaults when opening
-    setSourceYear(currentYear.toString());
-    setSourceMonth("1");
+    // Reset to defaults when opening - use previous month as source default
+    setSourceYear(sourceDefaultYear.toString());
+    setSourceMonth(previousMonth.toString());
     setTargetYear(currentYear.toString());
-    setTargetMonth("2");
+    setTargetMonth(currentMonth.toString());
   };
 
   const handleSourceYearChange = (value: string) => {
