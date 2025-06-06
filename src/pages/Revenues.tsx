@@ -787,11 +787,18 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Unit Price</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.offshoreUnitPrice}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.offshoreUnitPrice)}</div>
                   ) : (
-                    <NumberInput
-                      value={selectedRevenue.offshoreUnitPrice}
-                      onChange={(value) => setSelectedRevenue({...selectedRevenue, offshoreUnitPrice: value})}
+                    <Input
+                      value={formatNumber(selectedRevenue.offshoreUnitPrice)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, '');
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue) || value === '') {
+                          setSelectedRevenue({...selectedRevenue, offshoreUnitPrice: numValue || 0});
+                        }
+                      }}
+                      className="text-right"
                     />
                   )}
                 </div>
