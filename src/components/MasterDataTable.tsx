@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@/components/ui/table";
 
 interface MasterData {
   id: string;
@@ -41,15 +49,15 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
   const deleteItem = useCallback((id: string) => {
     setter(prev => prev.filter(item => item.id !== id));
     toast({
-      title: "Đã xóa",
-      description: "Đã xóa mục thành công",
+      title: "Deleted",
+      description: "Item successfully deleted",
     });
   }, [setter, toast]);
 
   const saveData = useCallback(() => {
     toast({
-      title: "Đã lưu",
-      description: "Dữ liệu đã được lưu thành công",
+      title: "Saved",
+      description: "Data saved successfully",
     });
   }, [toast]);
 
@@ -61,54 +69,65 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
           <div className="flex gap-2">
             <Button variant="outline" onClick={saveData}>
               <Save className="h-4 w-4 mr-2" />
-              Lưu
+              Save
             </Button>
             <Button onClick={addNewItem}>
               <Plus className="h-4 w-4 mr-2" />
-              Thêm mới
+              Add New
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-300 p-2 text-left font-medium">Mã</th>
-                <th className="border border-gray-300 p-2 text-left font-medium">Tên</th>
-                <th className="border border-gray-300 p-2 text-left font-medium">Mô tả</th>
-                <th className="border border-gray-300 p-2 text-left font-medium">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="border border-gray-300">Code</TableHead>
+                <TableHead className="border border-gray-300">Name</TableHead>
+                <TableHead className="border border-gray-300">Description</TableHead>
+                <TableHead className="border border-gray-300 text-center">
+                  Actions
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={addNewItem}
+                    className="h-6 w-6 p-0 ml-1"
+                    title="Add New Item"
+                  >
+                    <Plus className="h-4 w-4 text-blue-600" />
+                  </Button>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-1">
+                <TableRow key={item.id} className="hover:bg-gray-50">
+                  <TableCell className="border border-gray-300 p-1">
                     <Input
                       value={item.code}
                       onChange={(e) => updateItem(item.id, 'code', e.target.value)}
                       className="border-0 p-1 h-8"
                       onFocus={(e) => e.target.select()}
                     />
-                  </td>
-                  <td className="border border-gray-300 p-1">
+                  </TableCell>
+                  <TableCell className="border border-gray-300 p-1">
                     <Input
                       value={item.name}
                       onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                       className="border-0 p-1 h-8"
                       onFocus={(e) => e.target.select()}
                     />
-                  </td>
-                  <td className="border border-gray-300 p-1">
+                  </TableCell>
+                  <TableCell className="border border-gray-300 p-1">
                     <Input
                       value={item.description || ""}
                       onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                       className="border-0 p-1 h-8"
                       onFocus={(e) => e.target.select()}
                     />
-                  </td>
-                  <td className="border border-gray-300 p-2 text-center">
+                  </TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -117,11 +136,11 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

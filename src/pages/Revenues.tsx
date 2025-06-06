@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@/components/ui/table";
 
 interface Revenue {
   id: string;
@@ -372,40 +379,51 @@ const Revenues = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Invoice To</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Division</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Project Code</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Project Name</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Project Type</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Year</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Unit Price</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Currency</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Original Revenue</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">VND Revenue</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-blue-50">
+                    <TableHead className="border border-gray-300">Customer ID</TableHead>
+                    <TableHead className="border border-gray-300">Invoice To</TableHead>
+                    <TableHead className="border border-gray-300">Division</TableHead>
+                    <TableHead className="border border-gray-300">Project Code</TableHead>
+                    <TableHead className="border border-gray-300">Project Name</TableHead>
+                    <TableHead className="border border-gray-300">Project Type</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Year</TableHead>
+                    <TableHead className="border border-gray-300">Month</TableHead>
+                    <TableHead className="border border-gray-300 text-right">BMM</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
+                    <TableHead className="border border-gray-300">Currency</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Original Revenue</TableHead>
+                    <TableHead className="border border-gray-300 text-right">VND Revenue</TableHead>
+                    <TableHead className="border border-gray-300">Notes</TableHead>
+                    <TableHead className="border border-gray-300 text-center">
+                      Actions
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={addNewRow}
+                        className="h-6 w-6 p-0 ml-1"
+                        title="Add New Row"
+                      >
+                        <Plus className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredRevenues.length === 0 ? (
-                    <tr>
-                      <td colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
+                    <TableRow>
+                      <TableCell colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
                         {revenues.length === 0 
                           ? "No data available. Click \"Add Row\" to start entering data."
                           : "No data matches the selected filters. Try adjusting the year or month selection."
                         }
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     filteredRevenues.map((revenue) => (
-                      <tr key={revenue.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-1">
+                      <TableRow key={revenue.id} className="hover:bg-gray-50">
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.customerID}
                             onValueChange={(value) => updateRevenue(revenue.id, 'customerID', value)}
@@ -421,8 +439,8 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.invoiceTo}
                             onValueChange={(value) => updateRevenue(revenue.id, 'invoiceTo', value)}
@@ -438,8 +456,8 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.division}
                             onValueChange={(value) => updateRevenue(revenue.id, 'division', value)}
@@ -455,8 +473,8 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.projectCode}
                             onValueChange={(value) => updateRevenue(revenue.id, 'projectCode', value)}
@@ -472,15 +490,15 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={revenue.projectName}
                             onChange={(e) => updateRevenue(revenue.id, 'projectName', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.projectType}
                             onValueChange={(value) => updateRevenue(revenue.id, 'projectType', value)}
@@ -496,15 +514,15 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <NumberInput
                             value={revenue.year}
                             onChange={(value) => updateRevenue(revenue.id, 'year', value || currentYear)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.month.toString()}
                             onValueChange={(value) => updateRevenue(revenue.id, 'month', parseInt(value))}
@@ -520,15 +538,15 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <NumberInput
                             value={revenue.bmm}
                             onChange={(value) => updateRevenue(revenue.id, 'bmm', value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={formatNumber(revenue.offshoreUnitPrice)}
                             onChange={(e) => {
@@ -540,8 +558,8 @@ const Revenues = () => {
                             }}
                             className="border-0 p-1 h-8 text-right"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={revenue.currency}
                             onValueChange={(value) => updateRevenue(revenue.id, 'currency', value)}
@@ -557,29 +575,29 @@ const Revenues = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={formatNumber(revenue.originalRevenue)}
                             readOnly
                             className="border-0 p-1 h-8 bg-gray-50 text-right"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={formatNumber(revenue.vndRevenue)}
                             readOnly
                             className="border-0 p-1 h-8 bg-gray-50 text-right"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={revenue.notes}
                             onChange={(e) => updateRevenue(revenue.id, 'notes', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <div className="flex gap-1">
                             <Button
                               size="sm"
@@ -606,12 +624,12 @@ const Revenues = () => {
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

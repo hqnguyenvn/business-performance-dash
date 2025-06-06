@@ -10,6 +10,14 @@ import { Receipt, Plus, Download, Edit, Eye, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@/components/ui/table";
 
 interface Cost {
   id: string;
@@ -246,44 +254,55 @@ const Costs = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-red-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Description</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Unit Price</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Volume</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Cost</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Category</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">Is Cost</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">Checked</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-red-50">
+                    <TableHead className="border border-gray-300">Year</TableHead>
+                    <TableHead className="border border-gray-300">Month</TableHead>
+                    <TableHead className="border border-gray-300">Description</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Volume</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Cost</TableHead>
+                    <TableHead className="border border-gray-300">Category</TableHead>
+                    <TableHead className="border border-gray-300 text-center">Is Cost</TableHead>
+                    <TableHead className="border border-gray-300 text-center">Checked</TableHead>
+                    <TableHead className="border border-gray-300">Notes</TableHead>
+                    <TableHead className="border border-gray-300 text-center">
+                      Actions
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={addNewRow}
+                        className="h-6 w-6 p-0 ml-1"
+                        title="Add New Row"
+                      >
+                        <Plus className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredCosts.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
+                    <TableRow>
+                      <TableCell colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
                         {costs.length === 0 
                           ? "No data available. Click \"Add Row\" to start entering data."
                           : "No data matches the selected filters. Try adjusting the year or month selection."
                         }
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     filteredCosts.map((cost) => (
-                      <tr key={cost.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-1">
+                      <TableRow key={cost.id} className="hover:bg-gray-50">
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={cost.year.toString()}
                             onChange={(e) => updateCost(cost.id, 'year', parseInt(e.target.value) || currentYear)}
                             className="border-0 p-1 h-8 text-center"
                             type="number"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={cost.month.toString()}
                             onValueChange={(value) => updateCost(cost.id, 'month', parseInt(value))}
@@ -299,36 +318,36 @@ const Costs = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={cost.description}
                             onChange={(e) => updateCost(cost.id, 'description', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <NumberInput
                             value={cost.price}
                             onChange={(value) => updateCost(cost.id, 'price', value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <NumberInput
                             value={cost.volume}
                             onChange={(value) => updateCost(cost.id, 'volume', value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={formatNumber(cost.cost)}
                             readOnly
                             className="border-0 p-1 h-8 bg-gray-50 text-right"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
                             value={cost.category}
                             onValueChange={(value) => updateCost(cost.id, 'category', value)}
@@ -342,27 +361,27 @@ const Costs = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-2 text-center">
                           <Checkbox
                             checked={cost.isCost}
                             onCheckedChange={(checked) => updateCost(cost.id, 'isCost', checked)}
                           />
-                        </td>
-                        <td className="border border-gray-300 p-2 text-center">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-2 text-center">
                           <Checkbox
                             checked={cost.checked}
                             onCheckedChange={(checked) => updateCost(cost.id, 'checked', checked)}
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={cost.notes}
                             onChange={(e) => updateCost(cost.id, 'notes', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <div className="flex gap-1">
                             <Button
                               size="sm"
@@ -381,12 +400,12 @@ const Costs = () => {
                               <Edit className="h-3 w-3" />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
