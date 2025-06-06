@@ -6,6 +6,16 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +101,10 @@ const Revenues = () => {
   const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
+
+  // Add delete confirmation state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [revenueToDelete, setRevenueToDelete] = useState<string | null>(null);
 
   // Master data - in a real app, this would come from a shared context or API
   const [customers] = useState<MasterData[]>([
@@ -250,13 +264,24 @@ const Revenues = () => {
   };
 
   const handleDelete = (id: string) => {
-    const updatedRevenues = revenues.filter(revenue => revenue.id !== id);
-    setRevenues(updatedRevenues);
-    setHasUnsavedChanges(true);
-    toast({
-      title: "Deleted successfully",
-      description: "Revenue record has been deleted",
-    });
+    // Open confirmation dialog instead of deleting immediately
+    setRevenueToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (revenueToDelete) {
+      const updatedRevenues = revenues.filter(revenue => revenue.id !== revenueToDelete);
+      setRevenues(updatedRevenues);
+      setHasUnsavedChanges(true);
+      toast({
+        title: "Deleted successfully",
+        description: "Revenue record has been deleted",
+      });
+      // Close dialog and reset state
+      setIsDeleteDialogOpen(false);
+      setRevenueToDelete(null);
+    }
   };
 
   const handleSave = () => {
@@ -897,6 +922,24 @@ const Revenues = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this revenue record.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setRevenueToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
