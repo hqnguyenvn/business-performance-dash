@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,8 @@ import { Users, Plus, Download, Trash2, Eye, Edit, MoreHorizontal, Save } from "
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber } from "@/lib/format";
+import { useTableFilter } from "@/hooks/useTableFilter";
+import { TableFilter } from "@/components/ui/table-filter";
 
 interface SalaryCost {
   id: string;
@@ -97,11 +98,14 @@ const SalaryCosts = () => {
   const availableYears = Array.from(new Set([...(salaryCosts.map(c => c.year) || []), currentYear])).sort((a, b) => b - a);
 
   // Filter salary costs based on selected year and months
-  const filteredSalaryCosts = salaryCosts.filter(cost => {
+  const baseSalaryCosts = salaryCosts.filter(cost => {
     const yearMatch = cost.year === parseInt(selectedYear);
     const monthMatch = selectedMonths.includes(cost.month);
     return yearMatch && monthMatch;
   });
+
+  // Use table filter hook
+  const { filteredData: filteredSalaryCosts, setFilter, getActiveFilters } = useTableFilter(baseSalaryCosts);
 
   const addNewRow = () => {
     const newSalaryCost: SalaryCost = {
@@ -295,13 +299,83 @@ const SalaryCosts = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-purple-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Division</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Amount</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Year</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="year"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('year')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Month</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="month"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('month')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Company</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="company"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('company')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Division</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="division"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('division')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Customer ID</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="customerID"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('customerID')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Amount</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="amount"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('amount')}
+                        />
+                      </div>
+                    </th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">
+                      <div className="flex items-center justify-between">
+                        <span>Notes</span>
+                        <TableFilter
+                          data={baseSalaryCosts}
+                          field="notes"
+                          onFilter={setFilter}
+                          activeFilters={getActiveFilters('notes')}
+                        />
+                      </div>
+                    </th>
                     <th className="border border-gray-300 p-2 text-center font-medium">
                       Actions
                       <Button
