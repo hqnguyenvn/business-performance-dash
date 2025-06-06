@@ -57,6 +57,7 @@ const MONTHS = [
 const Revenues = () => {
   const { toast } = useToast();
   const [revenues, setRevenues] = useState<Revenue[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
@@ -135,6 +136,7 @@ const Revenues = () => {
       notes: "",
     };
     setRevenues([...revenues, newRevenue]);
+    setHasUnsavedChanges(true);
   };
 
   const updateRevenue = (id: string, field: keyof Revenue, value: any) => {
@@ -150,23 +152,25 @@ const Revenues = () => {
       }
       return revenue;
     }));
+    setHasUnsavedChanges(true);
   };
 
-  const handleSaveRow = (id: string) => {
-    const revenue = revenues.find(r => r.id === id);
-    if (revenue) {
-      // Recalculate revenue values
+  const handleSaveAll = () => {
+    // Recalculate all revenue values before saving
+    const updatedRevenues = revenues.map(revenue => {
       const updated = { ...revenue };
       updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
       updated.vndRevenue = updated.originalRevenue * 24000;
-      
-      setRevenues(revenues.map(r => r.id === id ? updated : r));
-      
-      toast({
-        title: "Lưu thành công",
-        description: "Đã lưu dữ liệu doanh thu",
-      });
-    }
+      return updated;
+    });
+    
+    setRevenues(updatedRevenues);
+    setHasUnsavedChanges(false);
+    
+    toast({
+      title: "Lưu thành công",
+      description: `Đã lưu tất cả ${updatedRevenues.length} bản ghi doanh thu`,
+    });
   };
 
   const handleMonthToggle = (monthValue: number) => {
@@ -236,6 +240,12 @@ const Revenues = () => {
               <Download className="h-4 w-4 mr-2" />
               Xuất CSV
             </Button>
+            {hasUnsavedChanges && (
+              <Button onClick={handleSaveAll} className="bg-green-600 hover:bg-green-700">
+                <Save className="h-4 w-4 mr-2" />
+                Lưu tất cả
+              </Button>
+            )}
             <Button onClick={addNewRow}>
               <Plus className="h-4 w-4 mr-2" />
               Thêm dòng
@@ -291,6 +301,23 @@ const Revenues = () => {
             </div>
           </CardContent>
         </Card>
+
+        {hasUnsavedChanges && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                <span className="text-yellow-800 font-medium">
+                  Có thay đổi chưa được lưu
+                </span>
+              </div>
+              <Button onClick={handleSaveAll} size="sm" className="bg-green-600 hover:bg-green-700">
+                <Save className="h-4 w-4 mr-2" />
+                Lưu ngay
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Card className="bg-white">
           <CardHeader>
@@ -501,14 +528,6 @@ const Revenues = () => {
                         </td>
                         <td className="border border-gray-300 p-1">
                           <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleSaveRow(revenue.id)}
-                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
-                            >
-                              <Save className="h-3 w-3" />
-                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
