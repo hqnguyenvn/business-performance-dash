@@ -6,7 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Receipt, Plus, Download, Edit, Eye, Save } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Receipt, Plus, Download, Edit, Eye, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
@@ -65,6 +75,10 @@ const Costs = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCost, setSelectedCost] = useState<Cost | null>(null);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
+  
+  // Delete confirmation dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [costToDelete, setCostToDelete] = useState<string | null>(null);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -124,6 +138,25 @@ const Costs = () => {
     setSelectedCost(cost);
     setDialogMode(mode);
     setIsDialogOpen(true);
+  };
+
+  // Modified to open confirmation dialog first
+  const deleteCost = (id: string) => {
+    setCostToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm deletion and actually delete the item
+  const confirmDelete = () => {
+    if (costToDelete) {
+      setCosts(prev => prev.filter(cost => cost.id !== costToDelete));
+      toast({
+        title: "Deleted",
+        description: "Item successfully deleted",
+      });
+      setIsDeleteDialogOpen(false);
+      setCostToDelete(null);
+    }
   };
 
   const saveChanges = () => {
@@ -399,6 +432,14 @@ const Costs = () => {
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteCost(cost.id)}
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -411,6 +452,7 @@ const Costs = () => {
         </Card>
       </div>
 
+      {/* Regular detail dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -559,6 +601,24 @@ const Costs = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this cost record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCostToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
