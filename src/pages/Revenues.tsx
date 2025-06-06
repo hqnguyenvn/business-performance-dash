@@ -116,15 +116,21 @@ const Revenues = () => {
     { id: "3", code: "JPY", name: "Japanese Yen", description: "Japanese Yen" },
   ]);
 
-  // Get unique years from revenue data
-  const availableYears = Array.from(new Set(revenues.map(r => r.year))).sort((a, b) => b - a);
-  const yearOptions = availableYears.length > 0 ? availableYears : [currentYear];
+  // Get unique years from revenue data, including current year
+  const availableYears = Array.from(new Set([...revenues.map(r => r.year), currentYear])).sort((a, b) => b - a);
 
   // Filter revenues based on selected year and months
-  const filteredRevenues = revenues.filter(revenue => 
-    revenue.year === parseInt(selectedYear) && 
-    selectedMonths.includes(revenue.month)
-  );
+  const filteredRevenues = revenues.filter(revenue => {
+    const yearMatch = revenue.year === parseInt(selectedYear);
+    const monthMatch = selectedMonths.includes(revenue.month);
+    console.log(`Filtering revenue ${revenue.id}: year=${revenue.year}, month=${revenue.month}, yearMatch=${yearMatch}, monthMatch=${monthMatch}`);
+    return yearMatch && monthMatch;
+  });
+
+  console.log('Selected year:', selectedYear);
+  console.log('Selected months:', selectedMonths);
+  console.log('Total revenues:', revenues.length);
+  console.log('Filtered revenues:', filteredRevenues.length);
 
   // Save to localStorage whenever revenues change
   useEffect(() => {
@@ -151,8 +157,8 @@ const Revenues = () => {
       chargeByJapan: 0,
       offshoreUnitPrice: 0,
       currency: "",
-      year: currentYear,
-      month: currentMonth,
+      year: parseInt(selectedYear), // Use selected year for new records
+      month: selectedMonths.length > 0 ? selectedMonths[0] : currentMonth, // Use first selected month
       bmm: 0,
       originalRevenue: 0,
       vndRevenue: 0,
@@ -207,12 +213,20 @@ const Revenues = () => {
     }
   };
 
+  const handleYearChange = (value: string) => {
+    console.log('Year changed to:', value);
+    setSelectedYear(value);
+  };
+
   const handleMonthToggle = (monthValue: number) => {
-    setSelectedMonths(prev => 
-      prev.includes(monthValue) 
+    console.log('Month toggled:', monthValue);
+    setSelectedMonths(prev => {
+      const newMonths = prev.includes(monthValue) 
         ? prev.filter(m => m !== monthValue)
-        : [...prev, monthValue].sort()
-    );
+        : [...prev, monthValue].sort();
+      console.log('New selected months:', newMonths);
+      return newMonths;
+    });
   };
 
   const handleView = (revenue: Revenue) => {
@@ -303,12 +317,12 @@ const Revenues = () => {
               <div className="flex items-start gap-8">
                 {/* Year Filter */}
                 <div className="flex items-center gap-4">
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <Select value={selectedYear} onValueChange={handleYearChange}>
                     <SelectTrigger className="w-32">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {yearOptions.map(year => (
+                      {availableYears.map(year => (
                         <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                       ))}
                     </SelectContent>
@@ -353,7 +367,7 @@ const Revenues = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Revenue Data</CardTitle>
+            <CardTitle>Revenue Data ({filteredRevenues.length} records)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -381,7 +395,10 @@ const Revenues = () => {
                   {filteredRevenues.length === 0 ? (
                     <tr>
                       <td colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
-                        No data available. Click "Add Row" to start entering data.
+                        {revenues.length === 0 
+                          ? "No data available. Click \"Add Row\" to start entering data."
+                          : "No data matches the selected filters. Try adjusting the year or month selection."
+                        }
                       </td>
                     </tr>
                   ) : (
