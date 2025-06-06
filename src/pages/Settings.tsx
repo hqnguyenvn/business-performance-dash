@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -143,7 +142,13 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="divisions">
-            <MasterDataTable data={divisions} setter={setDivisions} title="Division List" />
+            <MasterDataTable 
+              data={divisions} 
+              setter={setDivisions} 
+              title="Division List" 
+              showCompanyColumn={true}
+              companies={companies}
+            />
           </TabsContent>
 
           <TabsContent value="projects">

@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableHeader,
   TableHead,
@@ -19,15 +26,24 @@ interface MasterData {
   code: string;
   name: string;
   description?: string;
+  companyID?: string;
 }
 
 interface MasterDataTableProps {
   data: MasterData[];
   setter: React.Dispatch<React.SetStateAction<MasterData[]>>;
   title: string;
+  showCompanyColumn?: boolean;
+  companies?: MasterData[];
 }
 
-const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }) => {
+const MasterDataTable: React.FC<MasterDataTableProps> = ({ 
+  data, 
+  setter, 
+  title, 
+  showCompanyColumn = false,
+  companies = [] 
+}) => {
   const { toast } = useToast();
 
   const addNewItem = useCallback(() => {
@@ -36,9 +52,10 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
       code: "",
       name: "",
       description: "",
+      ...(showCompanyColumn && { companyID: "" }),
     };
     setter(prev => [...prev, newItem]);
-  }, [setter]);
+  }, [setter, showCompanyColumn]);
 
   const updateItem = useCallback((id: string, field: keyof MasterData, value: string) => {
     setter(prev => prev.map(item => 
@@ -60,6 +77,11 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
       description: "Data saved successfully",
     });
   }, [toast]);
+
+  const getCompanyName = (companyID: string) => {
+    const company = companies.find(c => c.id === companyID);
+    return company ? company.name : "";
+  };
 
   return (
     <Card className="bg-white">
@@ -83,6 +105,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
+                {showCompanyColumn && (
+                  <TableHead className="border border-gray-300">Company</TableHead>
+                )}
                 <TableHead className="border border-gray-300">Code</TableHead>
                 <TableHead className="border border-gray-300">Name</TableHead>
                 <TableHead className="border border-gray-300">Description</TableHead>
@@ -103,6 +128,25 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({ data, setter, title }
             <TableBody>
               {data.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50">
+                  {showCompanyColumn && (
+                    <TableCell className="border border-gray-300 p-1">
+                      <Select
+                        value={item.companyID || ""}
+                        onValueChange={(value) => updateItem(item.id, 'companyID', value)}
+                      >
+                        <SelectTrigger className="border-0 p-1 h-8">
+                          <SelectValue placeholder="Select company" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  )}
                   <TableCell className="border border-gray-300 p-1">
                     <Input
                       value={item.code}
