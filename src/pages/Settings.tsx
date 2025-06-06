@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, Plus, Edit, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Settings as SettingsIcon, Plus, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface MasterData {
@@ -14,6 +15,16 @@ interface MasterData {
   name: string;
   description?: string;
 }
+
+interface ExchangeRate {
+  id: string;
+  year: number;
+  month: string;
+  currencyID: string;
+  exchangeRate: number;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const Settings = () => {
   const { toast } = useToast();
@@ -54,6 +65,11 @@ const Settings = () => {
     { id: "3", code: "JPY", name: "Japanese Yen", description: "Yên Nhật" },
   ]);
 
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([
+    { id: "1", year: 2024, month: "Jan", currencyID: "USD", exchangeRate: 24000 },
+    { id: "2", year: 2024, month: "Jan", currencyID: "JPY", exchangeRate: 170 },
+  ]);
+
   const addNewItem = (setter: React.Dispatch<React.SetStateAction<MasterData[]>>) => {
     const newItem: MasterData = {
       id: Date.now().toString(),
@@ -62,6 +78,17 @@ const Settings = () => {
       description: "",
     };
     setter(prev => [...prev, newItem]);
+  };
+
+  const addNewExchangeRate = () => {
+    const newRate: ExchangeRate = {
+      id: Date.now().toString(),
+      year: new Date().getFullYear(),
+      month: "Jan",
+      currencyID: "",
+      exchangeRate: 0,
+    };
+    setExchangeRates(prev => [...prev, newRate]);
   };
 
   const updateItem = (
@@ -75,11 +102,37 @@ const Settings = () => {
     ));
   };
 
+  const updateExchangeRate = (
+    id: string,
+    field: keyof ExchangeRate,
+    value: string | number
+  ) => {
+    setExchangeRates(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
   const deleteItem = (setter: React.Dispatch<React.SetStateAction<MasterData[]>>, id: string) => {
     setter(prev => prev.filter(item => item.id !== id));
     toast({
       title: "Đã xóa",
       description: "Đã xóa mục thành công",
+    });
+  };
+
+  const deleteExchangeRate = (id: string) => {
+    setExchangeRates(prev => prev.filter(item => item.id !== id));
+    toast({
+      title: "Đã xóa",
+      description: "Đã xóa tỷ giá thành công",
+    });
+  };
+
+  const saveData = () => {
+    // Here you would typically save to a database
+    toast({
+      title: "Đã lưu",
+      description: "Dữ liệu đã được lưu thành công",
     });
   };
 
@@ -96,10 +149,16 @@ const Settings = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
-          <Button onClick={() => addNewItem(setter)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm mới
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={saveData}>
+              <Save className="h-4 w-4 mr-2" />
+              Lưu
+            </Button>
+            <Button onClick={() => addNewItem(setter)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm mới
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -121,6 +180,7 @@ const Settings = () => {
                       value={item.code}
                       onChange={(e) => updateItem(setter, item.id, 'code', e.target.value)}
                       className="border-0 p-1 h-8"
+                      onFocus={(e) => e.target.select()}
                     />
                   </td>
                   <td className="border border-gray-300 p-1">
@@ -128,6 +188,7 @@ const Settings = () => {
                       value={item.name}
                       onChange={(e) => updateItem(setter, item.id, 'name', e.target.value)}
                       className="border-0 p-1 h-8"
+                      onFocus={(e) => e.target.select()}
                     />
                   </td>
                   <td className="border border-gray-300 p-1">
@@ -135,6 +196,7 @@ const Settings = () => {
                       value={item.description || ""}
                       onChange={(e) => updateItem(setter, item.id, 'description', e.target.value)}
                       className="border-0 p-1 h-8"
+                      onFocus={(e) => e.target.select()}
                     />
                   </td>
                   <td className="border border-gray-300 p-2 text-center">
@@ -142,6 +204,99 @@ const Settings = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => deleteItem(setter, item.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const ExchangeRateTable = () => (
+    <Card className="bg-white">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Danh sách Tỷ giá</CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={saveData}>
+              <Save className="h-4 w-4 mr-2" />
+              Lưu
+            </Button>
+            <Button onClick={addNewExchangeRate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm mới
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border border-gray-300 p-2 text-left font-medium">Năm</th>
+                <th className="border border-gray-300 p-2 text-left font-medium">Tháng</th>
+                <th className="border border-gray-300 p-2 text-left font-medium">Mã tiền tệ</th>
+                <th className="border border-gray-300 p-2 text-left font-medium">Tỷ giá</th>
+                <th className="border border-gray-300 p-2 text-left font-medium">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exchangeRates.map((rate) => (
+                <tr key={rate.id} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 p-1">
+                    <Input
+                      type="number"
+                      value={rate.year}
+                      onChange={(e) => updateExchangeRate(rate.id, 'year', parseInt(e.target.value) || 0)}
+                      className="border-0 p-1 h-8"
+                      onFocus={(e) => e.target.select()}
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-1">
+                    <Select value={rate.month} onValueChange={(value) => updateExchangeRate(rate.id, 'month', value)}>
+                      <SelectTrigger className="border-0 p-1 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map(month => (
+                          <SelectItem key={month} value={month}>{month}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="border border-gray-300 p-1">
+                    <Select value={rate.currencyID} onValueChange={(value) => updateExchangeRate(rate.id, 'currencyID', value)}>
+                      <SelectTrigger className="border-0 p-1 h-8">
+                        <SelectValue placeholder="Chọn tiền tệ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map(currency => (
+                          <SelectItem key={currency.id} value={currency.code}>{currency.code} - {currency.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="border border-gray-300 p-1">
+                    <Input
+                      type="number"
+                      value={rate.exchangeRate}
+                      onChange={(e) => updateExchangeRate(rate.id, 'exchangeRate', parseFloat(e.target.value) || 0)}
+                      className="border-0 p-1 h-8"
+                      onFocus={(e) => e.target.select()}
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-2 text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteExchangeRate(rate.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -166,7 +321,7 @@ const Settings = () => {
 
       <div className="p-6">
         <Tabs defaultValue="customers" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="customers">Khách hàng</TabsTrigger>
             <TabsTrigger value="companies">Công ty</TabsTrigger>
             <TabsTrigger value="divisions">Bộ phận</TabsTrigger>
@@ -174,6 +329,7 @@ const Settings = () => {
             <TabsTrigger value="projectTypes">Loại DA</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="currencies">Tiền tệ</TabsTrigger>
+            <TabsTrigger value="exchangeRates">Tỷ giá</TabsTrigger>
           </TabsList>
 
           <TabsContent value="customers">
@@ -202,6 +358,10 @@ const Settings = () => {
 
           <TabsContent value="currencies">
             <MasterDataTable data={currencies} setter={setCurrencies} title="Danh sách Tiền tệ" />
+          </TabsContent>
+
+          <TabsContent value="exchangeRates">
+            <ExchangeRateTable />
           </TabsContent>
         </Tabs>
       </div>
