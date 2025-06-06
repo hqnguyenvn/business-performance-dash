@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DollarSign, Plus, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { DollarSign, Plus, Download, Eye, Edit, Trash2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Revenue {
@@ -150,6 +150,23 @@ const Revenues = () => {
       }
       return revenue;
     }));
+  };
+
+  const handleSaveRow = (id: string) => {
+    const revenue = revenues.find(r => r.id === id);
+    if (revenue) {
+      // Recalculate revenue values
+      const updated = { ...revenue };
+      updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
+      updated.vndRevenue = updated.originalRevenue * 24000;
+      
+      setRevenues(revenues.map(r => r.id === id ? updated : r));
+      
+      toast({
+        title: "Lưu thành công",
+        description: "Đã lưu dữ liệu doanh thu",
+      });
+    }
   };
 
   const handleMonthToggle = (monthValue: number) => {
@@ -484,6 +501,14 @@ const Revenues = () => {
                         </td>
                         <td className="border border-gray-300 p-1">
                           <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSaveRow(revenue.id)}
+                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700"
+                            >
+                              <Save className="h-3 w-3" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
