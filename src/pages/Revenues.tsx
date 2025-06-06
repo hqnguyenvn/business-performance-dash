@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Plus, Download, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DollarSign, Plus, Download, Eye, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Revenue {
@@ -45,11 +46,19 @@ const Revenues = () => {
   const [revenues, setRevenues] = useState<Revenue[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
+  const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
 
   // Master data - in a real app, this would come from a shared context or API
   const [customers] = useState<MasterData[]>([
     { id: "1", code: "CUST001", name: "Công ty ABC Technology", description: "Khách hàng VIP" },
     { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Khách hàng thường xuyên" },
+  ]);
+
+  const [companies] = useState<MasterData[]>([
+    { id: "1", code: "COMP001", name: "Công ty TNHH ABC", description: "Công ty chính" },
+    { id: "2", code: "COMP002", name: "Chi nhánh XYZ", description: "Chi nhánh phía Nam" },
   ]);
 
   const [divisions] = useState<MasterData[]>([
@@ -112,6 +121,38 @@ const Revenues = () => {
       }
       return revenue;
     }));
+  };
+
+  const handleView = (revenue: Revenue) => {
+    setSelectedRevenue(revenue);
+    setDialogMode('view');
+    setIsDialogOpen(true);
+  };
+
+  const handleEdit = (revenue: Revenue) => {
+    setSelectedRevenue(revenue);
+    setDialogMode('edit');
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setRevenues(revenues.filter(revenue => revenue.id !== id));
+    toast({
+      title: "Xóa thành công",
+      description: "Đã xóa bản ghi doanh thu",
+    });
+  };
+
+  const handleSave = () => {
+    if (selectedRevenue) {
+      updateRevenue(selectedRevenue.id, 'customerID', selectedRevenue.customerID);
+      // Update other fields as needed
+      setIsDialogOpen(false);
+      toast({
+        title: "Lưu thành công",
+        description: "Đã cập nhật thông tin doanh thu",
+      });
+    }
   };
 
   const exportToCSV = () => {
@@ -187,12 +228,13 @@ const Revenues = () => {
                     <th className="border border-gray-300 p-2 text-left font-medium">DT gốc</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">DT VND</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Ghi chú</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {revenues.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={13} className="border border-gray-300 p-8 text-center text-gray-500">
                         Chưa có dữ liệu. Nhấn "Thêm dòng" để bắt đầu nhập liệu.
                       </td>
                     </tr>
@@ -217,11 +259,21 @@ const Revenues = () => {
                           </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
-                          <Input
+                          <Select
                             value={revenue.invoiceTo}
-                            onChange={(e) => updateRevenue(revenue.id, 'invoiceTo', e.target.value)}
-                            className="border-0 p-1 h-8"
-                          />
+                            onValueChange={(value) => updateRevenue(revenue.id, 'invoiceTo', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue placeholder="Chọn công ty" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {companies.map(company => (
+                                <SelectItem key={company.id} value={company.code}>
+                                  {company.code} - {company.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Select
@@ -335,6 +387,34 @@ const Revenues = () => {
                             className="border-0 p-1 h-8"
                           />
                         </td>
+                        <td className="border border-gray-300 p-1">
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleView(revenue)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(revenue)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(revenue.id)}
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -343,6 +423,228 @@ const Revenues = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Revenue Detail Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {dialogMode === 'view' ? 'Xem chi tiết' : 'Chỉnh sửa'} Doanh thu
+              </DialogTitle>
+            </DialogHeader>
+            {selectedRevenue && (
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mã khách hàng</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.customerID}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.customerID}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, customerID: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn khách hàng" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map(customer => (
+                          <SelectItem key={customer.id} value={customer.code}>
+                            {customer.code} - {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Xuất hóa đơn</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.invoiceTo}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.invoiceTo}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, invoiceTo: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn công ty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies.map(company => (
+                          <SelectItem key={company.id} value={company.code}>
+                            {company.code} - {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Bộ phận</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.division}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.division}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, division: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn bộ phận" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {divisions.map(division => (
+                          <SelectItem key={division.id} value={division.code}>
+                            {division.code} - {division.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mã dự án</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectCode}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.projectCode}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, projectCode: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn dự án" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.code}>
+                            {project.code} - {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tên dự án</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectName}</div>
+                  ) : (
+                    <Input
+                      value={selectedRevenue.projectName}
+                      onChange={(e) => setSelectedRevenue({...selectedRevenue, projectName: e.target.value})}
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Loại dự án</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectType}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.projectType}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, projectType: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại dự án" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectTypes.map(type => (
+                          <SelectItem key={type.id} value={type.code}>
+                            {type.code} - {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">BMM</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.bmm}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={selectedRevenue.bmm}
+                      onChange={(e) => setSelectedRevenue({...selectedRevenue, bmm: parseFloat(e.target.value) || 0})}
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Đơn giá</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.offshoreUnitPrice}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      value={selectedRevenue.offshoreUnitPrice}
+                      onChange={(e) => setSelectedRevenue({...selectedRevenue, offshoreUnitPrice: parseFloat(e.target.value) || 0})}
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tiền tệ</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.currency}</div>
+                  ) : (
+                    <Select
+                      value={selectedRevenue.currency}
+                      onValueChange={(value) => setSelectedRevenue({...selectedRevenue, currency: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tiền tệ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map(currency => (
+                          <SelectItem key={currency.id} value={currency.code}>
+                            {currency.code} - {currency.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Doanh thu gốc</label>
+                  <div className="p-2 bg-gray-50 rounded">{selectedRevenue.originalRevenue.toLocaleString()}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Doanh thu VND</label>
+                  <div className="p-2 bg-gray-50 rounded">{selectedRevenue.vndRevenue.toLocaleString()}</div>
+                </div>
+
+                <div className="space-y-2 col-span-2">
+                  <label className="text-sm font-medium">Ghi chú</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.notes}</div>
+                  ) : (
+                    <Input
+                      value={selectedRevenue.notes}
+                      onChange={(e) => setSelectedRevenue({...selectedRevenue, notes: e.target.value})}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+            {dialogMode === 'edit' && (
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Hủy
+                </Button>
+                <Button onClick={handleSave}>
+                  Lưu
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
