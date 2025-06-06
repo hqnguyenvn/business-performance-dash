@@ -431,7 +431,7 @@ const Revenues = () => {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Revenue Management"
-        description="Record workload by year and month"
+        description="BMM & Revenue by year and month"
         icon={DollarSign}
         actions={
           <>
