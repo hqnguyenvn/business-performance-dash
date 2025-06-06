@@ -489,7 +489,7 @@ const Revenues = () => {
                             <SelectContent>
                               {customers.map(customer => (
                                 <SelectItem key={customer.id} value={customer.code}>
-                                  {customer.code} - {customer.name}
+                                  {customer.code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -506,7 +506,7 @@ const Revenues = () => {
                             <SelectContent>
                               {companies.map(company => (
                                 <SelectItem key={company.id} value={company.code}>
-                                  {company.code} - {company.name}
+                                  {company.code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -523,7 +523,7 @@ const Revenues = () => {
                             <SelectContent>
                               {divisions.map(division => (
                                 <SelectItem key={division.id} value={division.code}>
-                                  {division.code} - {division.name}
+                                  {division.code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -540,7 +540,7 @@ const Revenues = () => {
                             <SelectContent>
                               {projects.map(project => (
                                 <SelectItem key={project.id} value={project.code}>
-                                  {project.code} - {project.name}
+                                  {project.code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -564,17 +564,22 @@ const Revenues = () => {
                             <SelectContent>
                               {projectTypes.map(type => (
                                 <SelectItem key={type.id} value={type.code}>
-                                  {type.code} - {type.name}
+                                  {type.code}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
-                          <NumberInput
-                            value={revenue.year}
-                            onChange={(value) => updateRevenue(revenue.id, 'year', value || currentYear)}
-                            className="border-0 p-1 h-8"
+                          <Input
+                            value={revenue.year.toString()}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              if (!isNaN(value) || e.target.value === '') {
+                                updateRevenue(revenue.id, 'year', value || currentYear);
+                              }
+                            }}
+                            className="border-0 p-1 h-8 text-right"
                           />
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
@@ -845,9 +850,15 @@ const Revenues = () => {
                       {selectedRevenue.year}
                     </div>
                   ) : (
-                    <NumberInput
-                      value={selectedRevenue.year}
-                      onChange={(value) => setSelectedRevenue({...selectedRevenue, year: value || currentYear})}
+                    <Input
+                      value={selectedRevenue.year.toString()}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (!isNaN(value) || e.target.value === '') {
+                          setSelectedRevenue({...selectedRevenue, year: value || currentYear});
+                        }
+                      }}
+                      className="text-right"
                     />
                   )}
                 </div>
