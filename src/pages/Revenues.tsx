@@ -307,17 +307,11 @@ const Revenues = () => {
 
         {hasUnsavedChanges && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                <span className="text-yellow-800 font-medium">
-                  Unsaved changes
-                </span>
-              </div>
-              <Button onClick={handleSaveAll} size="sm" className="bg-green-600 hover:bg-green-700">
-                <Save className="h-4 w-4 mr-2" />
-                Save Now
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+              <span className="text-yellow-800 font-medium">
+                Unsaved changes
+              </span>
             </div>
           </div>
         )}
