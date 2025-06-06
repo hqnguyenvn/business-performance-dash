@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +58,19 @@ const MONTHS = [
 
 const Revenues = () => {
   const { toast } = useToast();
-  const [revenues, setRevenues] = useState<Revenue[]>([]);
+  const STORAGE_KEY = 'revenue-data';
+  
+  // Load initial data from localStorage
+  const [revenues, setRevenues] = useState<Revenue[]>(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      return savedData ? JSON.parse(savedData) : [];
+    } catch (error) {
+      console.error('Error loading revenue data from localStorage:', error);
+      return [];
+    }
+  });
+  
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   const currentYear = new Date().getFullYear();
@@ -113,6 +125,15 @@ const Revenues = () => {
     revenue.year === parseInt(selectedYear) && 
     selectedMonths.includes(revenue.month)
   );
+
+  // Save to localStorage whenever revenues change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(revenues));
+    } catch (error) {
+      console.error('Error saving revenue data to localStorage:', error);
+    }
+  }, [revenues]);
 
   const addNewRow = () => {
     const newRevenue: Revenue = {
@@ -169,10 +190,21 @@ const Revenues = () => {
     setRevenues(updatedRevenues);
     setHasUnsavedChanges(false);
     
-    toast({
-      title: "Saved successfully",
-      description: `Saved all ${updatedRevenues.length} revenue records`,
-    });
+    // Ensure data is saved to localStorage
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRevenues));
+      toast({
+        title: "Saved successfully",
+        description: `Saved all ${updatedRevenues.length} revenue records to local storage`,
+      });
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+      toast({
+        title: "Save failed",
+        description: "Could not save data to local storage",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleMonthToggle = (monthValue: number) => {
@@ -196,7 +228,9 @@ const Revenues = () => {
   };
 
   const handleDelete = (id: string) => {
-    setRevenues(revenues.filter(revenue => revenue.id !== id));
+    const updatedRevenues = revenues.filter(revenue => revenue.id !== id);
+    setRevenues(updatedRevenues);
+    setHasUnsavedChanges(true);
     toast({
       title: "Deleted successfully",
       description: "Revenue record has been deleted",
@@ -216,6 +250,7 @@ const Revenues = () => {
         return revenue;
       }));
       setIsDialogOpen(false);
+      setHasUnsavedChanges(true);
       toast({
         title: "Saved successfully",
         description: "Revenue information has been updated",
