@@ -80,68 +80,79 @@ const BusinessReport = () => {
       />
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">
-                {totalRevenue.toLocaleString()} VND
-              </div>
-              <p className="text-sm text-gray-600">Tổng Doanh thu năm {selectedYear}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {totalNetProfit.toLocaleString()} VND
-              </div>
-              <p className="text-sm text-gray-600">Tổng Lợi nhuận ròng</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm">Thuế TNDN:</label>
-                <Input
-                  type="number"
-                  value={incomeTaxRate}
-                  onChange={(e) => setIncomeTaxRate(parseFloat(e.target.value) || 5)}
-                  className="w-16 h-8"
-                />
-                <span className="text-sm">%</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm">Bonus:</label>
-                <Input
-                  type="number"
-                  value={bonusRate}
-                  onChange={(e) => setBonusRate(parseFloat(e.target.value) || 15)}
-                  className="w-16 h-8"
-                />
-                <span className="text-sm">%</span>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Summary Cards and Filters in optimized layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  {totalRevenue.toLocaleString()} VND
+                </div>
+                <p className="text-sm text-gray-600">Tổng Doanh thu năm {selectedYear}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
+                  {totalNetProfit.toLocaleString()} VND
+                </div>
+                <p className="text-sm text-gray-600">Tổng Lợi nhuận ròng</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters and Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <label className="text-sm font-medium mb-2 block">Năm:</label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Năm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2023, 2024, 2025].map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <label className="text-sm font-medium mb-2 block">Thuế TNDN:</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={incomeTaxRate}
+                    onChange={(e) => setIncomeTaxRate(parseFloat(e.target.value) || 5)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm">%</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-white">
+              <CardContent className="p-4">
+                <label className="text-sm font-medium mb-2 block">Bonus:</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={bonusRate}
+                    onChange={(e) => setBonusRate(parseFloat(e.target.value) || 15)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm">%</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <Card className="bg-white">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Báo cáo Chi tiết</CardTitle>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Năm" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2023, 2024, 2025].map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CardTitle>Báo cáo Chi tiết</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
