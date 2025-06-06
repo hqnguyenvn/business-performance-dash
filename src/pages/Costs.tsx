@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -214,14 +213,10 @@ const Costs = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-sm text-gray-600 min-w-[40px]">Year</span>
                 </div>
 
                 {/* Month Filter */}
                 <div className="flex-1">
-                  <div className="mb-2">
-                    <span className="text-sm text-gray-600">Months</span>
-                  </div>
                   <div className="grid grid-cols-6 gap-2">
                     {MONTHS.map((month) => (
                       <div key={month.value} className="flex items-center space-x-2">
