@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -183,8 +182,16 @@ const Revenues = () => {
 
   const handleSave = () => {
     if (selectedRevenue) {
-      updateRevenue(selectedRevenue.id, 'customerID', selectedRevenue.customerID);
-      // Update other fields as needed
+      setRevenues(revenues.map(revenue => {
+        if (revenue.id === selectedRevenue.id) {
+          const updated = { ...selectedRevenue };
+          // Auto calculate revenues when saving
+          updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
+          updated.vndRevenue = updated.originalRevenue * 24000; // Assume exchange rate
+          return updated;
+        }
+        return revenue;
+      }));
       setIsDialogOpen(false);
       toast({
         title: "Lưu thành công",
