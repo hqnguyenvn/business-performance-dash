@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,14 @@ interface MasterData {
   description?: string;
 }
 
+interface ExchangeRate {
+  id: string;
+  year: number;
+  month: string;
+  currencyID: string;
+  exchangeRate: number;
+}
+
 const MONTHS = [
   { value: 1, label: "Jan" },
   { value: 2, label: "Feb" },
@@ -106,37 +115,47 @@ const Revenues = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [revenueToDelete, setRevenueToDelete] = useState<string | null>(null);
 
-  // Master data - in a real app, this would come from a shared context or API
-  const [customers] = useState<MasterData[]>([
-    { id: "1", code: "CUST001", name: "ABC Technology Company", description: "VIP Customer" },
-    { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Regular Customer" },
-  ]);
+  // Master data - load from localStorage instead of hardcoded values
+  const [customers, setCustomers] = useState<MasterData[]>([]);
+  const [companies, setCompanies] = useState<MasterData[]>([]);
+  const [divisions, setDivisions] = useState<MasterData[]>([]);
+  const [projects, setProjects] = useState<MasterData[]>([]);
+  const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
+  const [resources, setResources] = useState<MasterData[]>([]);
+  const [currencies, setCurrencies] = useState<MasterData[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
 
-  const [companies] = useState<MasterData[]>([
-    { id: "1", code: "COMP001", name: "ABC Co., Ltd", description: "Main Company" },
-    { id: "2", code: "COMP002", name: "XYZ Branch", description: "Southern Branch" },
-  ]);
+  // Load master data from localStorage
+  useEffect(() => {
+    const loadMasterData = (key: string, defaultData: MasterData[] = []) => {
+      try {
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : defaultData;
+      } catch (error) {
+        console.error(`Error loading ${key} from localStorage:`, error);
+        return defaultData;
+      }
+    };
 
-  const [divisions] = useState<MasterData[]>([
-    { id: "1", code: "DIV001", name: "Development Department", description: "R&D Department" },
-    { id: "2", code: "DIV002", name: "Sales Department", description: "Sales Department" },
-  ]);
+    const loadExchangeRates = () => {
+      try {
+        const saved = localStorage.getItem('settings_exchangeRates');
+        return saved ? JSON.parse(saved) : [];
+      } catch (error) {
+        console.error('Error loading exchange rates from localStorage:', error);
+        return [];
+      }
+    };
 
-  const [projects] = useState<MasterData[]>([
-    { id: "1", code: "PRJ001", name: "ERP Project", description: "Enterprise Resource Planning System" },
-    { id: "2", code: "PRJ002", name: "CRM Project", description: "Customer Relationship Management" },
-  ]);
-
-  const [projectTypes] = useState<MasterData[]>([
-    { id: "1", code: "TYPE001", name: "New Development", description: "New project from scratch" },
-    { id: "2", code: "TYPE002", name: "Maintenance", description: "Current system maintenance" },
-  ]);
-
-  const [currencies] = useState<MasterData[]>([
-    { id: "1", code: "USD", name: "US Dollar", description: "US Dollar" },
-    { id: "2", code: "VND", name: "Vietnam Dong", description: "Vietnam Dong" },
-    { id: "3", code: "JPY", name: "Japanese Yen", description: "Japanese Yen" },
-  ]);
+    setCustomers(loadMasterData('settings_customers'));
+    setCompanies(loadMasterData('settings_companies'));
+    setDivisions(loadMasterData('settings_divisions'));
+    setProjects(loadMasterData('settings_projects'));
+    setProjectTypes(loadMasterData('settings_projectTypes'));
+    setResources(loadMasterData('settings_resources'));
+    setCurrencies(loadMasterData('settings_currencies'));
+    setExchangeRates(loadExchangeRates());
+  }, []);
 
   // Get unique years from revenue data, including current year
   const availableYears = Array.from(new Set([...revenues.map(r => r.year), currentYear])).sort((a, b) => b - a);
@@ -145,14 +164,8 @@ const Revenues = () => {
   const filteredRevenues = revenues.filter(revenue => {
     const yearMatch = revenue.year === parseInt(selectedYear);
     const monthMatch = selectedMonths.includes(revenue.month);
-    console.log(`Filtering revenue ${revenue.id}: year=${revenue.year}, month=${revenue.month}, yearMatch=${yearMatch}, monthMatch=${monthMatch}`);
     return yearMatch && monthMatch;
   });
-
-  console.log('Selected year:', selectedYear);
-  console.log('Selected months:', selectedMonths);
-  console.log('Total revenues:', revenues.length);
-  console.log('Filtered revenues:', filteredRevenues.length);
 
   // Save to localStorage whenever revenues change
   useEffect(() => {
@@ -162,6 +175,21 @@ const Revenues = () => {
       console.error('Error saving revenue data to localStorage:', error);
     }
   }, [revenues]);
+
+  // Get exchange rate for a specific currency
+  const getExchangeRate = (currencyCode: string, year: number, month: number): number => {
+    const monthStr = MONTHS.find(m => m.value === month)?.label || "";
+    const rate = exchangeRates.find(
+      r => r.currencyID === currencyCode && r.year === year && r.month === monthStr
+    );
+    
+    // Default to 24000 for USD if not found
+    if (currencyCode === "USD" && !rate) return 24000;
+    // Default to 170 for JPY if not found
+    if (currencyCode === "JPY" && !rate) return 170;
+    // Default to 1 for VND or any other currency if not found
+    return rate?.exchangeRate || (currencyCode === "VND" ? 1 : 0);
+  };
 
   const addNewRow = () => {
     const newRevenue: Revenue = {
@@ -195,9 +223,10 @@ const Revenues = () => {
       if (revenue.id === id) {
         const updated = { ...revenue, [field]: value };
         // Auto calculate original revenue
-        if (field === 'bmm' || field === 'offshoreUnitPrice') {
+        if (field === 'bmm' || field === 'offshoreUnitPrice' || field === 'currency') {
           updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
-          updated.vndRevenue = updated.originalRevenue * 24000; // Assume exchange rate
+          const exchangeRate = getExchangeRate(updated.currency, updated.year, updated.month);
+          updated.vndRevenue = updated.originalRevenue * exchangeRate;
         }
         return updated;
       }
@@ -211,7 +240,8 @@ const Revenues = () => {
     const updatedRevenues = revenues.map(revenue => {
       const updated = { ...revenue };
       updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
-      updated.vndRevenue = updated.originalRevenue * 24000;
+      const exchangeRate = getExchangeRate(updated.currency, updated.year, updated.month);
+      updated.vndRevenue = updated.originalRevenue * exchangeRate;
       return updated;
     });
     
@@ -284,6 +314,31 @@ const Revenues = () => {
     }
   };
 
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+  };
+
+  const handleMonthToggle = (monthValue: number) => {
+    setSelectedMonths(prev => {
+      const newMonths = prev.includes(monthValue) 
+        ? prev.filter(m => m !== monthValue)
+        : [...prev, monthValue].sort();
+      return newMonths;
+    });
+  };
+
+  const handleView = (revenue: Revenue) => {
+    setSelectedRevenue(revenue);
+    setDialogMode('view');
+    setIsDialogOpen(true);
+  };
+
+  const handleEdit = (revenue: Revenue) => {
+    setSelectedRevenue(revenue);
+    setDialogMode('edit');
+    setIsDialogOpen(true);
+  };
+
   const handleSave = () => {
     if (selectedRevenue) {
       setRevenues(revenues.map(revenue => {
@@ -291,7 +346,8 @@ const Revenues = () => {
           const updated = { ...selectedRevenue };
           // Auto calculate revenues when saving
           updated.originalRevenue = updated.bmm * updated.offshoreUnitPrice;
-          updated.vndRevenue = updated.originalRevenue * 24000; // Assume exchange rate
+          const exchangeRate = getExchangeRate(updated.currency, updated.year, updated.month);
+          updated.vndRevenue = updated.originalRevenue * exchangeRate;
           return updated;
         }
         return revenue;
@@ -348,7 +404,7 @@ const Revenues = () => {
             <div className="space-y-4">
               {/* Year and Month Filter in same row */}
               <div className="flex items-start gap-8">
-                {/* Year Filter - removed the label text */}
+                {/* Year Filter */}
                 <div className="flex items-center gap-4">
                   <Select value={selectedYear} onValueChange={handleYearChange}>
                     <SelectTrigger className="w-32">
@@ -362,7 +418,7 @@ const Revenues = () => {
                   </Select>
                 </div>
 
-                {/* Month Filter - removed the label text */}
+                {/* Month Filter */}
                 <div className="flex-1">
                   <div className="grid grid-cols-6 gap-4">
                     {MONTHS.map(month => (
@@ -672,7 +728,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Customer ID</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.customerID}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.customerID}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.customerID}
@@ -695,7 +753,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Invoice To</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.invoiceTo}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.invoiceTo}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.invoiceTo}
@@ -718,7 +778,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Division</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.division}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.division}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.division}
@@ -741,7 +803,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Project Code</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectCode}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.projectCode}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.projectCode}
@@ -764,7 +828,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Project Name</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectName}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.projectName}
+                    </div>
                   ) : (
                     <Input
                       value={selectedRevenue.projectName}
@@ -776,7 +842,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Project Type</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectType}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.projectType}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.projectType}
@@ -799,7 +867,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Year</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.year}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">
+                      {selectedRevenue.year}
+                    </div>
                   ) : (
                     <NumberInput
                       value={selectedRevenue.year}
@@ -836,7 +906,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">BMM</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{selectedRevenue.bmm}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">
+                      {selectedRevenue.bmm}
+                    </div>
                   ) : (
                     <NumberInput
                       value={selectedRevenue.bmm}
@@ -848,7 +920,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Unit Price</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.offshoreUnitPrice)}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">
+                      {formatNumber(selectedRevenue.offshoreUnitPrice)}
+                    </div>
                   ) : (
                     <Input
                       value={formatNumber(selectedRevenue.offshoreUnitPrice)}
@@ -867,7 +941,9 @@ const Revenues = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Currency</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.currency}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.currency}
+                    </div>
                   ) : (
                     <Select
                       value={selectedRevenue.currency}
@@ -889,18 +965,24 @@ const Revenues = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Original Revenue</label>
-                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.originalRevenue)}</div>
+                  <div className="p-2 bg-gray-50 rounded text-right">
+                    {formatNumber(selectedRevenue.originalRevenue)}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">VND Revenue</label>
-                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedRevenue.vndRevenue)}</div>
+                  <div className="p-2 bg-gray-50 rounded text-right">
+                    {formatNumber(selectedRevenue.vndRevenue)}
+                  </div>
                 </div>
 
                 <div className="space-y-2 col-span-2">
                   <label className="text-sm font-medium">Notes</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedRevenue.notes}</div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      {selectedRevenue.notes}
+                    </div>
                   ) : (
                     <Input
                       value={selectedRevenue.notes}
