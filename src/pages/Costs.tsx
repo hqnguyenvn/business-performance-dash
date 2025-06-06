@@ -28,6 +28,7 @@ import {
   TableRow,
   TableCell
 } from "@/components/ui/table";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface Cost {
   id: string;
@@ -97,11 +98,14 @@ const Costs = () => {
   const availableYears = Array.from(new Set([...costs.map(c => c.year), currentYear])).sort((a, b) => b - a);
 
   // Filter costs based on selected year and months
-  const filteredCosts = costs.filter(cost => {
+  const baseCosts = costs.filter(cost => {
     const yearMatch = cost.year === parseInt(selectedYear);
     const monthMatch = selectedMonths.includes(cost.month);
     return yearMatch && monthMatch;
   });
+
+  // Add table filtering
+  const { filteredData: filteredCosts, setFilter, getActiveFilters } = useTableFilter(baseCosts);
 
   const addNewRow = () => {
     const newCost: Cost = {
@@ -290,16 +294,106 @@ const Costs = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-red-50">
-                    <TableHead className="border border-gray-300">Year</TableHead>
-                    <TableHead className="border border-gray-300">Month</TableHead>
-                    <TableHead className="border border-gray-300">Description</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Volume</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Cost</TableHead>
-                    <TableHead className="border border-gray-300">Category</TableHead>
-                    <TableHead className="border border-gray-300 text-center">Is Cost</TableHead>
-                    <TableHead className="border border-gray-300 text-center">Checked</TableHead>
-                    <TableHead className="border border-gray-300">Notes</TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="year"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("year")}
+                    >
+                      Year
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="month"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("month")}
+                    >
+                      Month
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="description"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("description")}
+                    >
+                      Description
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="price"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("price")}
+                    >
+                      Unit Price
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="volume"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("volume")}
+                    >
+                      Volume
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="cost"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("cost")}
+                    >
+                      Cost
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="category"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("category")}
+                    >
+                      Category
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-center"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="isCost"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("isCost")}
+                    >
+                      Is Cost
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-center"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="checked"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("checked")}
+                    >
+                      Checked
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseCosts}
+                      filterField="notes"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("notes")}
+                    >
+                      Notes
+                    </TableHead>
                     <TableHead className="border border-gray-300 text-center">
                       Actions
                       <Button

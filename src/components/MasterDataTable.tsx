@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface MasterData {
   id: string;
@@ -57,6 +57,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
 }) => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  // Add table filtering
+  const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
 
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
@@ -119,11 +122,47 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
             <TableHeader>
               <TableRow className="bg-gray-50">
                 {showCompanyColumn && (
-                  <TableHead className="border border-gray-300">Company</TableHead>
+                  <TableHead 
+                    className="border border-gray-300"
+                    showFilter={true}
+                    filterData={data}
+                    filterField="companyID"
+                    onFilter={setFilter}
+                    activeFilters={getActiveFilters("companyID")}
+                  >
+                    Company
+                  </TableHead>
                 )}
-                <TableHead className="border border-gray-300">Code</TableHead>
-                <TableHead className="border border-gray-300">Name</TableHead>
-                <TableHead className="border border-gray-300">Description</TableHead>
+                <TableHead 
+                  className="border border-gray-300"
+                  showFilter={true}
+                  filterData={data}
+                  filterField="code"
+                  onFilter={setFilter}
+                  activeFilters={getActiveFilters("code")}
+                >
+                  Code
+                </TableHead>
+                <TableHead 
+                  className="border border-gray-300"
+                  showFilter={true}
+                  filterData={data}
+                  filterField="name"
+                  onFilter={setFilter}
+                  activeFilters={getActiveFilters("name")}
+                >
+                  Name
+                </TableHead>
+                <TableHead 
+                  className="border border-gray-300"
+                  showFilter={true}
+                  filterData={data}
+                  filterField="description"
+                  onFilter={setFilter}
+                  activeFilters={getActiveFilters("description")}
+                >
+                  Description
+                </TableHead>
                 <TableHead className="border border-gray-300 text-center">
                   Actions
                   <Button
@@ -139,7 +178,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50">
                   {showCompanyColumn && (
                     <TableCell className="border border-gray-300 p-1">

@@ -1,5 +1,6 @@
-import * as React from "react"
 
+import * as React from "react"
+import { TableFilter } from "./table-filter"
 import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
@@ -68,8 +69,14 @@ TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+  React.ThHTMLAttributes<HTMLTableCellElement> & {
+    showFilter?: boolean;
+    filterData?: any[];
+    filterField?: string;
+    onFilter?: (field: string, values: string[]) => void;
+    activeFilters?: string[];
+  }
+>(({ className, showFilter, filterData, filterField, onFilter, activeFilters, children, ...props }, ref) => (
   <th
     ref={ref}
     className={cn(
@@ -77,7 +84,19 @@ const TableHead = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    <div className="flex items-center justify-between">
+      <span>{children}</span>
+      {showFilter && filterData && filterField && onFilter && (
+        <TableFilter
+          data={filterData}
+          field={filterField}
+          onFilter={onFilter}
+          activeFilters={activeFilters || []}
+        />
+      )}
+    </div>
+  </th>
 ))
 TableHead.displayName = "TableHead"
 
