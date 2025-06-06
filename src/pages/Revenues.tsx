@@ -28,6 +28,7 @@ import {
   TableRow,
   TableCell
 } from "@/components/ui/table";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface Revenue {
   id: string;
@@ -165,6 +166,14 @@ const Revenues = () => {
     const monthMatch = selectedMonths.includes(revenue.month);
     return yearMatch && monthMatch;
   });
+
+  // Add table filter hook
+  const {
+    filteredData: tableFilteredRevenues,
+    setFilter,
+    clearAllFilters,
+    getActiveFilters
+  } = useTableFilter(filteredRevenues);
 
   // Save to localStorage whenever revenues change
   useEffect(() => {
@@ -430,27 +439,153 @@ const Revenues = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Revenue Data ({filteredRevenues.length} records)</CardTitle>
+            <CardTitle>Revenue Data ({tableFilteredRevenues.length} records)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-blue-50">
-                    <TableHead className="border border-gray-300">Customer ID</TableHead>
-                    <TableHead className="border border-gray-300">Invoice To</TableHead>
-                    <TableHead className="border border-gray-300">Division</TableHead>
-                    <TableHead className="border border-gray-300">Project Code</TableHead>
-                    <TableHead className="border border-gray-300">Project Name</TableHead>
-                    <TableHead className="border border-gray-300">Project Type</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Year</TableHead>
-                    <TableHead className="border border-gray-300">Month</TableHead>
-                    <TableHead className="border border-gray-300 text-right">BMM</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
-                    <TableHead className="border border-gray-300">Currency</TableHead>
-                    <TableHead className="border border-gray-300 text-right">Original Revenue</TableHead>
-                    <TableHead className="border border-gray-300 text-right">VND Revenue</TableHead>
-                    <TableHead className="border border-gray-300">Notes</TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="customerID"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('customerID')}
+                    >
+                      Customer ID
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="invoiceTo"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('invoiceTo')}
+                    >
+                      Invoice To
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="division"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('division')}
+                    >
+                      Division
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="projectCode"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('projectCode')}
+                    >
+                      Project Code
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="projectName"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('projectName')}
+                    >
+                      Project Name
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="projectType"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('projectType')}
+                    >
+                      Project Type
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="year"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('year')}
+                    >
+                      Year
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="month"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('month')}
+                    >
+                      Month
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="bmm"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('bmm')}
+                    >
+                      BMM
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="offshoreUnitPrice"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('offshoreUnitPrice')}
+                    >
+                      Unit Price
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="currency"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('currency')}
+                    >
+                      Currency
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="originalRevenue"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('originalRevenue')}
+                    >
+                      Original Revenue
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="vndRevenue"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('vndRevenue')}
+                    >
+                      VND Revenue
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={filteredRevenues}
+                      filterField="notes"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters('notes')}
+                    >
+                      Notes
+                    </TableHead>
                     <TableHead className="border border-gray-300 text-center">
                       Actions
                       <Button
@@ -466,17 +601,15 @@ const Revenues = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRevenues.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
-                        {revenues.length === 0 
-                          ? "No data available. Click \"Add Row\" to start entering data."
-                          : "No data matches the selected filters. Try adjusting the year or month selection."
-                        }
-                      </TableCell>
-                    </TableRow>
+                  {tableFilteredRevenues.length === 0 ? (
+                    <TableCell colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
+                      {revenues.length === 0 
+                        ? "No data available. Click \"Add Row\" to start entering data."
+                        : "No data matches the selected filters. Try adjusting the year or month selection."
+                      }
+                    </TableCell>
                   ) : (
-                    filteredRevenues.map((revenue) => (
+                    tableFilteredRevenues.map((revenue) => (
                       <TableRow key={revenue.id} className="hover:bg-gray-50">
                         <TableCell className="border border-gray-300 p-1">
                           <Select
