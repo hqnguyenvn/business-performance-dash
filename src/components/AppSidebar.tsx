@@ -20,32 +20,32 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Quản lý Doanh thu",
+    title: "Revenue Management",
     url: "/revenues",
     icon: DollarSign,
   },
   {
-    title: "Quản lý Chi phí",
+    title: "Cost Management",
     url: "/costs",
     icon: Receipt,
   },
   {
-    title: "Chi phí Lương",
+    title: "Salary Costs",
     url: "/salary-costs",
     icon: Users,
   },
   {
-    title: "Báo cáo Kinh doanh",
+    title: "Business Report",
     url: "/business-report",
     icon: BarChart3,
   },
   {
-    title: "Báo cáo Khách hàng",
+    title: "Customer Report",
     url: "/customer-report",
     icon: TrendingUp,
   },
   {
-    title: "Cài đặt",
+    title: "Settings",
     url: "/settings",
     icon: Settings,
   },
@@ -61,13 +61,13 @@ export function AppSidebar() {
           <Building className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-lg font-bold text-gray-900">Business Manager</h1>
-            <p className="text-sm text-gray-500">Quản lý kinh doanh</p>
+            <p className="text-sm text-gray-500">Business Management</p>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu chính</SidebarGroupLabel>
+          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (

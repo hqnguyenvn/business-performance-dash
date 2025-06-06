@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -40,18 +41,18 @@ interface MasterData {
 }
 
 const MONTHS = [
-  { value: 1, label: "Tháng 1" },
-  { value: 2, label: "Tháng 2" },
-  { value: 3, label: "Tháng 3" },
-  { value: 4, label: "Tháng 4" },
-  { value: 5, label: "Tháng 5" },
-  { value: 6, label: "Tháng 6" },
-  { value: 7, label: "Tháng 7" },
-  { value: 8, label: "Tháng 8" },
-  { value: 9, label: "Tháng 9" },
-  { value: 10, label: "Tháng 10" },
-  { value: 11, label: "Tháng 11" },
-  { value: 12, label: "Tháng 12" },
+  { value: 1, label: "Jan" },
+  { value: 2, label: "Feb" },
+  { value: 3, label: "Mar" },
+  { value: 4, label: "Apr" },
+  { value: 5, label: "May" },
+  { value: 6, label: "Jun" },
+  { value: 7, label: "Jul" },
+  { value: 8, label: "Aug" },
+  { value: 9, label: "Sep" },
+  { value: 10, label: "Oct" },
+  { value: 11, label: "Nov" },
+  { value: 12, label: "Dec" },
 ];
 
 const Revenues = () => {
@@ -72,34 +73,34 @@ const Revenues = () => {
 
   // Master data - in a real app, this would come from a shared context or API
   const [customers] = useState<MasterData[]>([
-    { id: "1", code: "CUST001", name: "Công ty ABC Technology", description: "Khách hàng VIP" },
-    { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Khách hàng thường xuyên" },
+    { id: "1", code: "CUST001", name: "ABC Technology Company", description: "VIP Customer" },
+    { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Regular Customer" },
   ]);
 
   const [companies] = useState<MasterData[]>([
-    { id: "1", code: "COMP001", name: "Công ty TNHH ABC", description: "Công ty chính" },
-    { id: "2", code: "COMP002", name: "Chi nhánh XYZ", description: "Chi nhánh phía Nam" },
+    { id: "1", code: "COMP001", name: "ABC Co., Ltd", description: "Main Company" },
+    { id: "2", code: "COMP002", name: "XYZ Branch", description: "Southern Branch" },
   ]);
 
   const [divisions] = useState<MasterData[]>([
-    { id: "1", code: "DIV001", name: "Phòng Phát triển", description: "Bộ phận R&D" },
-    { id: "2", code: "DIV002", name: "Phòng Kinh doanh", description: "Bộ phận Sales" },
+    { id: "1", code: "DIV001", name: "Development Department", description: "R&D Department" },
+    { id: "2", code: "DIV002", name: "Sales Department", description: "Sales Department" },
   ]);
 
   const [projects] = useState<MasterData[]>([
-    { id: "1", code: "PRJ001", name: "Dự án ERP", description: "Hệ thống quản lý tổng thể" },
-    { id: "2", code: "PRJ002", name: "Dự án CRM", description: "Quản lý khách hàng" },
+    { id: "1", code: "PRJ001", name: "ERP Project", description: "Enterprise Resource Planning System" },
+    { id: "2", code: "PRJ002", name: "CRM Project", description: "Customer Relationship Management" },
   ]);
 
   const [projectTypes] = useState<MasterData[]>([
-    { id: "1", code: "TYPE001", name: "Phát triển mới", description: "Dự án phát triển từ đầu" },
-    { id: "2", code: "TYPE002", name: "Bảo trì", description: "Bảo trì hệ thống hiện tại" },
+    { id: "1", code: "TYPE001", name: "New Development", description: "New project from scratch" },
+    { id: "2", code: "TYPE002", name: "Maintenance", description: "Current system maintenance" },
   ]);
 
   const [currencies] = useState<MasterData[]>([
-    { id: "1", code: "USD", name: "US Dollar", description: "Đô la Mỹ" },
-    { id: "2", code: "VND", name: "Vietnam Dong", description: "Đồng Việt Nam" },
-    { id: "3", code: "JPY", name: "Japanese Yen", description: "Yên Nhật" },
+    { id: "1", code: "USD", name: "US Dollar", description: "US Dollar" },
+    { id: "2", code: "VND", name: "Vietnam Dong", description: "Vietnam Dong" },
+    { id: "3", code: "JPY", name: "Japanese Yen", description: "Japanese Yen" },
   ]);
 
   // Get unique years from revenue data
@@ -168,8 +169,8 @@ const Revenues = () => {
     setHasUnsavedChanges(false);
     
     toast({
-      title: "Lưu thành công",
-      description: `Đã lưu tất cả ${updatedRevenues.length} bản ghi doanh thu`,
+      title: "Saved successfully",
+      description: `Saved all ${updatedRevenues.length} revenue records`,
     });
   };
 
@@ -196,8 +197,8 @@ const Revenues = () => {
   const handleDelete = (id: string) => {
     setRevenues(revenues.filter(revenue => revenue.id !== id));
     toast({
-      title: "Xóa thành công",
-      description: "Đã xóa bản ghi doanh thu",
+      title: "Deleted successfully",
+      description: "Revenue record has been deleted",
     });
   };
 
@@ -215,40 +216,40 @@ const Revenues = () => {
       }));
       setIsDialogOpen(false);
       toast({
-        title: "Lưu thành công",
-        description: "Đã cập nhật thông tin doanh thu",
+        title: "Saved successfully",
+        description: "Revenue information has been updated",
       });
     }
   };
 
   const exportToCSV = () => {
     toast({
-      title: "Xuất dữ liệu",
-      description: "Đã xuất dữ liệu ra file CSV thành công",
+      title: "Export data",
+      description: "Data has been exported to CSV file successfully",
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="Quản lý Doanh thu"
-        description="Ghi nhận khối lượng công việc theo năm và tháng"
+        title="Revenue Management"
+        description="Record workload by year and month"
         icon={DollarSign}
         actions={
           <>
             <Button variant="outline" onClick={exportToCSV}>
               <Download className="h-4 w-4 mr-2" />
-              Xuất CSV
+              Export CSV
             </Button>
             {hasUnsavedChanges && (
               <Button onClick={handleSaveAll} className="bg-green-600 hover:bg-green-700">
                 <Save className="h-4 w-4 mr-2" />
-                Lưu tất cả
+                Save All
               </Button>
             )}
             <Button onClick={addNewRow}>
               <Plus className="h-4 w-4 mr-2" />
-              Thêm dòng
+              Add Row
             </Button>
           </>
         }
@@ -258,7 +259,7 @@ const Revenues = () => {
         {/* Filter Section */}
         <Card className="bg-white mb-6">
           <CardHeader>
-            <CardTitle>Bộ lọc dữ liệu</CardTitle>
+            <CardTitle>Data Filter</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -266,10 +267,9 @@ const Revenues = () => {
               <div className="flex items-start gap-8">
                 {/* Year Filter */}
                 <div className="flex items-center gap-4">
-                  <label className="text-sm font-medium w-16">Năm:</label>
                   <Select value={selectedYear} onValueChange={setSelectedYear}>
                     <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Chọn năm" />
+                      <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
                       {yearOptions.map(year => (
@@ -281,7 +281,6 @@ const Revenues = () => {
 
                 {/* Month Filter */}
                 <div className="flex-1">
-                  <label className="text-sm font-medium mb-2 block">Tháng:</label>
                   <div className="grid grid-cols-6 gap-4">
                     {MONTHS.map(month => (
                       <div key={month.value} className="flex items-center space-x-2">
@@ -311,12 +310,12 @@ const Revenues = () => {
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                 <span className="text-yellow-800 font-medium">
-                  Có thay đổi chưa được lưu
+                  Unsaved changes
                 </span>
               </div>
               <Button onClick={handleSaveAll} size="sm" className="bg-green-600 hover:bg-green-700">
                 <Save className="h-4 w-4 mr-2" />
-                Lưu ngay
+                Save Now
               </Button>
             </div>
           </div>
@@ -324,35 +323,35 @@ const Revenues = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Dữ liệu Doanh thu</CardTitle>
+            <CardTitle>Revenue Data</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-blue-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Mã KH</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Xuất HĐ</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Bộ phận</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Mã DA</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Tên DA</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Loại DA</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Năm</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Tháng</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Invoice To</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Division</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Project Code</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Project Name</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Project Type</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">BMM</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Đơn giá</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Tiền tệ</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">DT gốc</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">DT VND</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Ghi chú</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Thao tác</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Unit Price</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Currency</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Original Revenue</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">VND Revenue</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRevenues.length === 0 ? (
                     <tr>
                       <td colSpan={15} className="border border-gray-300 p-8 text-center text-gray-500">
-                        Chưa có dữ liệu. Nhấn "Thêm dòng" để bắt đầu nhập liệu.
+                        No data available. Click "Add Row" to start entering data.
                       </td>
                     </tr>
                   ) : (
@@ -364,7 +363,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'customerID', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Chọn KH" />
+                              <SelectValue placeholder="Select Customer" />
                             </SelectTrigger>
                             <SelectContent>
                               {customers.map(customer => (
@@ -381,7 +380,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'invoiceTo', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Chọn công ty" />
+                              <SelectValue placeholder="Select Company" />
                             </SelectTrigger>
                             <SelectContent>
                               {companies.map(company => (
@@ -398,7 +397,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'division', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Chọn BP" />
+                              <SelectValue placeholder="Select Division" />
                             </SelectTrigger>
                             <SelectContent>
                               {divisions.map(division => (
@@ -415,7 +414,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'projectCode', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Chọn DA" />
+                              <SelectValue placeholder="Select Project" />
                             </SelectTrigger>
                             <SelectContent>
                               {projects.map(project => (
@@ -439,7 +438,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'projectType', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Chọn loại" />
+                              <SelectValue placeholder="Select Type" />
                             </SelectTrigger>
                             <SelectContent>
                               {projectTypes.map(type => (
@@ -464,7 +463,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'month', parseInt(value))}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Tháng" />
+                              <SelectValue placeholder="Month" />
                             </SelectTrigger>
                             <SelectContent>
                               {MONTHS.map(month => (
@@ -497,7 +496,7 @@ const Revenues = () => {
                             onValueChange={(value) => updateRevenue(revenue.id, 'currency', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Tiền tệ" />
+                              <SelectValue placeholder="Currency" />
                             </SelectTrigger>
                             <SelectContent>
                               {currencies.map(currency => (
@@ -571,13 +570,13 @@ const Revenues = () => {
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {dialogMode === 'view' ? 'Xem chi tiết' : 'Chỉnh sửa'} Doanh thu
+                {dialogMode === 'view' ? 'View Details' : 'Edit'} Revenue
               </DialogTitle>
             </DialogHeader>
             {selectedRevenue && (
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Mã khách hàng</label>
+                  <label className="text-sm font-medium">Customer ID</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.customerID}</div>
                   ) : (
@@ -586,7 +585,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, customerID: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn khách hàng" />
+                        <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                       <SelectContent>
                         {customers.map(customer => (
@@ -600,7 +599,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Xuất hóa đơn</label>
+                  <label className="text-sm font-medium">Invoice To</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.invoiceTo}</div>
                   ) : (
@@ -609,7 +608,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, invoiceTo: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn công ty" />
+                        <SelectValue placeholder="Select company" />
                       </SelectTrigger>
                       <SelectContent>
                         {companies.map(company => (
@@ -623,7 +622,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Bộ phận</label>
+                  <label className="text-sm font-medium">Division</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.division}</div>
                   ) : (
@@ -632,7 +631,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, division: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn bộ phận" />
+                        <SelectValue placeholder="Select division" />
                       </SelectTrigger>
                       <SelectContent>
                         {divisions.map(division => (
@@ -646,7 +645,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Mã dự án</label>
+                  <label className="text-sm font-medium">Project Code</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectCode}</div>
                   ) : (
@@ -655,7 +654,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, projectCode: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn dự án" />
+                        <SelectValue placeholder="Select project" />
                       </SelectTrigger>
                       <SelectContent>
                         {projects.map(project => (
@@ -669,7 +668,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Tên dự án</label>
+                  <label className="text-sm font-medium">Project Name</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectName}</div>
                   ) : (
@@ -681,7 +680,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Loại dự án</label>
+                  <label className="text-sm font-medium">Project Type</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.projectType}</div>
                   ) : (
@@ -690,7 +689,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, projectType: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn loại dự án" />
+                        <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
                       <SelectContent>
                         {projectTypes.map(type => (
@@ -704,7 +703,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Năm</label>
+                  <label className="text-sm font-medium">Year</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.year}</div>
                   ) : (
@@ -717,7 +716,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Tháng</label>
+                  <label className="text-sm font-medium">Month</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">
                       {MONTHS.find(m => m.value === selectedRevenue.month)?.label}
@@ -728,7 +727,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, month: parseInt(value)})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn tháng" />
+                        <SelectValue placeholder="Select month" />
                       </SelectTrigger>
                       <SelectContent>
                         {MONTHS.map(month => (
@@ -755,7 +754,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Đơn giá</label>
+                  <label className="text-sm font-medium">Unit Price</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.offshoreUnitPrice}</div>
                   ) : (
@@ -768,7 +767,7 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Tiền tệ</label>
+                  <label className="text-sm font-medium">Currency</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.currency}</div>
                   ) : (
@@ -777,7 +776,7 @@ const Revenues = () => {
                       onValueChange={(value) => setSelectedRevenue({...selectedRevenue, currency: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn tiền tệ" />
+                        <SelectValue placeholder="Select currency" />
                       </SelectTrigger>
                       <SelectContent>
                         {currencies.map(currency => (
@@ -791,17 +790,17 @@ const Revenues = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Doanh thu gốc</label>
+                  <label className="text-sm font-medium">Original Revenue</label>
                   <div className="p-2 bg-gray-50 rounded">{selectedRevenue.originalRevenue.toLocaleString()}</div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Doanh thu VND</label>
+                  <label className="text-sm font-medium">VND Revenue</label>
                   <div className="p-2 bg-gray-50 rounded">{selectedRevenue.vndRevenue.toLocaleString()}</div>
                 </div>
 
                 <div className="space-y-2 col-span-2">
-                  <label className="text-sm font-medium">Ghi chú</label>
+                  <label className="text-sm font-medium">Notes</label>
                   {dialogMode === 'view' ? (
                     <div className="p-2 bg-gray-50 rounded">{selectedRevenue.notes}</div>
                   ) : (
@@ -816,10 +815,10 @@ const Revenues = () => {
             {dialogMode === 'edit' && (
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Hủy
+                  Cancel
                 </Button>
                 <Button onClick={handleSave}>
-                  Lưu
+                  Save
                 </Button>
               </div>
             )}

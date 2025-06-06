@@ -57,8 +57,8 @@ const BusinessReport = () => {
 
   const exportToCSV = () => {
     toast({
-      title: "Xuất báo cáo",
-      description: "Đã xuất báo cáo kinh doanh ra file CSV thành công",
+      title: "Export report",
+      description: "Business report has been exported to CSV file successfully",
     });
   };
 
@@ -68,13 +68,13 @@ const BusinessReport = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="Báo cáo Kết quả Kinh doanh"
-        description="Báo cáo tổng hợp theo năm và tháng"
+        title="Business Performance Report"
+        description="Comprehensive report by year and month"
         icon={BarChart3}
         actions={
           <Button variant="outline" onClick={exportToCSV}>
             <Download className="h-4 w-4 mr-2" />
-            Xuất CSV
+            Export CSV
           </Button>
         }
       />
@@ -89,7 +89,7 @@ const BusinessReport = () => {
                 <div className="text-2xl font-bold text-blue-600">
                   {totalRevenue.toLocaleString()} VND
                 </div>
-                <p className="text-sm text-gray-600">Tổng Doanh thu năm {selectedYear}</p>
+                <p className="text-sm text-gray-600">Total Revenue {selectedYear}</p>
               </CardContent>
             </Card>
             <Card className="bg-white">
@@ -97,7 +97,7 @@ const BusinessReport = () => {
                 <div className="text-2xl font-bold text-green-600">
                   {totalNetProfit.toLocaleString()} VND
                 </div>
-                <p className="text-sm text-gray-600">Tổng Lợi nhuận ròng</p>
+                <p className="text-sm text-gray-600">Total Net Profit</p>
               </CardContent>
             </Card>
           </div>
@@ -106,10 +106,10 @@ const BusinessReport = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="bg-white">
               <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block">Năm:</label>
+                <label className="text-sm font-medium mb-2 block">Year:</label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Năm" />
+                    <SelectValue placeholder="Year" />
                   </SelectTrigger>
                   <SelectContent>
                     {[2023, 2024, 2025].map(year => (
@@ -121,7 +121,7 @@ const BusinessReport = () => {
             </Card>
             <Card className="bg-white">
               <CardContent className="p-4">
-                <label className="text-sm font-medium mb-2 block">Thuế TNDN:</label>
+                <label className="text-sm font-medium mb-2 block">Income Tax:</label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
@@ -152,23 +152,23 @@ const BusinessReport = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Báo cáo Chi tiết</CardTitle>
+            <CardTitle>Detailed Report</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-blue-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Tháng</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Doanh thu</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Chi phí</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">LN gốc</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Thuế TNDN</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Cost</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Gross Profit</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Income Tax</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">Bonus</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Tổng CP</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">LN ròng</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">% LN gốc</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">% LN ròng</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Total Cost</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Net Profit</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Gross %</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Net %</th>
                   </tr>
                 </thead>
                 <tbody>
