@@ -5,7 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Download } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Users, Plus, Download, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SalaryCost {
@@ -27,6 +37,10 @@ const SalaryCosts = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
 
+  // Delete confirmation dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [costToDelete, setCostToDelete] = useState<string | null>(null);
+
   const addNewRow = () => {
     const newSalaryCost: SalaryCost = {
       id: Date.now().toString(),
@@ -45,6 +59,23 @@ const SalaryCosts = () => {
     setSalaryCosts(salaryCosts.map(cost => 
       cost.id === id ? { ...cost, [field]: value } : cost
     ));
+  };
+
+  const deleteSalaryCost = (id: string) => {
+    setCostToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (costToDelete) {
+      setSalaryCosts(prev => prev.filter(cost => cost.id !== costToDelete));
+      toast({
+        title: "Deleted",
+        description: "Salary cost record has been deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setCostToDelete(null);
+    }
   };
 
   const exportToCSV = () => {
@@ -113,12 +144,24 @@ const SalaryCosts = () => {
                     <th className="border border-gray-300 p-2 text-left font-medium">Mã KH</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Số tiền</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Ghi chú</th>
+                    <th className="border border-gray-300 p-2 text-center font-medium">
+                      Hành động
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={addNewRow}
+                        className="h-6 w-6 p-0 ml-1"
+                        title="Add New Row"
+                      >
+                        <Plus className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {salaryCosts.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={6} className="border border-gray-300 p-8 text-center text-gray-500">
                         Chưa có dữ liệu. Nhấn "Thêm dòng" để bắt đầu nhập liệu.
                       </td>
                     </tr>
@@ -161,6 +204,18 @@ const SalaryCosts = () => {
                             className="border-0 p-1 h-8"
                           />
                         </td>
+                        <td className="border border-gray-300 p-1">
+                          <div className="flex justify-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteSalaryCost(salaryCost.id)}
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -170,6 +225,24 @@ const SalaryCosts = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bạn có chắc chắn?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hành động này không thể hoàn tác. Điều này sẽ xóa vĩnh viễn bản ghi chi phí lương này.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCostToDelete(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
