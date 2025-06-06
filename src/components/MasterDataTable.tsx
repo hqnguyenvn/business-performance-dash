@@ -1,24 +1,9 @@
-import React, { useCallback, useState } from "react";
+
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,8 +13,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Plus, Edit, Eye, Trash2, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@/components/ui/table";
 import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface MasterData {
@@ -48,91 +42,102 @@ interface MasterDataTableProps {
   companies?: MasterData[];
 }
 
-const MasterDataTable: React.FC<MasterDataTableProps> = ({ 
-  data, 
-  setter, 
-  title, 
+const MasterDataTable: React.FC<MasterDataTableProps> = ({
+  data,
+  setter,
+  title,
   showCompanyColumn = false,
-  companies = [] 
+  companies = []
 }) => {
   const { toast } = useToast();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MasterData | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'add'>('view');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   // Add table filtering
-  const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
+  const { filteredData: filteredItems, setFilter, getActiveFilters } = useTableFilter(data);
 
-  const addNewItem = useCallback(() => {
+  const addNewItem = () => {
     const newItem: MasterData = {
       id: Date.now().toString(),
       code: "",
       name: "",
       description: "",
-      ...(showCompanyColumn && { companyID: "" }),
+      ...(showCompanyColumn && { companyID: "" })
     };
-    setter(prev => [...prev, newItem]);
-  }, [setter, showCompanyColumn]);
+    setSelectedItem(newItem);
+    setDialogMode('add');
+    setIsDialogOpen(true);
+  };
 
-  const updateItem = useCallback((id: string, field: keyof MasterData, value: string) => {
+  const updateItem = (id: string, field: keyof MasterData, value: any) => {
     setter(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
-  }, [setter]);
+  };
 
-  const deleteItem = useCallback((id: string) => {
-    setter(prev => prev.filter(item => item.id !== id));
-    toast({
-      title: "Deleted",
-      description: "Item successfully deleted",
-    });
-    setDeleteId(null);
-  }, [setter, toast]);
+  const openDialog = (item: MasterData, mode: 'view' | 'edit') => {
+    setSelectedItem(item);
+    setDialogMode(mode);
+    setIsDialogOpen(true);
+  };
 
-  const saveData = useCallback(() => {
-    toast({
-      title: "Saved",
-      description: "Data saved successfully",
-    });
-  }, [toast]);
+  const deleteItem = (id: string) => {
+    setItemToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
 
-  const getCompanyName = (companyID: string) => {
-    const company = companies.find(c => c.id === companyID);
-    return company ? company.name : "";
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      setter(prev => prev.filter(item => item.id !== itemToDelete));
+      toast({
+        title: "Deleted",
+        description: "Item successfully deleted",
+      });
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const saveItem = () => {
+    if (selectedItem) {
+      if (dialogMode === 'add') {
+        setter(prev => [...prev, selectedItem]);
+        toast({
+          title: "Added",
+          description: "New item has been added",
+        });
+      } else {
+        setter(prev => prev.map(item => 
+          item.id === selectedItem.id ? selectedItem : item
+        ));
+        toast({
+          title: "Updated",
+          description: "Item has been updated",
+        });
+      }
+      setIsDialogOpen(false);
+    }
   };
 
   return (
     <Card className="bg-white">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>{title}</CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={saveData}>
-              <Save className="h-4 w-4 mr-2" />
-              Save
-            </Button>
-            <Button onClick={addNewItem}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
-          </div>
+        <div className="flex justify-between items-center">
+          <CardTitle>{title} ({filteredItems.length} records)</CardTitle>
+          <Button onClick={addNewItem}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
-                {showCompanyColumn && (
-                  <TableHead 
-                    className="border border-gray-300"
-                    showFilter={true}
-                    filterData={data}
-                    filterField="companyID"
-                    onFilter={setFilter}
-                    activeFilters={getActiveFilters("companyID")}
-                  >
-                    Company
-                  </TableHead>
-                )}
+              <TableRow className="bg-blue-50">
                 <TableHead 
                   className="border border-gray-300"
                   showFilter={true}
@@ -163,102 +168,195 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 >
                   Description
                 </TableHead>
+                {showCompanyColumn && (
+                  <TableHead 
+                    className="border border-gray-300"
+                    showFilter={true}
+                    filterData={data}
+                    filterField="companyID"
+                    onFilter={setFilter}
+                    activeFilters={getActiveFilters("companyID")}
+                  >
+                    Company
+                  </TableHead>
+                )}
                 <TableHead className="border border-gray-300 text-center">
                   Actions
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={addNewItem}
-                    className="h-6 w-6 p-0 ml-1"
-                    title="Add New Item"
-                  >
-                    <Plus className="h-4 w-4 text-blue-600" />
-                  </Button>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={item.id} className="hover:bg-gray-50">
-                  {showCompanyColumn && (
-                    <TableCell className="border border-gray-300 p-1">
-                      <Select
-                        value={item.companyID || ""}
-                        onValueChange={(value) => updateItem(item.id, 'companyID', value)}
-                      >
-                        <SelectTrigger className="border-0 p-1 h-8">
-                          <SelectValue placeholder="Select company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  )}
-                  <TableCell className="border border-gray-300 p-1">
-                    <Input
-                      value={item.code}
-                      onChange={(e) => updateItem(item.id, 'code', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-1">
-                    <Input
-                      value={item.name}
-                      onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-1">
-                    <Input
-                      value={item.description || ""}
-                      onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-center">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this item? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteItem(item.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+              {filteredItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={showCompanyColumn ? 5 : 4} className="border border-gray-300 p-8 text-center text-gray-500">
+                    {data.length === 0 
+                      ? "No data available. Click \"Add New\" to start entering data."
+                      : "No data matches the selected filters."
+                    }
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredItems.map((item) => (
+                  <TableRow key={item.id} className="hover:bg-gray-50">
+                    <TableCell className="border border-gray-300 p-1">
+                      <Input
+                        value={item.code}
+                        onChange={(e) => updateItem(item.id, 'code', e.target.value)}
+                        className="border-0 p-1 h-8"
+                      />
+                    </TableCell>
+                    <TableCell className="border border-gray-300 p-1">
+                      <Input
+                        value={item.name}
+                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                        className="border-0 p-1 h-8"
+                      />
+                    </TableCell>
+                    <TableCell className="border border-gray-300 p-1">
+                      <Input
+                        value={item.description || ""}
+                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                        className="border-0 p-1 h-8"
+                      />
+                    </TableCell>
+                    {showCompanyColumn && (
+                      <TableCell className="border border-gray-300 p-1">
+                        <Input
+                          value={item.companyID || ""}
+                          onChange={(e) => updateItem(item.id, 'companyID', e.target.value)}
+                          className="border-0 p-1 h-8"
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell className="border border-gray-300 p-1">
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openDialog(item, 'view')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openDialog(item, 'edit')}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteItem(item.id)}
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
       </CardContent>
+
+      {/* Detail Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogMode === 'view' ? 'View Item' : dialogMode === 'edit' ? 'Edit Item' : 'Add New Item'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedItem && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Code</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded">{selectedItem.code}</div>
+                ) : (
+                  <Input
+                    value={selectedItem.code}
+                    onChange={(e) => setSelectedItem({...selectedItem, code: e.target.value})}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded">{selectedItem.name}</div>
+                ) : (
+                  <Input
+                    value={selectedItem.name}
+                    onChange={(e) => setSelectedItem({...selectedItem, name: e.target.value})}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded">{selectedItem.description}</div>
+                ) : (
+                  <Input
+                    value={selectedItem.description || ""}
+                    onChange={(e) => setSelectedItem({...selectedItem, description: e.target.value})}
+                  />
+                )}
+              </div>
+
+              {showCompanyColumn && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Company</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedItem.companyID}</div>
+                  ) : (
+                    <Input
+                      value={selectedItem.companyID || ""}
+                      onChange={(e) => setSelectedItem({...selectedItem, companyID: e.target.value})}
+                    />
+                  )}
+                </div>
+              )}
+
+              {dialogMode !== 'view' && (
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={saveItem}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

@@ -17,67 +17,73 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Users, Plus, Download, Trash2, Eye, Edit, MoreHorizontal, Save } from "lucide-react";
+import { Users, Plus, Download, Edit, Eye, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber } from "@/lib/format";
+import {
+  Table,
+  TableHeader,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
+} from "@/components/ui/table";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface SalaryCost {
   id: string;
   year: number;
-  month: string;
-  company: string;
-  division: string;
-  customerID: string;
-  amount: number;
+  month: number;
+  employeeName: string;
+  position: string;
+  department: string;
+  baseSalary: number;
+  overtimeHours: number;
+  overtimeRate: number;
+  overtime: number;
+  bonus: number;
+  totalSalary: number;
+  benefits: number;
+  socialInsurance: number;
+  totalCost: number;
+  checked: boolean;
   notes: string;
 }
 
-interface MasterData {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-}
+const MONTHS = [
+  { value: 1, label: "January" },
+  { value: 2, label: "February" },
+  { value: 3, label: "March" },
+  { value: 4, label: "April" },
+  { value: 5, label: "May" },
+  { value: 6, label: "June" },
+  { value: 7, label: "July" },
+  { value: 8, label: "August" },
+  { value: 9, label: "September" },
+  { value: 10, label: "October" },
+  { value: 11, label: "November" },
+  { value: 12, label: "December" }
+];
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const POSITIONS = ["Developer", "Senior Developer", "Team Lead", "Project Manager", "Designer", "QA Engineer"];
+const DEPARTMENTS = ["Development", "Design", "QA", "Management", "Sales", "HR"];
 
 const SalaryCosts = () => {
   const { toast } = useToast();
   const [salaryCosts, setSalaryCosts] = useState<SalaryCost[]>([]);
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonths, setSelectedMonths] = useState<string[]>(MONTHS);
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
   
-  // Master data for dropdowns
-  const [companies, setCompanies] = useState<MasterData[]>([
-    { id: "1", code: "COMP001", name: "Parent Company", description: "Main company" },
-    { id: "2", code: "COMP002", name: "Hanoi Branch", description: "Northern branch" },
-  ]);
-  
-  const [divisions, setDivisions] = useState<MasterData[]>([
-    { id: "1", code: "DIV001", name: "Development Department", description: "R&D division" },
-    { id: "2", code: "DIV002", name: "Sales Department", description: "Sales division" },
-  ]);
-  
-  const [customers, setCustomers] = useState<MasterData[]>([
-    { id: "1", code: "CUST001", name: "ABC Technology Company", description: "VIP customer" },
-    { id: "2", code: "CUST002", name: "XYZ Solutions Ltd", description: "Regular customer" },
-  ]);
-
-  // View/Edit dialog states
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedCost, setSelectedCost] = useState<SalaryCost | null>(null);
+  const [selectedSalaryCost, setSelectedSalaryCost] = useState<SalaryCost | null>(null);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
-
+  
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [costToDelete, setCostToDelete] = useState<string | null>(null);
+  const [salaryCostToDelete, setSalaryCostToDelete] = useState<string | null>(null);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -92,70 +98,103 @@ const SalaryCosts = () => {
     localStorage.setItem('salaryCosts', JSON.stringify(salaryCosts));
   }, [salaryCosts]);
 
-  // Get unique years from cost data, including current year
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from(new Set([...(salaryCosts.map(c => c.year) || []), currentYear])).sort((a, b) => b - a);
+  // Get unique years from salary cost data, including current year
+  const availableYears = Array.from(new Set([...salaryCosts.map(s => s.year), currentYear])).sort((a, b) => b - a);
 
   // Filter salary costs based on selected year and months
-  const filteredSalaryCosts = salaryCosts.filter(cost => {
-    const yearMatch = cost.year === parseInt(selectedYear);
-    const monthMatch = selectedMonths.includes(cost.month);
+  const baseSalaryCosts = salaryCosts.filter(salaryCost => {
+    const yearMatch = salaryCost.year === parseInt(selectedYear);
+    const monthMatch = selectedMonths.includes(salaryCost.month);
     return yearMatch && monthMatch;
   });
+
+  // Add table filtering
+  const { filteredData: filteredSalaryCosts, setFilter, getActiveFilters } = useTableFilter(baseSalaryCosts);
 
   const addNewRow = () => {
     const newSalaryCost: SalaryCost = {
       id: Date.now().toString(),
       year: parseInt(selectedYear),
-      month: selectedMonths.length > 0 ? selectedMonths[0] : "Jan",
-      company: "",
-      division: "",
-      customerID: "",
-      amount: 0,
+      month: selectedMonths.length > 0 ? selectedMonths[0] : currentMonth,
+      employeeName: "",
+      position: POSITIONS[0],
+      department: DEPARTMENTS[0],
+      baseSalary: 0,
+      overtimeHours: 0,
+      overtimeRate: 0,
+      overtime: 0,
+      bonus: 0,
+      totalSalary: 0,
+      benefits: 0,
+      socialInsurance: 0,
+      totalCost: 0,
+      checked: false,
       notes: "",
     };
     setSalaryCosts([...salaryCosts, newSalaryCost]);
   };
 
   const updateSalaryCost = (id: string, field: keyof SalaryCost, value: any) => {
-    setSalaryCosts(salaryCosts.map(cost => 
-      cost.id === id ? { ...cost, [field]: value } : cost
-    ));
+    setSalaryCosts(salaryCosts.map(salaryCost => {
+      if (salaryCost.id === id) {
+        const updated = { ...salaryCost, [field]: value };
+        // Auto calculate derived fields
+        if (field === 'overtimeHours' || field === 'overtimeRate') {
+          updated.overtime = updated.overtimeHours * updated.overtimeRate;
+        }
+        if (field === 'baseSalary' || field === 'overtime' || field === 'bonus' || updated.overtime !== salaryCost.overtime) {
+          updated.totalSalary = updated.baseSalary + updated.overtime + updated.bonus;
+        }
+        if (field === 'benefits' || field === 'socialInsurance' || updated.totalSalary !== salaryCost.totalSalary) {
+          updated.totalCost = updated.totalSalary + updated.benefits + updated.socialInsurance;
+        }
+        return updated;
+      }
+      return salaryCost;
+    }));
   };
 
-  const deleteSalaryCost = (id: string) => {
-    setCostToDelete(id);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (costToDelete) {
-      setSalaryCosts(prev => prev.filter(cost => cost.id !== costToDelete));
-      toast({
-        title: "Deleted",
-        description: "Salary cost record has been deleted successfully",
-      });
-      setIsDeleteDialogOpen(false);
-      setCostToDelete(null);
-    }
-  };
-
-  const openDialog = (cost: SalaryCost, mode: 'view' | 'edit') => {
-    setSelectedCost(cost);
+  const openDialog = (salaryCost: SalaryCost, mode: 'view' | 'edit') => {
+    setSelectedSalaryCost(salaryCost);
     setDialogMode(mode);
     setIsDialogOpen(true);
   };
 
-  const saveChanges = () => {
-    if (selectedCost) {
-      setSalaryCosts(prev => 
-        prev.map(cost => cost.id === selectedCost.id ? selectedCost : cost)
-      );
+  const deleteSalaryCost = (id: string) => {
+    setSalaryCostToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (salaryCostToDelete) {
+      setSalaryCosts(prev => prev.filter(salaryCost => salaryCost.id !== salaryCostToDelete));
       toast({
-        title: "Changes Saved",
-        description: "Salary cost record has been updated successfully",
+        title: "Deleted",
+        description: "Item successfully deleted",
       });
+      setIsDeleteDialogOpen(false);
+      setSalaryCostToDelete(null);
+    }
+  };
+
+  const saveChanges = () => {
+    if (selectedSalaryCost) {
+      updateSalaryCost(selectedSalaryCost.id, 'employeeName', selectedSalaryCost.employeeName);
+      updateSalaryCost(selectedSalaryCost.id, 'position', selectedSalaryCost.position);
+      updateSalaryCost(selectedSalaryCost.id, 'department', selectedSalaryCost.department);
+      updateSalaryCost(selectedSalaryCost.id, 'baseSalary', selectedSalaryCost.baseSalary);
+      updateSalaryCost(selectedSalaryCost.id, 'overtimeHours', selectedSalaryCost.overtimeHours);
+      updateSalaryCost(selectedSalaryCost.id, 'overtimeRate', selectedSalaryCost.overtimeRate);
+      updateSalaryCost(selectedSalaryCost.id, 'bonus', selectedSalaryCost.bonus);
+      updateSalaryCost(selectedSalaryCost.id, 'benefits', selectedSalaryCost.benefits);
+      updateSalaryCost(selectedSalaryCost.id, 'socialInsurance', selectedSalaryCost.socialInsurance);
+      updateSalaryCost(selectedSalaryCost.id, 'checked', selectedSalaryCost.checked);
+      updateSalaryCost(selectedSalaryCost.id, 'notes', selectedSalaryCost.notes);
       setIsDialogOpen(false);
+      toast({
+        title: "Save Successful",
+        description: "Salary cost data has been updated",
+      });
     }
   };
 
@@ -178,45 +217,25 @@ const SalaryCosts = () => {
     setSelectedYear(value);
   };
 
-  const handleMonthToggle = (month: string) => {
+  const handleMonthToggle = (monthValue: number) => {
     setSelectedMonths(prev => {
-      if (prev.includes(month)) {
-        return prev.filter(m => m !== month);
-      } else {
-        return [...prev, month];
-      }
+      const newMonths = prev.includes(monthValue) 
+        ? prev.filter(m => m !== monthValue)
+        : [...prev, monthValue].sort();
+      return newMonths;
     });
   };
 
-  const getCompanyOptions = () => {
-    return companies.map(company => (
-      <SelectItem key={company.id} value={company.code}>
-        {company.name}
-      </SelectItem>
-    ));
-  };
-
-  const getDivisionOptions = () => {
-    return divisions.map(division => (
-      <SelectItem key={division.id} value={division.code}>
-        {division.name}
-      </SelectItem>
-    ));
-  };
-
-  const getCustomerOptions = () => {
-    return customers.map(customer => (
-      <SelectItem key={customer.id} value={customer.code}>
-        {customer.name}
-      </SelectItem>
-    ));
+  const getMonthName = (monthNumber: number) => {
+    const month = MONTHS.find(m => m.value === monthNumber);
+    return month ? month.label : monthNumber.toString();
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="Salary Costs by Customer"
-        description="Record salary costs by customer"
+        title="Salary Costs"
+        description="Record salary costs by year and month"
         icon={Users}
         actions={
           <>
@@ -263,17 +282,17 @@ const SalaryCosts = () => {
                 <div className="flex-1">
                   <div className="grid grid-cols-6 gap-2">
                     {MONTHS.map((month) => (
-                      <div key={month} className="flex items-center space-x-2">
+                      <div key={month.value} className="flex items-center space-x-2">
                         <Checkbox 
-                          id={`month-${month}`}
-                          checked={selectedMonths.includes(month)}
-                          onCheckedChange={() => handleMonthToggle(month)}
+                          id={`month-${month.value}`}
+                          checked={selectedMonths.includes(month.value)}
+                          onCheckedChange={() => handleMonthToggle(month.value)}
                         />
                         <label 
-                          htmlFor={`month-${month}`} 
+                          htmlFor={`month-${month.value}`} 
                           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                         >
-                          {month}
+                          {month.label.substring(0, 3)}
                         </label>
                       </div>
                     ))}
@@ -286,23 +305,174 @@ const SalaryCosts = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Salary Cost Data ({filteredSalaryCosts.length} records)</CardTitle>
-            </div>
+            <CardTitle>Salary Cost Data ({filteredSalaryCosts.length} records)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-purple-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Division</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Amount</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Notes</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-green-50">
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="year"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("year")}
+                    >
+                      Year
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="month"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("month")}
+                    >
+                      Month
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="employeeName"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("employeeName")}
+                    >
+                      Employee Name
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="position"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("position")}
+                    >
+                      Position
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="department"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("department")}
+                    >
+                      Department
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="baseSalary"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("baseSalary")}
+                    >
+                      Base Salary
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="overtimeHours"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("overtimeHours")}
+                    >
+                      OT Hours
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="overtimeRate"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("overtimeRate")}
+                    >
+                      OT Rate
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="overtime"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("overtime")}
+                    >
+                      Overtime
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="bonus"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("bonus")}
+                    >
+                      Bonus
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="totalSalary"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("totalSalary")}
+                    >
+                      Total Salary
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="benefits"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("benefits")}
+                    >
+                      Benefits
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="socialInsurance"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("socialInsurance")}
+                    >
+                      Social Insurance
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-right"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="totalCost"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("totalCost")}
+                    >
+                      Total Cost
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300 text-center"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="checked"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("checked")}
+                    >
+                      Checked
+                    </TableHead>
+                    <TableHead 
+                      className="border border-gray-300"
+                      showFilter={true}
+                      filterData={baseSalaryCosts}
+                      filterField="notes"
+                      onFilter={setFilter}
+                      activeFilters={getActiveFilters("notes")}
+                    >
+                      Notes
+                    </TableHead>
+                    <TableHead className="border border-gray-300 text-center">
                       Actions
                       <Button
                         size="sm"
@@ -313,137 +483,199 @@ const SalaryCosts = () => {
                       >
                         <Plus className="h-4 w-4 text-blue-600" />
                       </Button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredSalaryCosts.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="border border-gray-300 p-8 text-center text-gray-500">
-                        No data available. Click "Add Row" to start entering data.
-                      </td>
-                    </tr>
+                    <TableRow>
+                      <TableCell colSpan={17} className="border border-gray-300 p-8 text-center text-gray-500">
+                        {salaryCosts.length === 0 
+                          ? "No data available. Click \"Add Row\" to start entering data."
+                          : "No data matches the selected filters. Try adjusting the year or month selection."
+                        }
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     filteredSalaryCosts.map((salaryCost) => (
-                      <tr key={salaryCost.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-1">
+                      <TableRow key={salaryCost.id} className="hover:bg-gray-50">
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
-                            type="number"
                             value={salaryCost.year.toString()}
                             onChange={(e) => updateSalaryCost(salaryCost.id, 'year', parseInt(e.target.value) || currentYear)}
-                            className="border-0 p-1 h-8"
+                            className="border-0 p-1 h-8 text-center"
+                            type="number"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Select
-                            value={salaryCost.month}
-                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'month', value)}
+                            value={salaryCost.month.toString()}
+                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'month', parseInt(value))}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               {MONTHS.map(month => (
-                                <SelectItem key={month} value={month}>{month}</SelectItem>
+                                <SelectItem key={month.value} value={month.value.toString()}>
+                                  {month.label}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Select
-                            value={salaryCost.company}
-                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'company', value)}
-                          >
-                            <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Select company" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getCompanyOptions()}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Select
-                            value={salaryCost.division}
-                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'division', value)}
-                          >
-                            <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Select division" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getDivisionOptions()}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Select
-                            value={salaryCost.customerID}
-                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'customerID', value)}
-                          >
-                            <SelectTrigger className="border-0 p-1 h-8">
-                              <SelectValue placeholder="Select customer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getCustomerOptions()}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <NumberInput
-                            value={salaryCost.amount}
-                            onChange={(value) => updateSalaryCost(salaryCost.id, 'amount', value)}
-                            className="border-0 p-1 h-8 text-right"
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Input
+                            value={salaryCost.employeeName}
+                            onChange={(e) => updateSalaryCost(salaryCost.id, 'employeeName', e.target.value)}
+                            className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Select
+                            value={salaryCost.position}
+                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'position', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {POSITIONS.map(position => (
+                                <SelectItem key={position} value={position}>{position}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Select
+                            value={salaryCost.department}
+                            onValueChange={(value) => updateSalaryCost(salaryCost.id, 'department', value)}
+                          >
+                            <SelectTrigger className="border-0 p-1 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DEPARTMENTS.map(department => (
+                                <SelectItem key={department} value={department}>{department}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.baseSalary}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'baseSalary', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.overtimeHours}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'overtimeHours', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.overtimeRate}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'overtimeRate', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Input
+                            value={formatNumber(salaryCost.overtime)}
+                            readOnly
+                            className="border-0 p-1 h-8 bg-gray-50 text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.bonus}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'bonus', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Input
+                            value={formatNumber(salaryCost.totalSalary)}
+                            readOnly
+                            className="border-0 p-1 h-8 bg-gray-50 text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.benefits}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'benefits', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <NumberInput
+                            value={salaryCost.socialInsurance}
+                            onChange={(value) => updateSalaryCost(salaryCost.id, 'socialInsurance', value)}
+                            className="border-0 p-1 h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <Input
+                            value={formatNumber(salaryCost.totalCost)}
+                            readOnly
+                            className="border-0 p-1 h-8 bg-gray-50 text-right"
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-2 text-center">
+                          <Checkbox
+                            checked={salaryCost.checked}
+                            onCheckedChange={(checked) => updateSalaryCost(salaryCost.id, 'checked', checked)}
+                          />
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
                           <Input
                             value={salaryCost.notes}
                             onChange={(e) => updateSalaryCost(salaryCost.id, 'notes', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <div className="flex justify-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-36">
-                                <DropdownMenuItem onClick={() => openDialog(salaryCost, 'view')}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  <span>View</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openDialog(salaryCost, 'edit')}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  <span>Edit</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => deleteSalaryCost(salaryCost.id)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  <span>Delete</span>
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                        </TableCell>
+                        <TableCell className="border border-gray-300 p-1">
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openDialog(salaryCost, 'view')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openDialog(salaryCost, 'edit')}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteSalaryCost(salaryCost.id)}
+                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* View/Edit Dialog */}
+      {/* Regular detail dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -451,36 +683,67 @@ const SalaryCosts = () => {
               {dialogMode === 'view' ? 'View Salary Cost' : 'Edit Salary Cost'}
             </DialogTitle>
           </DialogHeader>
-          {selectedCost && (
+          {selectedSalaryCost && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Year</label>
-                  {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedCost.year}</div>
-                  ) : (
-                    <Input
-                      type="number"
-                      value={selectedCost.year.toString()}
-                      onChange={(e) => setSelectedCost({...selectedCost, year: parseInt(e.target.value) || currentYear})}
-                    />
-                  )}
+                  <div className="p-2 bg-gray-50 rounded">{selectedSalaryCost.year}</div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Month</label>
+                  <div className="p-2 bg-gray-50 rounded">{getMonthName(selectedSalaryCost.month)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Employee Name</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded">{selectedSalaryCost.employeeName}</div>
+                ) : (
+                  <Input
+                    value={selectedSalaryCost.employeeName}
+                    onChange={(e) => setSelectedSalaryCost({...selectedSalaryCost, employeeName: e.target.value})}
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Position</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedCost.month}</div>
+                    <div className="p-2 bg-gray-50 rounded">{selectedSalaryCost.position}</div>
                   ) : (
                     <Select
-                      value={selectedCost.month}
-                      onValueChange={(value) => setSelectedCost({...selectedCost, month: value})}
+                      value={selectedSalaryCost.position}
+                      onValueChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, position: value})}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {MONTHS.map(month => (
-                          <SelectItem key={month} value={month}>{month}</SelectItem>
+                        {POSITIONS.map(position => (
+                          <SelectItem key={position} value={position}>{position}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Department</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded">{selectedSalaryCost.department}</div>
+                  ) : (
+                    <Select
+                      value={selectedSalaryCost.department}
+                      onValueChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, department: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEPARTMENTS.map(department => (
+                          <SelectItem key={department} value={department}>{department}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -489,83 +752,116 @@ const SalaryCosts = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Company</label>
+                <label className="text-sm font-medium">Base Salary</label>
                 {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded">{selectedCost.company}</div>
-                ) : (
-                  <Select
-                    value={selectedCost.company}
-                    onValueChange={(value) => setSelectedCost({...selectedCost, company: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select company" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCompanyOptions()}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Division</label>
-                {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded">{selectedCost.division}</div>
-                ) : (
-                  <Select
-                    value={selectedCost.division}
-                    onValueChange={(value) => setSelectedCost({...selectedCost, division: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select division" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getDivisionOptions()}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Customer ID</label>
-                {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded">{selectedCost.customerID}</div>
-                ) : (
-                  <Select
-                    value={selectedCost.customerID}
-                    onValueChange={(value) => setSelectedCost({...selectedCost, customerID: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCustomerOptions()}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Amount</label>
-                {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.amount)}</div>
+                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.baseSalary)}</div>
                 ) : (
                   <NumberInput
-                    value={selectedCost.amount}
-                    onChange={(value) => setSelectedCost({...selectedCost, amount: value})}
-                    className="text-right"
+                    value={selectedSalaryCost.baseSalary}
+                    onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, baseSalary: value})}
                   />
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">OT Hours</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.overtimeHours)}</div>
+                  ) : (
+                    <NumberInput
+                      value={selectedSalaryCost.overtimeHours}
+                      onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, overtimeHours: value})}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">OT Rate</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.overtimeRate)}</div>
+                  ) : (
+                    <NumberInput
+                      value={selectedSalaryCost.overtimeRate}
+                      onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, overtimeRate: value})}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Overtime</label>
+                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.overtimeHours * selectedSalaryCost.overtimeRate)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bonus</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.bonus)}</div>
+                ) : (
+                  <NumberInput
+                    value={selectedSalaryCost.bonus}
+                    onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, bonus: value})}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Total Salary</label>
+                <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.baseSalary + (selectedSalaryCost.overtimeHours * selectedSalaryCost.overtimeRate) + selectedSalaryCost.bonus)}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Benefits</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.benefits)}</div>
+                  ) : (
+                    <NumberInput
+                      value={selectedSalaryCost.benefits}
+                      onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, benefits: value})}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Social Insurance</label>
+                  {dialogMode === 'view' ? (
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.socialInsurance)}</div>
+                  ) : (
+                    <NumberInput
+                      value={selectedSalaryCost.socialInsurance}
+                      onChange={(value) => setSelectedSalaryCost({...selectedSalaryCost, socialInsurance: value})}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Total Cost</label>
+                <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedSalaryCost.baseSalary + (selectedSalaryCost.overtimeHours * selectedSalaryCost.overtimeRate) + selectedSalaryCost.bonus + selectedSalaryCost.benefits + selectedSalaryCost.socialInsurance)}</div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Checked</label>
+                {dialogMode === 'view' ? (
+                  <div className="p-2 bg-gray-50 rounded">{selectedSalaryCost.checked ? 'Yes' : 'No'}</div>
+                ) : (
+                  <div className="flex items-center space-x-2 p-2">
+                    <Checkbox
+                      checked={selectedSalaryCost.checked}
+                      onCheckedChange={(checked) => setSelectedSalaryCost({...selectedSalaryCost, checked: Boolean(checked)})}
+                    />
+                    <span className="text-sm">{selectedSalaryCost.checked ? 'Yes' : 'No'}</span>
+                  </div>
                 )}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Notes</label>
                 {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded min-h-[60px]">{selectedCost.notes}</div>
+                  <div className="p-2 bg-gray-50 rounded min-h-[60px]">{selectedSalaryCost.notes}</div>
                 ) : (
                   <Input
-                    value={selectedCost.notes}
-                    onChange={(e) => setSelectedCost({...selectedCost, notes: e.target.value})}
+                    value={selectedSalaryCost.notes}
+                    onChange={(e) => setSelectedSalaryCost({...selectedSalaryCost, notes: e.target.value})}
                   />
                 )}
               </div>
@@ -595,7 +891,7 @@ const SalaryCosts = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCostToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setSalaryCostToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
               Delete
             </AlertDialogAction>
