@@ -159,7 +159,6 @@ const CustomerReport = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-green-50">
-                    <th className="border border-gray-300 p-2 text-center font-medium w-16">No.</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Mã KH</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Công ty</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
@@ -170,11 +169,8 @@ const CustomerReport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {customerData.map((data, index) => (
+                  {customerData.map((data) => (
                     <tr key={data.customerID} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2 text-center text-sm text-gray-600">
-                        {index + 1}
-                      </td>
                       <td className="border border-gray-300 p-2 font-medium">{data.customerID}</td>
                       <td className="border border-gray-300 p-2">{data.company}</td>
                       <td className="border border-gray-300 p-2 text-right">{data.bmm}</td>

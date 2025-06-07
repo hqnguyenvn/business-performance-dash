@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -186,7 +187,6 @@ const BusinessReport = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-indigo-50">
-                    <th className="border border-gray-300 p-2 text-center font-medium w-16">No.</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
@@ -202,9 +202,6 @@ const BusinessReport = () => {
                 <tbody>
                   {detailReportData.map((data, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2 text-center text-sm text-gray-600">
-                        {index + 1}
-                      </td>
                       <td className="border border-gray-300 p-2">{data.year}</td>
                       <td className="border border-gray-300 p-2">{data.month}</td>
                       <td className="border border-gray-300 p-2">{data.company}</td>
