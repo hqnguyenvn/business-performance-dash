@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -299,6 +300,7 @@ const SalaryCosts = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-purple-50">
+                    <th className="border border-gray-300 p-2 text-center font-medium w-16">No.</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">
                       <div className="flex items-center justify-between">
                         <span>Year</span>
@@ -393,13 +395,16 @@ const SalaryCosts = () => {
                 <tbody>
                   {filteredSalaryCosts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={9} className="border border-gray-300 p-8 text-center text-gray-500">
                         No data available. Click "Add Row" to start entering data.
                       </td>
                     </tr>
                   ) : (
-                    filteredSalaryCosts.map((salaryCost) => (
+                    filteredSalaryCosts.map((salaryCost, index) => (
                       <tr key={salaryCost.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2 text-center text-sm text-gray-600">
+                          {index + 1}
+                        </td>
                         <td className="border border-gray-300 p-1">
                           <Input
                             type="number"
@@ -659,7 +664,6 @@ const SalaryCosts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -673,7 +677,7 @@ const SalaryCosts = () => {
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
               Delete
             </AlertDialogAction>
-          </AlertDialogFooter>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
