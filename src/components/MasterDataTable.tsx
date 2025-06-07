@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,7 +121,6 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="border border-gray-300 w-16 text-center">No.</TableHead>
                 {showCompanyColumn && (
                   <TableHead 
                     className="border border-gray-300"
@@ -180,11 +178,8 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item, index) => (
+              {filteredData.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50">
-                  <TableCell className="border border-gray-300 p-2 text-center text-sm text-gray-600">
-                    {index + 1}
-                  </TableCell>
                   {showCompanyColumn && (
                     <TableCell className="border border-gray-300 p-1">
                       <Select

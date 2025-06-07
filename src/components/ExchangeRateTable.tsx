@@ -110,7 +110,6 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-50">
-                <th className="border border-gray-300 p-2 text-center font-medium w-16">No.</th>
                 <th className="border border-gray-300 p-2 text-left font-medium">Year</th>
                 <th className="border border-gray-300 p-2 text-left font-medium">Month</th>
                 <th className="border border-gray-300 p-2 text-left font-medium">Currency Code</th>
@@ -130,11 +129,8 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {exchangeRates.map((rate, index) => (
+              {exchangeRates.map((rate) => (
                 <tr key={rate.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-2 text-center text-sm text-gray-600">
-                    {index + 1}
-                  </td>
                   <td className="border border-gray-300 p-1">
                     <Input
                       type="number"
