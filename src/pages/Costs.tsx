@@ -15,6 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -277,7 +278,7 @@ const Costs = () => {
                 <tbody>
                   {filteredCosts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={10} className="border border-gray-300 p-8 text-center text-gray-500">
                         No data available. Click "Add Row" to start entering data.
                       </td>
                     </tr>
@@ -390,60 +391,6 @@ const Costs = () => {
           </CardContent>
         </Card>
       </div>
-
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Filter Costs</DialogTitle>
-            <DialogDescription>
-              Filter cost data by year and month.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="year" className="text-right text-sm font-medium">
-                Year
-              </label>
-              <Input
-                type="number"
-                id="year"
-                value={filterYear}
-                onChange={e => setFilterYear(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="month" className="text-right text-sm font-medium">
-                Month
-              </label>
-              <Select value={filterMonth} onValueChange={setFilterMonth}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTHS.map(month => (
-                    <SelectItem key={month} value={month}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex justify-between">
-            <Button variant="ghost" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-            <Button onClick={() => setIsFilterDialogOpen(false)}>Apply Filters</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

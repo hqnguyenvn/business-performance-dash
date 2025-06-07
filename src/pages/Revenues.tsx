@@ -15,6 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -22,7 +23,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
 
@@ -229,7 +229,7 @@ const Revenues = () => {
                 <tbody>
                   {filteredRevenues.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
                         No data available. Click "Add Row" to start entering data.
                       </td>
                     </tr>
