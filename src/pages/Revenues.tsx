@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,7 @@ const Revenues = () => {
     totalItems,
     startIndex,
     endIndex,
-  } = usePagination({ data: filteredRevenues });
+  } = usePagination({ data: filteredRevenues, itemsPerPage: 20 });
 
   const addNewRow = () => {
     const newRevenue: Revenue = {
