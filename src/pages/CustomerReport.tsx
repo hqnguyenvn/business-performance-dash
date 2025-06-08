@@ -26,7 +26,7 @@ const CustomerReport = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
 
-  // Mock data for demonstration
+  // Mock data for demonstration - adding more data to test pagination
   const customerData: CustomerData[] = [
     {
       customerID: "CUST001",
@@ -73,6 +73,51 @@ const CustomerReport = () => {
       profit: 180000000,
       profitMargin: 40,
     },
+    {
+      customerID: "CUST006",
+      company: "MNO Enterprise Co",
+      bmm: 9.7,
+      revenue: 390000000,
+      cost: 240000000,
+      profit: 150000000,
+      profitMargin: 38.5,
+    },
+    {
+      customerID: "CUST007",
+      company: "PQR International",
+      bmm: 11.4,
+      revenue: 520000000,
+      cost: 310000000,
+      profit: 210000000,
+      profitMargin: 40.4,
+    },
+    {
+      customerID: "CUST008",
+      company: "STU Technologies",
+      bmm: 7.2,
+      revenue: 300000000,
+      cost: 190000000,
+      profit: 110000000,
+      profitMargin: 36.7,
+    },
+    {
+      customerID: "CUST009",
+      company: "VWX Global Corp",
+      bmm: 13.8,
+      revenue: 620000000,
+      cost: 370000000,
+      profit: 250000000,
+      profitMargin: 40.3,
+    },
+    {
+      customerID: "CUST010",
+      company: "YZA Digital Solutions",
+      bmm: 8.9,
+      revenue: 410000000,
+      cost: 250000000,
+      profit: 160000000,
+      profitMargin: 39.0,
+    },
   ];
 
   const {
@@ -85,7 +130,7 @@ const CustomerReport = () => {
     totalItems,
     startIndex,
     endIndex,
-  } = usePagination({ data: customerData });
+  } = usePagination({ data: customerData, itemsPerPage: 5 });
 
   const exportToCSV = () => {
     toast({
