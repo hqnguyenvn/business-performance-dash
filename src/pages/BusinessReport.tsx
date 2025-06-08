@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface BusinessData {
   year: number;
@@ -54,6 +57,18 @@ const BusinessReport = () => {
       netProfitPercent: (netProfit / revenue) * 100,
     };
   });
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    totalItems,
+    startIndex,
+    endIndex,
+  } = usePagination({ data: businessData });
 
   const exportToCSV = () => {
     toast({
@@ -169,7 +184,7 @@ const BusinessReport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {businessData.map((data) => (
+                  {paginatedData.map((data) => (
                     <tr key={data.month} className="hover:bg-gray-50">
                       <td className="border border-gray-300 p-2 font-medium">{data.month}</td>
                       <td className="border border-gray-300 p-2 text-right">
@@ -204,6 +219,16 @@ const BusinessReport = () => {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
+            />
           </CardContent>
         </Card>
       </div>

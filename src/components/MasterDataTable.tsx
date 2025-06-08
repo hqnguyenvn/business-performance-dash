@@ -31,6 +31,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useTableFilter } from "@/hooks/useTableFilter";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface MasterData {
   id: string;
@@ -60,6 +62,19 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
 
   // Add table filtering
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
+
+  // Add pagination
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    totalItems,
+    startIndex,
+    endIndex,
+  } = usePagination({ data: filteredData });
 
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
@@ -178,7 +193,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
+              {paginatedData.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50">
                   {showCompanyColumn && (
                     <TableCell className="border border-gray-300 p-1">
@@ -258,6 +273,16 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
             </TableBody>
           </Table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+          onNextPage={goToNextPage}
+          onPreviousPage={goToPreviousPage}
+          totalItems={totalItems}
+          startIndex={startIndex}
+          endIndex={endIndex}
+        />
       </CardContent>
     </Card>
   );

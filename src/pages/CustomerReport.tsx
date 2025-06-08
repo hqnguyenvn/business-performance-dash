@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface CustomerData {
   customerID: string;
@@ -72,6 +74,18 @@ const CustomerReport = () => {
       profitMargin: 40,
     },
   ];
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    totalItems,
+    startIndex,
+    endIndex,
+  } = usePagination({ data: customerData });
 
   const exportToCSV = () => {
     toast({
@@ -169,7 +183,7 @@ const CustomerReport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {customerData.map((data) => (
+                  {paginatedData.map((data) => (
                     <tr key={data.customerID} className="hover:bg-gray-50">
                       <td className="border border-gray-300 p-2 font-medium">{data.customerID}</td>
                       <td className="border border-gray-300 p-2">{data.company}</td>
@@ -191,6 +205,16 @@ const CustomerReport = () => {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
+            />
           </CardContent>
         </Card>
       </div>

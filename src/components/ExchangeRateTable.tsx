@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface ExchangeRate {
   id: string;
@@ -49,6 +50,18 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
 }) => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    totalItems,
+    startIndex,
+    endIndex,
+  } = usePagination({ data: exchangeRates });
 
   const addNewExchangeRate = useCallback(() => {
     const newRate: ExchangeRate = {
@@ -129,7 +142,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {exchangeRates.map((rate) => (
+              {paginatedData.map((rate) => (
                 <tr key={rate.id} className="hover:bg-gray-50">
                   <td className="border border-gray-300 p-1">
                     <Input
@@ -208,6 +221,16 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
             </tbody>
           </table>
         </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+          onNextPage={goToNextPage}
+          onPreviousPage={goToPreviousPage}
+          totalItems={totalItems}
+          startIndex={startIndex}
+          endIndex={endIndex}
+        />
       </CardContent>
     </Card>
   );
