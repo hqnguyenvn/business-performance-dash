@@ -1,12 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import MasterDataTable from "@/components/MasterDataTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { importDataFromLocalStorage } from "@/utils/importData";
 
 interface MasterData {
   id: string;
@@ -206,6 +207,26 @@ const Settings = () => {
     }
   };
 
+  const handleImportData = async () => {
+    const result = await importDataFromLocalStorage();
+    
+    if (result.success) {
+      toast({
+        title: "Import Successful",
+        description: result.message,
+      });
+      // Reload data after successful import
+      await loadAllData();
+    } else {
+      toast({
+        title: "Import Failed",
+        description: result.message,
+        variant: "destructive"
+      });
+      console.error('Import error details:', result.details);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -223,6 +244,12 @@ const Settings = () => {
         title="Settings"
         description="Manage system master data"
         icon={SettingsIcon}
+        actions={
+          <Button onClick={handleImportData} variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            Import from LocalStorage
+          </Button>
+        }
       />
 
       <div className="p-6">
