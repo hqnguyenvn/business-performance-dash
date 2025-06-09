@@ -39,6 +39,7 @@ interface CostData {
   year: number;
   month: number;
   cost: number;
+  costType: string;
   // other fields...
 }
 
@@ -72,18 +73,29 @@ const BusinessReport = () => {
     const savedRevenues = localStorage.getItem('revenues');
     const savedCosts = localStorage.getItem('costs');
     
+    console.log('Loading revenue data from localStorage:', savedRevenues);
+    console.log('Loading cost data from localStorage:', savedCosts);
+    
     if (savedRevenues) {
-      setRevenues(JSON.parse(savedRevenues));
+      const revenueData = JSON.parse(savedRevenues);
+      console.log('Parsed revenue data:', revenueData);
+      setRevenues(revenueData);
     }
     
     if (savedCosts) {
-      setCosts(JSON.parse(savedCosts));
+      const costData = JSON.parse(savedCosts);
+      console.log('Parsed cost data:', costData);
+      setCosts(costData);
     }
   }, []);
 
   // Generate business data from real revenue and cost data
   const generateBusinessData = (): BusinessData[] => {
     const businessDataMap = new Map<string, BusinessData>();
+
+    console.log('Generating business data for year:', selectedYear);
+    console.log('Available revenues:', revenues.length);
+    console.log('Available costs:', costs.length);
 
     // Initialize all months for the selected year
     MONTHS.forEach(month => {
@@ -105,36 +117,62 @@ const BusinessReport = () => {
     });
 
     // Aggregate revenue data
-    revenues
-      .filter(revenue => revenue.year === parseInt(selectedYear))
-      .forEach(revenue => {
-        const key = `${revenue.year}-${revenue.month}`;
-        const existing = businessDataMap.get(key);
-        if (existing) {
-          existing.revenue += revenue.vndRevenue || 0;
-        }
-      });
+    const filteredRevenues = revenues.filter(revenue => revenue.year === parseInt(selectedYear));
+    console.log('Filtered revenues for year', selectedYear, ':', filteredRevenues);
+    
+    filteredRevenues.forEach(revenue => {
+      const key = `${revenue.year}-${revenue.month}`;
+      const existing = businessDataMap.get(key);
+      if (existing) {
+        existing.revenue += revenue.vndRevenue || 0;
+        console.log(`Added revenue ${revenue.vndRevenue} for ${key}, total: ${existing.revenue}`);
+      }
+    });
 
     // Aggregate cost data
-    costs
-      .filter(cost => cost.year === parseInt(selectedYear))
-      .forEach(cost => {
-        const key = `${cost.year}-${cost.month}`;
-        const existing = businessDataMap.get(key);
-        if (existing) {
-          existing.cost += cost.cost || 0;
-        }
-      });
+    const filteredCosts = costs.filter(cost => cost.year === parseInt(selectedYear));
+    console.log('Filtered costs for year', selectedYear, ':', filteredCosts);
+    
+    filteredCosts.forEach(cost => {
+      const key = `${cost.year}-${cost.month}`;
+      const existing = businessDataMap.get(key);
+      if (existing) {
+        existing.cost += cost.cost || 0;
+        console.log(`Added cost ${cost.cost} for ${key}, total: ${existing.cost}`);
+      }
+    });
 
     // Calculate derived values
     Array.from(businessDataMap.values()).forEach(data => {
       data.grossProfit = data.revenue - data.cost;
-      data.incomeTax = data.grossProfit * (incomeTaxRate / 100);
-      data.bonus = data.cost * 0.3 * (bonusRate / 100); // Assume 30% of cost is salary
+      
+      // Income Tax = 0 if Gross Profit < 0, otherwise apply tax rate
+      data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
+      
+      // Calculate bonus based on salary costs only
+      const salaryCosts = filteredCosts.filter(cost => 
+        cost.year === data.year && 
+        cost.month === data.monthNumber && 
+        cost.costType === "Salary"
+      );
+      const totalSalaryCost = salaryCosts.reduce((sum, cost) => sum + (cost.cost || 0), 0);
+      data.bonus = totalSalaryCost * (bonusRate / 100);
+      
       data.totalCost = data.cost + data.incomeTax + data.bonus;
       data.netProfit = data.revenue - data.totalCost;
       data.grossProfitPercent = data.revenue > 0 ? (data.grossProfit / data.revenue) * 100 : 0;
       data.netProfitPercent = data.revenue > 0 ? (data.netProfit / data.revenue) * 100 : 0;
+      
+      console.log(`Calculations for ${data.month}:`, {
+        revenue: data.revenue,
+        cost: data.cost,
+        grossProfit: data.grossProfit,
+        incomeTax: data.incomeTax,
+        totalSalaryCost,
+        bonus: data.bonus,
+        totalCost: data.totalCost,
+        netProfit: data.netProfit
+      });
     });
 
     return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
