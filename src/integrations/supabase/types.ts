@@ -9,7 +9,495 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      costs: {
+        Row: {
+          company_id: string | null
+          cost: number
+          cost_type: string
+          created_at: string | null
+          description: string | null
+          division_id: string | null
+          id: string
+          is_checked: boolean | null
+          is_cost: boolean | null
+          month: number
+          notes: string | null
+          project_id: string | null
+          resource_id: string | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          company_id?: string | null
+          cost: number
+          cost_type: string
+          created_at?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_checked?: boolean | null
+          is_cost?: boolean | null
+          month: number
+          notes?: string | null
+          project_id?: string | null
+          resource_id?: string | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          company_id?: string | null
+          cost?: number
+          cost_type?: string
+          created_at?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_checked?: boolean | null
+          is_cost?: boolean | null
+          month?: number
+          notes?: string | null
+          project_id?: string | null
+          resource_id?: string | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "costs_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "costs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "costs_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      currencies: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      divisions: {
+        Row: {
+          code: string
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "divisions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exchange_rates: {
+        Row: {
+          created_at: string | null
+          currency_id: string
+          exchange_rate: number
+          id: string
+          month: number
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          currency_id: string
+          exchange_rate: number
+          id?: string
+          month: number
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          currency_id?: string
+          exchange_rate?: number
+          id?: string
+          month?: number
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rates_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_types: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          code: string
+          created_at: string | null
+          customer_id: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      revenues: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          currency_id: string | null
+          customer_id: string | null
+          division_id: string | null
+          id: string
+          month: number
+          notes: string | null
+          original_amount: number
+          project_id: string | null
+          project_type_id: string | null
+          quantity: number | null
+          resource_id: string | null
+          unit_price: number | null
+          updated_at: string | null
+          vnd_revenue: number
+          year: number
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          currency_id?: string | null
+          customer_id?: string | null
+          division_id?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          original_amount: number
+          project_id?: string | null
+          project_type_id?: string | null
+          quantity?: number | null
+          resource_id?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          vnd_revenue: number
+          year: number
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          currency_id?: string | null
+          customer_id?: string | null
+          division_id?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          original_amount?: number
+          project_id?: string | null
+          project_type_id?: string | null
+          quantity?: number | null
+          resource_id?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          vnd_revenue?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenues_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_project_type_id_fkey"
+            columns: ["project_type_id"]
+            isOneToOne: false
+            referencedRelation: "project_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenues_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_costs: {
+        Row: {
+          amount: number
+          company_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          division: string | null
+          id: string
+          month: string
+          notes: string | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          amount: number
+          company_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          division?: string | null
+          id?: string
+          month: string
+          notes?: string | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          amount?: number
+          company_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          division?: string | null
+          id?: string
+          month?: string
+          notes?: string | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_costs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BusinessData {
   year: number;
@@ -30,8 +32,8 @@ interface RevenueData {
   id: string;
   year: number;
   month: number;
-  vndRevenue?: number;
-  [key: string]: any; // Allow other properties
+  vnd_revenue: number;
+  [key: string]: any;
 }
 
 interface CostData {
@@ -39,8 +41,16 @@ interface CostData {
   year: number;
   month: number;
   cost: number;
-  costType: string;
-  [key: string]: any; // Allow other properties
+  cost_type: string;
+  [key: string]: any;
+}
+
+interface SalaryCostData {
+  id: string;
+  year: number;
+  month: string;
+  amount: number;
+  [key: string]: any;
 }
 
 const MONTHS = [
@@ -67,37 +77,97 @@ const BusinessReport = () => {
   const [bonusRate, setBonusRate] = useState<number>(15);
   const [revenues, setRevenues] = useState<RevenueData[]>([]);
   const [costs, setCosts] = useState<CostData[]>([]);
+  const [salaryCosts, setSalaryCosts] = useState<SalaryCostData[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load data from localStorage
+  // Fetch data from Supabase
   useEffect(() => {
-    const savedRevenues = localStorage.getItem('revenues');
-    const savedCosts = localStorage.getItem('costs');
-    
-    console.log('Loading revenue data from localStorage:', savedRevenues);
-    console.log('Loading cost data from localStorage:', savedCosts);
-    
-    if (savedRevenues) {
-      const revenueData = JSON.parse(savedRevenues);
-      console.log('Parsed revenue data:', revenueData);
-      console.log('Sample revenue item:', revenueData[0]);
-      setRevenues(revenueData);
-    }
-    
-    if (savedCosts) {
-      const costData = JSON.parse(savedCosts);
-      console.log('Parsed cost data:', costData);
-      console.log('Sample cost item:', costData[0]);
-      setCosts(costData);
-    }
+    fetchData();
   }, []);
 
-  // Generate business data from real revenue and cost data
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch revenues
+      const { data: revenueData, error: revenueError } = await supabase
+        .from('revenues')
+        .select('*');
+      
+      if (revenueError) {
+        console.error('Error fetching revenues:', revenueError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch revenue data",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Fetched revenues:', revenueData);
+        setRevenues(revenueData || []);
+      }
+
+      // Fetch costs
+      const { data: costData, error: costError } = await supabase
+        .from('costs')
+        .select('*');
+      
+      if (costError) {
+        console.error('Error fetching costs:', costError);
+        toast({
+          title: "Error", 
+          description: "Failed to fetch cost data",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Fetched costs:', costData);
+        setCosts(costData || []);
+      }
+
+      // Fetch salary costs
+      const { data: salaryData, error: salaryError } = await supabase
+        .from('salary_costs')
+        .select('*');
+      
+      if (salaryError) {
+        console.error('Error fetching salary costs:', salaryError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch salary cost data", 
+          variant: "destructive"
+        });
+      } else {
+        console.log('Fetched salary costs:', salaryData);
+        setSalaryCosts(salaryData || []);
+      }
+
+      // Calculate available years
+      const revenueYears = revenueData?.map(r => r.year) || [];
+      const costYears = costData?.map(c => c.year) || [];
+      const salaryYears = salaryData?.map(s => s.year) || [];
+      const allYears = Array.from(new Set([...revenueYears, ...costYears, ...salaryYears, currentYear])).sort((a, b) => b - a);
+      setAvailableYears(allYears);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch data from database",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate business data from database data
   const generateBusinessData = (): BusinessData[] => {
     const businessDataMap = new Map<string, BusinessData>();
 
     console.log('Generating business data for year:', selectedYear);
     console.log('Available revenues:', revenues.length);
     console.log('Available costs:', costs.length);
+    console.log('Available salary costs:', salaryCosts.length);
 
     // Initialize all months for the selected year
     MONTHS.forEach(month => {
@@ -126,12 +196,8 @@ const BusinessReport = () => {
       const key = `${revenue.year}-${revenue.month}`;
       const existing = businessDataMap.get(key);
       if (existing) {
-        // Check multiple possible field names for VND Revenue
-        const revenueAmount = revenue.vndRevenue || revenue.vnd_revenue || revenue.VNDRevenue || 
-                             revenue.revenue || revenue.amount || 0;
-        existing.revenue += revenueAmount;
-        console.log(`Added revenue ${revenueAmount} for ${key}, total: ${existing.revenue}`);
-        console.log('Revenue object fields:', Object.keys(revenue));
+        existing.revenue += revenue.vnd_revenue || 0;
+        console.log(`Added revenue ${revenue.vnd_revenue} for ${key}, total: ${existing.revenue}`);
       }
     });
 
@@ -155,13 +221,12 @@ const BusinessReport = () => {
       // Income Tax = 0 if Gross Profit < 0, otherwise apply tax rate
       data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
       
-      // Calculate bonus based on salary costs only
-      const salaryCosts = filteredCosts.filter(cost => 
-        cost.year === data.year && 
-        cost.month === data.monthNumber && 
-        cost.costType === "Salary"
+      // Calculate bonus based on salary costs
+      const monthlySalaryCosts = salaryCosts.filter(salary => 
+        salary.year === data.year && 
+        salary.month === data.month
       );
-      const totalSalaryCost = salaryCosts.reduce((sum, cost) => sum + (cost.cost || 0), 0);
+      const totalSalaryCost = monthlySalaryCosts.reduce((sum, salary) => sum + (salary.amount || 0), 0);
       data.bonus = totalSalaryCost * (bonusRate / 100);
       
       data.totalCost = data.cost + data.incomeTax + data.bonus;
@@ -233,10 +298,16 @@ const BusinessReport = () => {
   const grossProfitPercent = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
   const netProfitPercent = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
 
-  // Get unique years from revenue and cost data
-  const revenueYears = revenues.map(r => r.year);
-  const costYears = costs.map(c => c.year);
-  const availableYears = Array.from(new Set([...revenueYears, ...costYears, currentYear])).sort((a, b) => b - a);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
