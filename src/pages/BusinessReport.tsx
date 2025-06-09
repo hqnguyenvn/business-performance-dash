@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -232,7 +231,7 @@ const BusinessReport = () => {
                 {formatNumber(totalGrossProfit)} VND
               </div>
               <div className="text-sm text-green-600 text-right font-medium">
-                {grossProfitPercent.toFixed(1)}%
+                {formatNumber(grossProfitPercent)}%
               </div>
               <p className="text-sm text-gray-600">Total Gross Profit</p>
             </CardContent>
@@ -253,7 +252,7 @@ const BusinessReport = () => {
                 {formatNumber(totalNetProfit)} VND
               </div>
               <div className="text-sm text-purple-600 text-right font-medium">
-                {netProfitPercent.toFixed(1)}%
+                {formatNumber(netProfitPercent)}%
               </div>
               <p className="text-sm text-gray-600">Total Net Profit</p>
             </CardContent>
@@ -314,10 +313,10 @@ const BusinessReport = () => {
                           {formatNumber(data.netProfit)}
                         </td>
                         <td className="border border-gray-300 p-2 text-right">
-                          {data.grossProfitPercent.toFixed(1)}%
+                          {formatNumber(data.grossProfitPercent)}%
                         </td>
                         <td className="border border-gray-300 p-2 text-right">
-                          {data.netProfitPercent.toFixed(1)}%
+                          {formatNumber(data.netProfitPercent)}%
                         </td>
                       </tr>
                     ))
