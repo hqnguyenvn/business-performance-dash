@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,22 @@ interface BusinessData {
   netProfitPercent: number;
 }
 
+interface RevenueData {
+  id: string;
+  year: number;
+  month: number;
+  vndRevenue: number;
+  // other fields...
+}
+
+interface CostData {
+  id: string;
+  year: number;
+  month: number;
+  cost: number;
+  // other fields...
+}
+
 const MONTHS = [
   { value: 1, label: "January", short: "Jan" },
   { value: 2, label: "February", short: "Feb" },
@@ -48,39 +64,88 @@ const BusinessReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
+  const [revenues, setRevenues] = useState<RevenueData[]>([]);
+  const [costs, setCosts] = useState<CostData[]>([]);
 
-  // Generate business data for all months
-  const allBusinessData: BusinessData[] = MONTHS.map((month, index) => {
-    const revenue = (Math.random() * 500 + 200) * 1000000; // 200-700M VND
-    const cost = revenue * (0.6 + Math.random() * 0.2); // 60-80% of revenue
-    const grossProfit = revenue - cost;
-    const incomeTax = grossProfit * (incomeTaxRate / 100);
-    const bonus = cost * 0.3 * (bonusRate / 100); // Assume 30% of cost is salary
-    const totalCost = cost + incomeTax + bonus;
-    const netProfit = revenue - totalCost;
+  // Load data from localStorage
+  useEffect(() => {
+    const savedRevenues = localStorage.getItem('revenues');
+    const savedCosts = localStorage.getItem('costs');
     
-    return {
-      year: parseInt(selectedYear),
-      month: month.short,
-      monthNumber: month.value,
-      revenue,
-      cost,
-      grossProfit,
-      incomeTax,
-      bonus,
-      totalCost,
-      netProfit,
-      grossProfitPercent: (grossProfit / revenue) * 100,
-      netProfitPercent: (netProfit / revenue) * 100,
-    };
-  });
+    if (savedRevenues) {
+      setRevenues(JSON.parse(savedRevenues));
+    }
+    
+    if (savedCosts) {
+      setCosts(JSON.parse(savedCosts));
+    }
+  }, []);
 
-  // Filter data based on selected year and months
-  const businessData = allBusinessData.filter(data => {
-    const yearMatch = data.year === parseInt(selectedYear);
-    const monthMatch = selectedMonths.includes(data.monthNumber);
-    return yearMatch && monthMatch;
-  });
+  // Generate business data from real revenue and cost data
+  const generateBusinessData = (): BusinessData[] => {
+    const businessDataMap = new Map<string, BusinessData>();
+
+    // Initialize all months for the selected year
+    MONTHS.forEach(month => {
+      const key = `${selectedYear}-${month.value}`;
+      businessDataMap.set(key, {
+        year: parseInt(selectedYear),
+        month: month.short,
+        monthNumber: month.value,
+        revenue: 0,
+        cost: 0,
+        grossProfit: 0,
+        incomeTax: 0,
+        bonus: 0,
+        totalCost: 0,
+        netProfit: 0,
+        grossProfitPercent: 0,
+        netProfitPercent: 0,
+      });
+    });
+
+    // Aggregate revenue data
+    revenues
+      .filter(revenue => revenue.year === parseInt(selectedYear))
+      .forEach(revenue => {
+        const key = `${revenue.year}-${revenue.month}`;
+        const existing = businessDataMap.get(key);
+        if (existing) {
+          existing.revenue += revenue.vndRevenue || 0;
+        }
+      });
+
+    // Aggregate cost data
+    costs
+      .filter(cost => cost.year === parseInt(selectedYear))
+      .forEach(cost => {
+        const key = `${cost.year}-${cost.month}`;
+        const existing = businessDataMap.get(key);
+        if (existing) {
+          existing.cost += cost.cost || 0;
+        }
+      });
+
+    // Calculate derived values
+    Array.from(businessDataMap.values()).forEach(data => {
+      data.grossProfit = data.revenue - data.cost;
+      data.incomeTax = data.grossProfit * (incomeTaxRate / 100);
+      data.bonus = data.cost * 0.3 * (bonusRate / 100); // Assume 30% of cost is salary
+      data.totalCost = data.cost + data.incomeTax + data.bonus;
+      data.netProfit = data.revenue - data.totalCost;
+      data.grossProfitPercent = data.revenue > 0 ? (data.grossProfit / data.revenue) * 100 : 0;
+      data.netProfitPercent = data.revenue > 0 ? (data.netProfit / data.revenue) * 100 : 0;
+    });
+
+    return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
+  };
+
+  const allBusinessData = generateBusinessData();
+
+  // Filter data based on selected months
+  const businessData = allBusinessData.filter(data => 
+    selectedMonths.includes(data.monthNumber)
+  );
 
   const {
     currentPage,
@@ -124,6 +189,11 @@ const BusinessReport = () => {
   const grossProfitPercent = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
   const netProfitPercent = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
 
+  // Get unique years from revenue and cost data
+  const revenueYears = revenues.map(r => r.year);
+  const costYears = costs.map(c => c.year);
+  const availableYears = Array.from(new Set([...revenueYears, ...costYears, currentYear])).sort((a, b) => b - a);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
@@ -154,7 +224,7 @@ const BusinessReport = () => {
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {[2023, 2024, 2025].map(year => (
+                      {availableYears.map(year => (
                         <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                       ))}
                     </SelectContent>
