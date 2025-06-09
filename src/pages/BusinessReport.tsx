@@ -30,8 +30,8 @@ interface RevenueData {
   id: string;
   year: number;
   month: number;
-  vndRevenue: number;
-  // other fields...
+  vndRevenue?: number;
+  [key: string]: any; // Allow other properties
 }
 
 interface CostData {
@@ -40,7 +40,7 @@ interface CostData {
   month: number;
   cost: number;
   costType: string;
-  // other fields...
+  [key: string]: any; // Allow other properties
 }
 
 const MONTHS = [
@@ -79,12 +79,14 @@ const BusinessReport = () => {
     if (savedRevenues) {
       const revenueData = JSON.parse(savedRevenues);
       console.log('Parsed revenue data:', revenueData);
+      console.log('Sample revenue item:', revenueData[0]);
       setRevenues(revenueData);
     }
     
     if (savedCosts) {
       const costData = JSON.parse(savedCosts);
       console.log('Parsed cost data:', costData);
+      console.log('Sample cost item:', costData[0]);
       setCosts(costData);
     }
   }, []);
@@ -124,8 +126,12 @@ const BusinessReport = () => {
       const key = `${revenue.year}-${revenue.month}`;
       const existing = businessDataMap.get(key);
       if (existing) {
-        existing.revenue += revenue.vndRevenue || 0;
-        console.log(`Added revenue ${revenue.vndRevenue} for ${key}, total: ${existing.revenue}`);
+        // Check multiple possible field names for VND Revenue
+        const revenueAmount = revenue.vndRevenue || revenue.vnd_revenue || revenue.VNDRevenue || 
+                             revenue.revenue || revenue.amount || 0;
+        existing.revenue += revenueAmount;
+        console.log(`Added revenue ${revenueAmount} for ${key}, total: ${existing.revenue}`);
+        console.log('Revenue object fields:', Object.keys(revenue));
       }
     });
 
