@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NumberInput } from "@/components/ui/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BarChart3, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/format";
@@ -14,6 +15,7 @@ import PaginationControls from "@/components/PaginationControls";
 interface BusinessData {
   year: number;
   month: string;
+  monthNumber: number;
   revenue: number;
   cost: number;
   grossProfit: number;
@@ -25,16 +27,31 @@ interface BusinessData {
   netProfitPercent: number;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  { value: 1, label: "January", short: "Jan" },
+  { value: 2, label: "February", short: "Feb" },
+  { value: 3, label: "March", short: "Mar" },
+  { value: 4, label: "April", short: "Apr" },
+  { value: 5, label: "May", short: "May" },
+  { value: 6, label: "June", short: "Jun" },
+  { value: 7, label: "July", short: "Jul" },
+  { value: 8, label: "August", short: "Aug" },
+  { value: 9, label: "September", short: "Sep" },
+  { value: 10, label: "October", short: "Oct" },
+  { value: 11, label: "November", short: "Nov" },
+  { value: 12, label: "December", short: "Dec" }
+];
 
 const BusinessReport = () => {
   const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
 
-  // Mock data for demonstration
-  const businessData: BusinessData[] = MONTHS.map((month, index) => {
+  // Generate business data for all months
+  const allBusinessData: BusinessData[] = MONTHS.map((month, index) => {
     const revenue = (Math.random() * 500 + 200) * 1000000; // 200-700M VND
     const cost = revenue * (0.6 + Math.random() * 0.2); // 60-80% of revenue
     const grossProfit = revenue - cost;
@@ -45,7 +62,8 @@ const BusinessReport = () => {
     
     return {
       year: parseInt(selectedYear),
-      month,
+      month: month.short,
+      monthNumber: month.value,
       revenue,
       cost,
       grossProfit,
@@ -56,6 +74,13 @@ const BusinessReport = () => {
       grossProfitPercent: (grossProfit / revenue) * 100,
       netProfitPercent: (netProfit / revenue) * 100,
     };
+  });
+
+  // Filter data based on selected year and months
+  const businessData = allBusinessData.filter(data => {
+    const yearMatch = data.year === parseInt(selectedYear);
+    const monthMatch = selectedMonths.includes(data.monthNumber);
+    return yearMatch && monthMatch;
   });
 
   const {
@@ -77,6 +102,19 @@ const BusinessReport = () => {
     });
   };
 
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+  };
+
+  const handleMonthToggle = (monthValue: number) => {
+    setSelectedMonths(prev => {
+      const newMonths = prev.includes(monthValue) 
+        ? prev.filter(m => m !== monthValue)
+        : [...prev, monthValue].sort();
+      return newMonths;
+    });
+  };
+
   const totalRevenue = businessData.reduce((sum, data) => sum + data.revenue, 0);
   const totalNetProfit = businessData.reduce((sum, data) => sum + data.netProfit, 0);
 
@@ -95,76 +133,104 @@ const BusinessReport = () => {
       />
 
       <div className="p-6">
-        {/* Summary Cards and Filters in optimized layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-white">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600 text-right">
-                  {formatNumber(totalRevenue)} VND
+        {/* Data Filter */}
+        <Card className="bg-white mb-6">
+          <CardHeader>
+            <CardTitle>Data Filter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex items-start gap-8">
+                {/* Year Filter */}
+                <div className="flex items-center gap-4">
+                  <Select value={selectedYear} onValueChange={handleYearChange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2023, 2024, 2025].map(year => (
+                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <p className="text-sm text-gray-600">Total Revenue {selectedYear}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600 text-right">
-                  {formatNumber(totalNetProfit)} VND
-                </div>
-                <p className="text-sm text-gray-600">Total Net Profit</p>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Filters and Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-white">
-              <CardContent className="p-4">
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2023, 2024, 2025].map(year => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                {/* Month Filter */}
+                <div className="flex-1">
+                  <div className="grid grid-cols-6 gap-2">
+                    {MONTHS.map((month) => (
+                      <div key={month.value} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`month-${month.value}`}
+                          checked={selectedMonths.includes(month.value)}
+                          onCheckedChange={() => handleMonthToggle(month.value)}
+                        />
+                        <label 
+                          htmlFor={`month-${month.value}`} 
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {month.short}
+                        </label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <NumberInput
-                    value={incomeTaxRate}
-                    onChange={setIncomeTaxRate}
-                    className="flex-1"
-                    placeholder="Income Tax"
-                  />
-                  <span className="text-sm">%</span>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardContent className="p-4">
+              </div>
+
+              {/* Tax and Bonus Controls */}
+              <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <NumberInput
-                    value={bonusRate}
-                    onChange={setBonusRate}
-                    className="flex-1"
-                    placeholder="Bonus"
-                  />
-                  <span className="text-sm">%</span>
+                  <label className="text-sm font-medium">Income Tax Rate:</label>
+                  <div className="flex items-center gap-2">
+                    <NumberInput
+                      value={incomeTaxRate}
+                      onChange={setIncomeTaxRate}
+                      className="w-20"
+                      placeholder="Tax"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Bonus Rate:</label>
+                  <div className="flex items-center gap-2">
+                    <NumberInput
+                      value={bonusRate}
+                      onChange={setBonusRate}
+                      className="w-20"
+                      placeholder="Bonus"
+                    />
+                    <span className="text-sm">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600 text-right">
+                {formatNumber(totalRevenue)} VND
+              </div>
+              <p className="text-sm text-gray-600">Total Revenue {selectedYear}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600 text-right">
+                {formatNumber(totalNetProfit)} VND
+              </div>
+              <p className="text-sm text-gray-600">Total Net Profit</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Detailed Report</CardTitle>
+            <CardTitle>Detailed Report ({businessData.length} records)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -184,38 +250,46 @@ const BusinessReport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedData.map((data) => (
-                    <tr key={data.month} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2 font-medium">{data.month}</td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {formatNumber(data.revenue)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {formatNumber(data.cost)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right text-green-600">
-                        {formatNumber(data.grossProfit)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {formatNumber(data.incomeTax)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {formatNumber(data.bonus)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {formatNumber(data.totalCost)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right text-blue-600 font-medium">
-                        {formatNumber(data.netProfit)}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {data.grossProfitPercent.toFixed(1)}%
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {data.netProfitPercent.toFixed(1)}%
+                  {paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="border border-gray-300 p-8 text-center text-gray-500">
+                        No data matches the selected filters. Try adjusting the year or month selection.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedData.map((data) => (
+                      <tr key={`${data.year}-${data.monthNumber}`} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2 font-medium">{data.month}</td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {formatNumber(data.revenue)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {formatNumber(data.cost)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right text-green-600">
+                          {formatNumber(data.grossProfit)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {formatNumber(data.incomeTax)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {formatNumber(data.bonus)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {formatNumber(data.totalCost)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right text-blue-600 font-medium">
+                          {formatNumber(data.netProfit)}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {data.grossProfitPercent.toFixed(1)}%
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {data.netProfitPercent.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
