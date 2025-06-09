@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -115,8 +114,15 @@ const BusinessReport = () => {
     });
   };
 
+  // Calculate totals from filtered data
   const totalRevenue = businessData.reduce((sum, data) => sum + data.revenue, 0);
+  const totalGrossProfit = businessData.reduce((sum, data) => sum + data.grossProfit, 0);
+  const totalCost = businessData.reduce((sum, data) => sum + data.totalCost, 0);
   const totalNetProfit = businessData.reduce((sum, data) => sum + data.netProfit, 0);
+  
+  // Calculate percentages
+  const grossProfitPercent = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
+  const netProfitPercent = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -209,7 +215,7 @@ const BusinessReport = () => {
         </Card>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
           <Card className="bg-white">
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600 text-right">
@@ -218,10 +224,35 @@ const BusinessReport = () => {
               <p className="text-sm text-gray-600">Total Revenue {selectedYear}</p>
             </CardContent>
           </Card>
+          
           <Card className="bg-white">
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-green-600 text-right">
+                {formatNumber(totalGrossProfit)} VND
+              </div>
+              <div className="text-sm text-green-600 text-right font-medium">
+                {formatNumber(grossProfitPercent)}%
+              </div>
+              <p className="text-sm text-gray-600">Total Gross Profit</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600 text-right">
+                {formatNumber(totalCost)} VND
+              </div>
+              <p className="text-sm text-gray-600">Total Cost</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-purple-600 text-right">
                 {formatNumber(totalNetProfit)} VND
+              </div>
+              <div className="text-sm text-purple-600 text-right font-medium">
+                {formatNumber(netProfitPercent)}%
               </div>
               <p className="text-sm text-gray-600">Total Net Profit</p>
             </CardContent>
@@ -282,10 +313,10 @@ const BusinessReport = () => {
                           {formatNumber(data.netProfit)}
                         </td>
                         <td className="border border-gray-300 p-2 text-right">
-                          {data.grossProfitPercent.toFixed(1)}%
+                          {formatNumber(data.grossProfitPercent)}%
                         </td>
                         <td className="border border-gray-300 p-2 text-right">
-                          {data.netProfitPercent.toFixed(1)}%
+                          {formatNumber(data.netProfitPercent)}%
                         </td>
                       </tr>
                     ))
