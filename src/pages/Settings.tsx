@@ -87,25 +87,53 @@ const Settings = () => {
     }
   };
 
-  // Enhanced setters that sync with Supabase
-  const createSupabaseSetter = (service: any, setter: React.Dispatch<React.SetStateAction<MasterData[]>>) => {
+  // Enhanced setters that sync with Supabase and reload data
+  const createSupabaseSetter = (service: any, reloadFunction: () => Promise<void>) => {
     return async (newData: MasterData[]) => {
-      setter(newData);
-      console.log('Data updated in local state');
+      // Reload data from database to ensure consistency
+      await reloadFunction();
     };
   };
 
-  const setCustomersWithSync = createSupabaseSetter(customersService, setCustomers);
-  const setCompaniesWithSync = createSupabaseSetter(companiesService, setCompanies);
-  const setDivisionsWithSync = createSupabaseSetter(divisionsService, setDivisions);
-  const setProjectsWithSync = createSupabaseSetter(projectsService, setProjects);
-  const setProjectTypesWithSync = createSupabaseSetter(projectTypesService, setProjectTypes);
-  const setResourcesWithSync = createSupabaseSetter(resourcesService, setResources);
-  const setCurrenciesWithSync = createSupabaseSetter(currenciesService, setCurrencies);
+  const setCustomersWithSync = createSupabaseSetter(customersService, async () => {
+    const data = await customersService.getAll();
+    setCustomers(data);
+  });
+  
+  const setCompaniesWithSync = createSupabaseSetter(companiesService, async () => {
+    const data = await companiesService.getAll();
+    setCompanies(data);
+  });
+  
+  const setDivisionsWithSync = createSupabaseSetter(divisionsService, async () => {
+    const data = await divisionsService.getAll();
+    setDivisions(data);
+  });
+  
+  const setProjectsWithSync = createSupabaseSetter(projectsService, async () => {
+    const data = await projectsService.getAll();
+    setProjects(data);
+  });
+  
+  const setProjectTypesWithSync = createSupabaseSetter(projectTypesService, async () => {
+    const data = await projectTypesService.getAll();
+    setProjectTypes(data);
+  });
+  
+  const setResourcesWithSync = createSupabaseSetter(resourcesService, async () => {
+    const data = await resourcesService.getAll();
+    setResources(data);
+  });
+  
+  const setCurrenciesWithSync = createSupabaseSetter(currenciesService, async () => {
+    const data = await currenciesService.getAll();
+    setCurrencies(data);
+  });
 
   const setExchangeRatesWithSync = async (newData: ExchangeRateDisplay[]) => {
-    setExchangeRates(newData);
-    console.log('Exchange rates updated in local state');
+    // Reload exchange rates from database
+    const data = await exchangeRateService.getAll();
+    setExchangeRates(data);
   };
 
   const handleImportData = async () => {
@@ -184,11 +212,21 @@ const Settings = () => {
           </TabsList>
 
           <TabsContent value="customers">
-            <MasterDataTable data={customers} setter={setCustomersWithSync} title="Customer List" />
+            <MasterDataTable 
+              data={customers} 
+              setter={setCustomersWithSync} 
+              title="Customer List"
+              service={customersService}
+            />
           </TabsContent>
 
           <TabsContent value="companies">
-            <MasterDataTable data={companies} setter={setCompaniesWithSync} title="Company List" />
+            <MasterDataTable 
+              data={companies} 
+              setter={setCompaniesWithSync} 
+              title="Company List"
+              service={companiesService}
+            />
           </TabsContent>
 
           <TabsContent value="divisions">
@@ -198,23 +236,44 @@ const Settings = () => {
               title="Division List" 
               showCompanyColumn={true}
               companies={companies}
+              service={divisionsService}
             />
           </TabsContent>
 
           <TabsContent value="projects">
-            <MasterDataTable data={projects} setter={setProjectsWithSync} title="Project List" />
+            <MasterDataTable 
+              data={projects} 
+              setter={setProjectsWithSync} 
+              title="Project List"
+              service={projectsService}
+            />
           </TabsContent>
 
           <TabsContent value="projectTypes">
-            <MasterDataTable data={projectTypes} setter={setProjectTypesWithSync} title="Project Type List" />
+            <MasterDataTable 
+              data={projectTypes} 
+              setter={setProjectTypesWithSync} 
+              title="Project Type List"
+              service={projectTypesService}
+            />
           </TabsContent>
 
           <TabsContent value="resources">
-            <MasterDataTable data={resources} setter={setResourcesWithSync} title="Resource List" />
+            <MasterDataTable 
+              data={resources} 
+              setter={setResourcesWithSync} 
+              title="Resource List"
+              service={resourcesService}
+            />
           </TabsContent>
 
           <TabsContent value="currencies">
-            <MasterDataTable data={currencies} setter={setCurrenciesWithSync} title="Currency List" />
+            <MasterDataTable 
+              data={currencies} 
+              setter={setCurrenciesWithSync} 
+              title="Currency List"
+              service={currenciesService}
+            />
           </TabsContent>
 
           <TabsContent value="exchangeRates">
