@@ -87,12 +87,6 @@ const Settings = () => {
     }
   };
 
-  const setExchangeRatesWithSync = async (newData: ExchangeRateDisplay[]) => {
-    // Reload exchange rates from database
-    const data = await exchangeRateService.getAll();
-    setExchangeRates(data);
-  };
-
   const handleImportData = async () => {
     try {
       setLoading(true);
@@ -236,7 +230,7 @@ const Settings = () => {
           <TabsContent value="exchangeRates">
             <ExchangeRateTable 
               exchangeRates={exchangeRates} 
-              setExchangeRates={setExchangeRatesWithSync} 
+              setExchangeRates={setExchangeRates} 
               currencies={currencies}
             />
           </TabsContent>
