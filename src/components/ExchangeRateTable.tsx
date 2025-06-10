@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,14 +20,7 @@ import {
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
-
-interface ExchangeRate {
-  id: string;
-  year: number;
-  month: string;
-  currencyID: string;
-  exchangeRate: number;
-}
+import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 
 interface MasterData {
   id: string;
@@ -36,8 +30,8 @@ interface MasterData {
 }
 
 interface ExchangeRateTableProps {
-  exchangeRates: ExchangeRate[];
-  setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRate[]>>;
+  exchangeRates: ExchangeRateDisplay[];
+  setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
   currencies: MasterData[];
 }
 
@@ -50,6 +44,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
 }) => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const {
     currentPage,
@@ -64,7 +59,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   } = usePagination({ data: exchangeRates });
 
   const addNewExchangeRate = useCallback(() => {
-    const newRate: ExchangeRate = {
+    const newRate: ExchangeRateDisplay = {
       id: Date.now().toString(),
       year: new Date().getFullYear(),
       month: "Jan",
@@ -74,7 +69,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
     setExchangeRates(prev => [...prev, newRate]);
   }, [setExchangeRates]);
 
-  const updateExchangeRate = useCallback((id: string, field: keyof ExchangeRate, value: string | number) => {
+  const updateExchangeRate = useCallback((id: string, field: keyof ExchangeRateDisplay, value: string | number) => {
     setExchangeRates(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -85,21 +80,68 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
     updateExchangeRate(id, 'exchangeRate', numericValue);
   }, [updateExchangeRate]);
 
-  const deleteExchangeRate = useCallback((id: string) => {
-    setExchangeRates(prev => prev.filter(item => item.id !== id));
-    toast({
-      title: "Deleted",
-      description: "Exchange rate deleted successfully",
-    });
-    setDeleteId(null);
+  const deleteExchangeRate = useCallback(async (id: string) => {
+    try {
+      // Only delete from database if it's not a temporary ID (new items have timestamp IDs)
+      const isNewItem = !isNaN(Number(id));
+      if (!isNewItem) {
+        await exchangeRateService.delete(id);
+      }
+      
+      setExchangeRates(prev => prev.filter(item => item.id !== id));
+      toast({
+        title: "Deleted",
+        description: "Exchange rate deleted successfully",
+      });
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Error deleting exchange rate:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete exchange rate",
+        variant: "destructive"
+      });
+    }
   }, [setExchangeRates, toast]);
 
-  const saveData = useCallback(() => {
-    toast({
-      title: "Saved",
-      description: "Exchange rate data saved successfully",
-    });
-  }, [toast]);
+  const saveData = useCallback(async () => {
+    try {
+      setSaving(true);
+      const promises = exchangeRates.map(async (item) => {
+        // Check if it's a new item (has timestamp ID) or existing item
+        const isNewItem = !isNaN(Number(item.id));
+        
+        if (isNewItem && (item.currencyID || item.exchangeRate)) {
+          // Create new item
+          const { id, ...itemData } = item;
+          return await exchangeRateService.create(itemData);
+        } else if (!isNewItem && (item.currencyID || item.exchangeRate)) {
+          // Update existing item
+          return await exchangeRateService.update(item.id, item);
+        }
+        return item;
+      });
+
+      const results = await Promise.all(promises);
+      
+      // Update the state with the returned data from database
+      setExchangeRates(results.filter(Boolean));
+      
+      toast({
+        title: "Saved",
+        description: "Exchange rate data saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving exchange rates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save exchange rate data",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [exchangeRates, setExchangeRates, toast]);
 
   return (
     <Card className="bg-white">
@@ -107,9 +149,9 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle>Exchange Rate List</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={saveData}>
+            <Button variant="outline" onClick={saveData} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              Save
+              {saving ? "Saving..." : "Save"}
             </Button>
             <Button onClick={addNewExchangeRate}>
               <Plus className="h-4 w-4 mr-2" />
