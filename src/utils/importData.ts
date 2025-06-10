@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 interface ImportResult {
   success: boolean;
@@ -10,102 +9,128 @@ interface ImportResult {
 
 export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
   try {
+    console.log("Starting data import from localStorage...");
+    
+    // Clear existing data first to avoid conflicts
+    console.log("Clearing existing data...");
+    const clearPromises = [
+      supabase.from('salary_costs').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('costs').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('revenues').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('exchange_rates').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('divisions').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('projects').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('customers').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('companies').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('project_types').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('resources').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      supabase.from('currencies').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    ];
+    
+    await Promise.all(clearPromises);
+    console.log("Existing data cleared successfully");
+
     // Step 1: Import Master Data Tables (no foreign key dependencies)
     console.log("Starting import of master data tables...");
     
     // Import Customers
     const customers = JSON.parse(localStorage.getItem('settings_customers') || '[]');
     if (customers.length > 0) {
+      console.log(`Importing ${customers.length} customers...`);
       const { error: customersError } = await supabase
         .from('customers')
-        .upsert(customers.map((item: any) => ({
+        .insert(customers.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description
+          description: item.description || null
         })));
       
       if (customersError) {
         console.error('Error importing customers:', customersError);
         return { success: false, message: 'Failed to import customers', details: customersError };
       }
-      console.log(`Imported ${customers.length} customers`);
+      console.log(`Successfully imported ${customers.length} customers`);
     }
 
     // Import Companies
     const companies = JSON.parse(localStorage.getItem('settings_companies') || '[]');
     if (companies.length > 0) {
+      console.log(`Importing ${companies.length} companies...`);
       const { error: companiesError } = await supabase
         .from('companies')
-        .upsert(companies.map((item: any) => ({
+        .insert(companies.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description
+          description: item.description || null
         })));
       
       if (companiesError) {
         console.error('Error importing companies:', companiesError);
         return { success: false, message: 'Failed to import companies', details: companiesError };
       }
-      console.log(`Imported ${companies.length} companies`);
+      console.log(`Successfully imported ${companies.length} companies`);
     }
 
     // Import Project Types
     const projectTypes = JSON.parse(localStorage.getItem('settings_projectTypes') || '[]');
     if (projectTypes.length > 0) {
+      console.log(`Importing ${projectTypes.length} project types...`);
       const { error: projectTypesError } = await supabase
         .from('project_types')
-        .upsert(projectTypes.map((item: any) => ({
+        .insert(projectTypes.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description
+          description: item.description || null
         })));
       
       if (projectTypesError) {
         console.error('Error importing project types:', projectTypesError);
         return { success: false, message: 'Failed to import project types', details: projectTypesError };
       }
-      console.log(`Imported ${projectTypes.length} project types`);
+      console.log(`Successfully imported ${projectTypes.length} project types`);
     }
 
     // Import Resources
     const resources = JSON.parse(localStorage.getItem('settings_resources') || '[]');
     if (resources.length > 0) {
+      console.log(`Importing ${resources.length} resources...`);
       const { error: resourcesError } = await supabase
         .from('resources')
-        .upsert(resources.map((item: any) => ({
+        .insert(resources.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description
+          description: item.description || null
         })));
       
       if (resourcesError) {
         console.error('Error importing resources:', resourcesError);
         return { success: false, message: 'Failed to import resources', details: resourcesError };
       }
-      console.log(`Imported ${resources.length} resources`);
+      console.log(`Successfully imported ${resources.length} resources`);
     }
 
     // Import Currencies
     const currencies = JSON.parse(localStorage.getItem('settings_currencies') || '[]');
     if (currencies.length > 0) {
+      console.log(`Importing ${currencies.length} currencies...`);
       const { error: currenciesError } = await supabase
         .from('currencies')
-        .upsert(currencies.map((item: any) => ({
+        .insert(currencies.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description
+          description: item.description || null
         })));
       
       if (currenciesError) {
         console.error('Error importing currencies:', currenciesError);
         return { success: false, message: 'Failed to import currencies', details: currenciesError };
       }
-      console.log(`Imported ${currencies.length} currencies`);
+      console.log(`Successfully imported ${currencies.length} currencies`);
     }
 
     // Step 2: Import tables with foreign key dependencies
@@ -114,13 +139,14 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
     // Import Divisions (depends on Companies)
     const divisions = JSON.parse(localStorage.getItem('settings_divisions') || '[]');
     if (divisions.length > 0) {
+      console.log(`Importing ${divisions.length} divisions...`);
       const { error: divisionsError } = await supabase
         .from('divisions')
-        .upsert(divisions.map((item: any) => ({
+        .insert(divisions.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description,
+          description: item.description || null,
           company_id: item.companyID || null
         })));
       
@@ -128,19 +154,20 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing divisions:', divisionsError);
         return { success: false, message: 'Failed to import divisions', details: divisionsError };
       }
-      console.log(`Imported ${divisions.length} divisions`);
+      console.log(`Successfully imported ${divisions.length} divisions`);
     }
 
     // Import Projects (depends on Customers)
     const projects = JSON.parse(localStorage.getItem('settings_projects') || '[]');
     if (projects.length > 0) {
+      console.log(`Importing ${projects.length} projects...`);
       const { error: projectsError } = await supabase
         .from('projects')
-        .upsert(projects.map((item: any) => ({
+        .insert(projects.map((item: any) => ({
           id: item.id,
           code: item.code,
           name: item.name,
-          description: item.description,
+          description: item.description || null,
           customer_id: item.customerID || null
         })));
       
@@ -148,15 +175,16 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing projects:', projectsError);
         return { success: false, message: 'Failed to import projects', details: projectsError };
       }
-      console.log(`Imported ${projects.length} projects`);
+      console.log(`Successfully imported ${projects.length} projects`);
     }
 
     // Import Exchange Rates (depends on Currencies)
     const exchangeRates = JSON.parse(localStorage.getItem('settings_exchangeRates') || '[]');
     if (exchangeRates.length > 0) {
+      console.log(`Importing ${exchangeRates.length} exchange rates...`);
       const { error: exchangeRatesError } = await supabase
         .from('exchange_rates')
-        .upsert(exchangeRates.map((item: any) => ({
+        .insert(exchangeRates.map((item: any) => ({
           id: item.id,
           year: item.year,
           month: getMonthNumber(item.month),
@@ -168,7 +196,7 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing exchange rates:', exchangeRatesError);
         return { success: false, message: 'Failed to import exchange rates', details: exchangeRatesError };
       }
-      console.log(`Imported ${exchangeRates.length} exchange rates`);
+      console.log(`Successfully imported ${exchangeRates.length} exchange rates`);
     }
 
     // Step 3: Import transaction data tables
@@ -177,9 +205,10 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
     // Import Revenues (depends on multiple master tables)
     const revenues = JSON.parse(localStorage.getItem('revenues') || '[]');
     if (revenues.length > 0) {
+      console.log(`Importing ${revenues.length} revenues...`);
       const { error: revenuesError } = await supabase
         .from('revenues')
-        .upsert(revenues.map((item: any) => ({
+        .insert(revenues.map((item: any) => ({
           id: item.id,
           year: item.year,
           month: item.month,
@@ -201,15 +230,16 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing revenues:', revenuesError);
         return { success: false, message: 'Failed to import revenues', details: revenuesError };
       }
-      console.log(`Imported ${revenues.length} revenues`);
+      console.log(`Successfully imported ${revenues.length} revenues`);
     }
 
     // Import Costs (depends on multiple master tables)
     const costs = JSON.parse(localStorage.getItem('costs') || '[]');
     if (costs.length > 0) {
+      console.log(`Importing ${costs.length} costs...`);
       const { error: costsError } = await supabase
         .from('costs')
-        .upsert(costs.map((item: any) => ({
+        .insert(costs.map((item: any) => ({
           id: item.id,
           year: item.year,
           month: item.month,
@@ -229,15 +259,16 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing costs:', costsError);
         return { success: false, message: 'Failed to import costs', details: costsError };
       }
-      console.log(`Imported ${costs.length} costs`);
+      console.log(`Successfully imported ${costs.length} costs`);
     }
 
     // Import Salary Costs (depends on Companies)
     const salaryCosts = JSON.parse(localStorage.getItem('salaryCosts') || '[]');
     if (salaryCosts.length > 0) {
+      console.log(`Importing ${salaryCosts.length} salary costs...`);
       const { error: salaryCostsError } = await supabase
         .from('salary_costs')
-        .upsert(salaryCosts.map((item: any) => ({
+        .insert(salaryCosts.map((item: any) => ({
           id: item.id,
           year: item.year,
           month: item.month,
@@ -252,7 +283,7 @@ export const importDataFromLocalStorage = async (): Promise<ImportResult> => {
         console.error('Error importing salary costs:', salaryCostsError);
         return { success: false, message: 'Failed to import salary costs', details: salaryCostsError };
       }
-      console.log(`Imported ${salaryCosts.length} salary costs`);
+      console.log(`Successfully imported ${salaryCosts.length} salary costs`);
     }
 
     console.log("Data import completed successfully!");
