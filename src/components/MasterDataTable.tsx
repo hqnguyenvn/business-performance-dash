@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,14 @@ interface MasterData {
   code: string;
   name: string;
   description?: string;
-  companyID?: string;
+  company_id?: string;
+  customer_id?: string;
+}
+
+interface MasterDataService {
+  create: (item: Omit<MasterData, 'id'>) => Promise<MasterData>;
+  update: (id: string, item: Partial<MasterData>) => Promise<MasterData>;
+  delete: (id: string) => Promise<void>;
 }
 
 interface MasterDataTableProps {
@@ -48,6 +56,7 @@ interface MasterDataTableProps {
   title: string;
   showCompanyColumn?: boolean;
   companies?: MasterData[];
+  service: MasterDataService;
 }
 
 const MasterDataTable: React.FC<MasterDataTableProps> = ({ 
@@ -55,10 +64,12 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
   setter, 
   title, 
   showCompanyColumn = false,
-  companies = [] 
+  companies = [],
+  service
 }) => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Add table filtering
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
@@ -82,7 +93,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       code: "",
       name: "",
       description: "",
-      ...(showCompanyColumn && { companyID: "" }),
+      ...(showCompanyColumn && { company_id: "" }),
     };
     setter(prev => [...prev, newItem]);
   }, [setter, showCompanyColumn]);
@@ -93,21 +104,68 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     ));
   }, [setter]);
 
-  const deleteItem = useCallback((id: string) => {
-    setter(prev => prev.filter(item => item.id !== id));
-    toast({
-      title: "Deleted",
-      description: "Item successfully deleted",
-    });
-    setDeleteId(null);
-  }, [setter, toast]);
+  const deleteItem = useCallback(async (id: string) => {
+    try {
+      // Only delete from database if it's not a temporary ID (new items have timestamp IDs)
+      const isNewItem = !isNaN(Number(id));
+      if (!isNewItem) {
+        await service.delete(id);
+      }
+      
+      setter(prev => prev.filter(item => item.id !== id));
+      toast({
+        title: "Deleted",
+        description: "Item successfully deleted",
+      });
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete item",
+        variant: "destructive"
+      });
+    }
+  }, [setter, toast, service]);
 
-  const saveData = useCallback(() => {
-    toast({
-      title: "Saved",
-      description: "Data saved successfully",
-    });
-  }, [toast]);
+  const saveData = useCallback(async () => {
+    try {
+      setSaving(true);
+      const promises = data.map(async (item) => {
+        // Check if it's a new item (has timestamp ID) or existing item
+        const isNewItem = !isNaN(Number(item.id));
+        
+        if (isNewItem && (item.code || item.name)) {
+          // Create new item
+          const { id, ...itemData } = item;
+          return await service.create(itemData);
+        } else if (!isNewItem && (item.code || item.name)) {
+          // Update existing item
+          return await service.update(item.id, item);
+        }
+        return item;
+      });
+
+      const results = await Promise.all(promises);
+      
+      // Update the state with the returned data from database
+      setter(results.filter(Boolean));
+      
+      toast({
+        title: "Saved",
+        description: "Data saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save data",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [data, service, setter, toast]);
 
   const getCompanyName = (companyID: string) => {
     const company = companies.find(c => c.id === companyID);
@@ -120,9 +178,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={saveData}>
+            <Button variant="outline" onClick={saveData} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              Save
+              {saving ? "Saving..." : "Save"}
             </Button>
             <Button onClick={addNewItem}>
               <Plus className="h-4 w-4 mr-2" />
@@ -141,9 +199,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                     className="border border-gray-300"
                     showFilter={true}
                     filterData={data}
-                    filterField="companyID"
+                    filterField="company_id"
                     onFilter={setFilter}
-                    activeFilters={getActiveFilters("companyID")}
+                    activeFilters={getActiveFilters("company_id")}
                   >
                     Company
                   </TableHead>
@@ -198,8 +256,8 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                   {showCompanyColumn && (
                     <TableCell className="border border-gray-300 p-1">
                       <Select
-                        value={item.companyID || ""}
-                        onValueChange={(value) => updateItem(item.id, 'companyID', value)}
+                        value={item.company_id || ""}
+                        onValueChange={(value) => updateItem(item.id, 'company_id', value)}
                       >
                         <SelectTrigger className="border-0 p-1 h-8">
                           <SelectValue placeholder="Select company" />
