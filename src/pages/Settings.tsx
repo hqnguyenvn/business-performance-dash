@@ -87,49 +87,6 @@ const Settings = () => {
     }
   };
 
-  // Enhanced setters that sync with Supabase and reload data
-  const createSupabaseSetter = (service: any, reloadFunction: () => Promise<void>) => {
-    return async (newData: MasterData[]) => {
-      // Reload data from database to ensure consistency
-      await reloadFunction();
-    };
-  };
-
-  const setCustomersWithSync = createSupabaseSetter(customersService, async () => {
-    const data = await customersService.getAll();
-    setCustomers(data);
-  });
-  
-  const setCompaniesWithSync = createSupabaseSetter(companiesService, async () => {
-    const data = await companiesService.getAll();
-    setCompanies(data);
-  });
-  
-  const setDivisionsWithSync = createSupabaseSetter(divisionsService, async () => {
-    const data = await divisionsService.getAll();
-    setDivisions(data);
-  });
-  
-  const setProjectsWithSync = createSupabaseSetter(projectsService, async () => {
-    const data = await projectsService.getAll();
-    setProjects(data);
-  });
-  
-  const setProjectTypesWithSync = createSupabaseSetter(projectTypesService, async () => {
-    const data = await projectTypesService.getAll();
-    setProjectTypes(data);
-  });
-  
-  const setResourcesWithSync = createSupabaseSetter(resourcesService, async () => {
-    const data = await resourcesService.getAll();
-    setResources(data);
-  });
-  
-  const setCurrenciesWithSync = createSupabaseSetter(currenciesService, async () => {
-    const data = await currenciesService.getAll();
-    setCurrencies(data);
-  });
-
   const setExchangeRatesWithSync = async (newData: ExchangeRateDisplay[]) => {
     // Reload exchange rates from database
     const data = await exchangeRateService.getAll();
@@ -214,7 +171,7 @@ const Settings = () => {
           <TabsContent value="customers">
             <MasterDataTable 
               data={customers} 
-              setter={setCustomersWithSync} 
+              setter={setCustomers} 
               title="Customer List"
               service={customersService}
             />
@@ -223,7 +180,7 @@ const Settings = () => {
           <TabsContent value="companies">
             <MasterDataTable 
               data={companies} 
-              setter={setCompaniesWithSync} 
+              setter={setCompanies} 
               title="Company List"
               service={companiesService}
             />
@@ -232,7 +189,7 @@ const Settings = () => {
           <TabsContent value="divisions">
             <MasterDataTable 
               data={divisions} 
-              setter={setDivisionsWithSync} 
+              setter={setDivisions} 
               title="Division List" 
               showCompanyColumn={true}
               companies={companies}
@@ -243,7 +200,7 @@ const Settings = () => {
           <TabsContent value="projects">
             <MasterDataTable 
               data={projects} 
-              setter={setProjectsWithSync} 
+              setter={setProjects} 
               title="Project List"
               service={projectsService}
             />
@@ -252,7 +209,7 @@ const Settings = () => {
           <TabsContent value="projectTypes">
             <MasterDataTable 
               data={projectTypes} 
-              setter={setProjectTypesWithSync} 
+              setter={setProjectTypes} 
               title="Project Type List"
               service={projectTypesService}
             />
@@ -261,7 +218,7 @@ const Settings = () => {
           <TabsContent value="resources">
             <MasterDataTable 
               data={resources} 
-              setter={setResourcesWithSync} 
+              setter={setResources} 
               title="Resource List"
               service={resourcesService}
             />
@@ -270,7 +227,7 @@ const Settings = () => {
           <TabsContent value="currencies">
             <MasterDataTable 
               data={currencies} 
-              setter={setCurrenciesWithSync} 
+              setter={setCurrencies} 
               title="Currency List"
               service={currenciesService}
             />

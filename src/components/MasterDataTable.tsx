@@ -95,6 +95,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       description: "",
       ...(showCompanyColumn && { company_id: "" }),
     };
+    // Update local state immediately
     setter(prev => [...prev, newItem]);
   }, [setter, showCompanyColumn]);
 
