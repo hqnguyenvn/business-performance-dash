@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { DollarSign, Plus, Save, Trash2 } from "lucide-react";
+import { DollarSign, Plus, Save, Trash2, Eye, Edit, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -36,6 +37,7 @@ import { useTableFilter } from "@/hooks/useTableFilter";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { revenueService, Revenue } from "@/services/revenueService";
+import { exchangeRateService } from "@/services/exchangeRateService";
 import {
   customersService,
   companiesService,
@@ -46,6 +48,8 @@ import {
   currenciesService,
   MasterData
 } from "@/services/masterDataService";
+import RevenueFilters from "@/components/RevenueFilters";
+import CloneDataDialog from "@/components/CloneDataDialog";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -57,8 +61,15 @@ const Revenues = () => {
   const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Filter states
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonths, setSelectedMonths] = useState([currentMonth]);
 
   // Add table filtering
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(revenues);
@@ -80,6 +91,10 @@ const Revenues = () => {
     loadAllData();
   }, []);
 
+  useEffect(() => {
+    loadFilteredRevenues();
+  }, [selectedYear, selectedMonths]);
+
   const loadAllData = async () => {
     try {
       setLoading(true);
@@ -88,26 +103,25 @@ const Revenues = () => {
       
       // Load all data in parallel
       const [
-        revenuesData,
         customersData,
         companiesData,
         divisionsData,
         projectsData,
         projectTypesData,
         resourcesData,
-        currenciesData
+        currenciesData,
+        exchangeRatesData
       ] = await Promise.all([
-        revenueService.getAll(),
         customersService.getAll(),
         companiesService.getAll(),
         divisionsService.getAll(),
         projectsService.getAll(),
         projectTypesService.getAll(),
         resourcesService.getAll(),
-        currenciesService.getAll()
+        currenciesService.getAll(),
+        exchangeRateService.getAll()
       ]);
 
-      setRevenues(revenuesData);
       setCustomers(customersData);
       setCompanies(companiesData);
       setDivisions(divisionsData);
@@ -115,6 +129,7 @@ const Revenues = () => {
       setProjectTypes(projectTypesData);
       setResources(resourcesData);
       setCurrencies(currenciesData);
+      setExchangeRates(exchangeRatesData);
 
       console.log("All data loaded successfully from Supabase");
 
@@ -130,11 +145,49 @@ const Revenues = () => {
     }
   };
 
+  const loadFilteredRevenues = async () => {
+    try {
+      const revenuesData = await revenueService.getByFilters({
+        year: selectedYear,
+        month: selectedMonths.length === 12 ? undefined : selectedMonths[0]
+      });
+      
+      // Filter by selected months if not all months are selected
+      const filteredRevenues = selectedMonths.length === 12 
+        ? revenuesData 
+        : revenuesData.filter(r => selectedMonths.includes(r.month));
+      
+      setRevenues(filteredRevenues);
+    } catch (error) {
+      console.error('Error loading filtered revenues:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load filtered revenue data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getExchangeRate = (year: number, month: number, currencyId: string): number => {
+    const rate = exchangeRates.find(rate => 
+      rate.year === year && 
+      rate.month === month && 
+      rate.currencyID === getCurrencyCode(currencyId)
+    );
+    return rate ? rate.exchangeRate : 1;
+  };
+
+  const calculateVNDRevenue = (originalAmount: number, year: number, month: number, currencyId: string): number => {
+    if (!originalAmount || !currencyId) return 0;
+    const exchangeRate = getExchangeRate(year, month, currencyId);
+    return originalAmount * exchangeRate;
+  };
+
   const addNewRevenue = () => {
     const newRevenue: Revenue = {
       id: Date.now().toString(),
-      year: new Date().getFullYear(),
-      month: new Date().getMonth() + 1,
+      year: selectedYear,
+      month: selectedMonths[0] || currentMonth,
       customer_id: "",
       company_id: "",
       division_id: "",
@@ -143,7 +196,7 @@ const Revenues = () => {
       resource_id: "",
       currency_id: "",
       unit_price: 0,
-      quantity: 0,
+      quantity: 1,
       original_amount: 0,
       vnd_revenue: 0,
       notes: "",
@@ -151,18 +204,53 @@ const Revenues = () => {
     setRevenues(prev => [...prev, newRevenue]);
   };
 
+  const addRevenueAfter = (afterId: string) => {
+    const newRevenue: Revenue = {
+      id: Date.now().toString(),
+      year: selectedYear,
+      month: selectedMonths[0] || currentMonth,
+      customer_id: "",
+      company_id: "",
+      division_id: "",
+      project_id: "",
+      project_type_id: "",
+      resource_id: "",
+      currency_id: "",
+      unit_price: 0,
+      quantity: 1,
+      original_amount: 0,
+      vnd_revenue: 0,
+      notes: "",
+    };
+    
+    setRevenues(prev => {
+      const index = prev.findIndex(item => item.id === afterId);
+      const newArray = [...prev];
+      newArray.splice(index + 1, 0, newRevenue);
+      return newArray;
+    });
+  };
+
   const updateRevenue = (id: string, field: keyof Revenue, value: string | number) => {
     setRevenues(prev => prev.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
         
-        // Auto-calculate VND revenue when original amount or unit price/quantity changes
-        if (field === 'original_amount' || field === 'unit_price' || field === 'quantity') {
+        // Auto-calculate original amount when unit price or quantity changes
+        if (field === 'unit_price' || field === 'quantity') {
           if (updatedItem.unit_price && updatedItem.quantity) {
             updatedItem.original_amount = Number(updatedItem.unit_price) * Number(updatedItem.quantity);
           }
-          // For now, assume VND revenue equals original amount (can be enhanced with exchange rates)
-          updatedItem.vnd_revenue = updatedItem.original_amount;
+        }
+        
+        // Auto-calculate VND revenue
+        if (field === 'original_amount' || field === 'unit_price' || field === 'quantity' || field === 'currency_id') {
+          updatedItem.vnd_revenue = calculateVNDRevenue(
+            updatedItem.original_amount, 
+            updatedItem.year, 
+            updatedItem.month, 
+            updatedItem.currency_id || ""
+          );
         }
         
         // Clear project when customer changes
@@ -238,40 +326,79 @@ const Revenues = () => {
     }
   };
 
+  const handleCloneData = async (sourceYear: number, sourceMonth: number, targetYear: number, targetMonth: number) => {
+    try {
+      const sourceData = await revenueService.getByFilters({
+        year: sourceYear,
+        month: sourceMonth
+      });
+
+      if (sourceData.length === 0) {
+        toast({
+          title: "No Data",
+          description: "No revenue data found for the selected source period",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const clonedData = sourceData.map(item => ({
+        ...item,
+        id: Date.now().toString() + Math.random(),
+        year: targetYear,
+        month: targetMonth
+      }));
+
+      setRevenues(prev => [...prev, ...clonedData]);
+      
+      toast({
+        title: "Success",
+        description: `Cloned ${clonedData.length} revenue records`,
+      });
+    } catch (error) {
+      console.error('Error cloning data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clone revenue data",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Get filtered projects based on selected customer
   const getFilteredProjects = (customerId: string) => {
     if (!customerId) return projects;
     return projects.filter(project => project.customer_id === customerId);
   };
 
-  const getCustomerName = (customerId: string) => {
+  const getCustomerCode = (customerId: string) => {
     const customer = customers.find(c => c.id === customerId);
-    return customer ? customer.name : "";
+    return customer ? customer.code : "";
   };
 
-  const getCompanyName = (companyId: string) => {
+  const getCompanyCode = (companyId: string) => {
     const company = companies.find(c => c.id === companyId);
-    return company ? company.name : "";
+    return company ? company.code : "";
   };
 
-  const getDivisionName = (divisionId: string) => {
+  const getDivisionCode = (divisionId: string) => {
     const division = divisions.find(d => d.id === divisionId);
-    return division ? division.name : "";
+    return division ? division.code : "";
   };
 
-  const getProjectName = (projectId: string) => {
+  const getProjectCode = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
-    return project ? project.name : "";
+    return project ? project.code : "";
   };
 
-  const getProjectTypeName = (projectTypeId: string) => {
+  const getProjectTypeCode = (projectTypeId: string) => {
     const projectType = projectTypes.find(pt => pt.id === projectTypeId);
-    return projectType ? projectType.name : "";
+    return projectType ? projectType.code : "";
   };
 
-  const getResourceName = (resourceId: string) => {
+  const getResourceCode = (resourceId: string) => {
     const resource = resources.find(r => r.id === resourceId);
-    return resource ? resource.name : "";
+    return resource ? resource.code : "";
   };
 
   const getCurrencyCode = (currencyId: string) => {
@@ -311,15 +438,26 @@ const Revenues = () => {
       />
 
       <div className="p-6">
+        <RevenueFilters
+          selectedYear={selectedYear}
+          selectedMonths={selectedMonths}
+          onYearChange={setSelectedYear}
+          onMonthChange={setSelectedMonths}
+        />
+
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Revenue Records</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Revenue Records</CardTitle>
+              <CloneDataDialog onClone={handleCloneData} />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
+                    <TableHead className="border border-gray-300">No.</TableHead>
                     <TableHead className="border border-gray-300">Year</TableHead>
                     <TableHead className="border border-gray-300">Month</TableHead>
                     <TableHead className="border border-gray-300">Customer</TableHead>
@@ -331,15 +469,18 @@ const Revenues = () => {
                     <TableHead className="border border-gray-300">Currency</TableHead>
                     <TableHead className="border border-gray-300">Unit Price</TableHead>
                     <TableHead className="border border-gray-300">Quantity</TableHead>
-                    <TableHead className="border border-gray-300">Original Amount</TableHead>
+                    <TableHead className="border border-gray-300">Original Revenue</TableHead>
                     <TableHead className="border border-gray-300">VND Revenue</TableHead>
                     <TableHead className="border border-gray-300">Notes</TableHead>
                     <TableHead className="border border-gray-300 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedData.map((revenue) => (
+                  {paginatedData.map((revenue, index) => (
                     <TableRow key={revenue.id} className="hover:bg-gray-50">
+                      <TableCell className="border border-gray-300 p-1 text-center">
+                        {startIndex + index + 1}
+                      </TableCell>
                       <TableCell className="border border-gray-300 p-1">
                         <Input
                           type="number"
@@ -369,7 +510,7 @@ const Revenues = () => {
                           <SelectContent>
                             {customers.map((customer) => (
                               <SelectItem key={customer.id} value={customer.id}>
-                                {customer.name}
+                                {customer.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -386,7 +527,7 @@ const Revenues = () => {
                           <SelectContent>
                             {companies.map((company) => (
                               <SelectItem key={company.id} value={company.id}>
-                                {company.name}
+                                {company.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -403,7 +544,7 @@ const Revenues = () => {
                           <SelectContent>
                             {divisions.map((division) => (
                               <SelectItem key={division.id} value={division.id}>
-                                {division.name}
+                                {division.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -420,7 +561,7 @@ const Revenues = () => {
                           <SelectContent>
                             {getFilteredProjects(revenue.customer_id || "").map((project) => (
                               <SelectItem key={project.id} value={project.id}>
-                                {project.name}
+                                {project.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -437,7 +578,7 @@ const Revenues = () => {
                           <SelectContent>
                             {projectTypes.map((projectType) => (
                               <SelectItem key={projectType.id} value={projectType.id}>
-                                {projectType.name}
+                                {projectType.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -454,7 +595,7 @@ const Revenues = () => {
                           <SelectContent>
                             {resources.map((resource) => (
                               <SelectItem key={resource.id} value={resource.id}>
-                                {resource.name}
+                                {resource.code}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -478,39 +619,33 @@ const Revenues = () => {
                         </Select>
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={revenue.unit_price || ""}
-                          onChange={(e) => updateRevenue(revenue.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                        <NumberInput
+                          value={revenue.unit_price || 0}
+                          onChange={(value) => updateRevenue(revenue.id, 'unit_price', value)}
                           className="border-0 p-1 h-8"
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={revenue.quantity || ""}
-                          onChange={(e) => updateRevenue(revenue.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        <NumberInput
+                          value={revenue.quantity || 1}
+                          onChange={(value) => updateRevenue(revenue.id, 'quantity', value)}
                           className="border-0 p-1 h-8"
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumberInput
                           value={revenue.original_amount}
-                          onChange={(e) => updateRevenue(revenue.id, 'original_amount', parseFloat(e.target.value) || 0)}
-                          className="border-0 p-1 h-8"
+                          onChange={() => {}} // readonly
+                          className="border-0 p-1 h-8 bg-gray-100"
+                          disabled
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumberInput
                           value={revenue.vnd_revenue}
-                          onChange={(e) => updateRevenue(revenue.id, 'vnd_revenue', parseFloat(e.target.value) || 0)}
-                          className="border-0 p-1 h-8"
+                          onChange={() => {}} // readonly
+                          className="border-0 p-1 h-8 bg-gray-100"
+                          disabled
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
@@ -521,34 +656,58 @@ const Revenues = () => {
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-2 text-center">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this revenue record? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteRevenue(revenue.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                        <div className="flex gap-1 justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addRevenueAfter(revenue.id)}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-orange-600 hover:text-orange-700"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
                               >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this revenue record? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteRevenue(revenue.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
