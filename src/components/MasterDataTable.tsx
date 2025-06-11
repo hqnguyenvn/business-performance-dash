@@ -55,7 +55,9 @@ interface MasterDataTableProps {
   setter: React.Dispatch<React.SetStateAction<MasterData[]>>;
   title: string;
   showCompanyColumn?: boolean;
+  showCustomerColumn?: boolean;
   companies?: MasterData[];
+  customers?: MasterData[];
   service: MasterDataService;
 }
 
@@ -64,7 +66,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
   setter, 
   title, 
   showCompanyColumn = false,
+  showCustomerColumn = false,
   companies = [],
+  customers = [],
   service
 }) => {
   const { toast } = useToast();
@@ -94,10 +98,11 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       name: "",
       description: "",
       ...(showCompanyColumn && { company_id: "" }),
+      ...(showCustomerColumn && { customer_id: "" }),
     };
     // Update local state immediately
     setter(prev => [...prev, newItem]);
-  }, [setter, showCompanyColumn]);
+  }, [setter, showCompanyColumn, showCustomerColumn]);
 
   const updateItem = useCallback((id: string, field: keyof MasterData, value: string) => {
     setter(prev => prev.map(item => 
@@ -173,6 +178,11 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     return company ? company.name : "";
   };
 
+  const getCustomerName = (customerID: string) => {
+    const customer = customers.find(c => c.id === customerID);
+    return customer ? customer.name : "";
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -205,6 +215,18 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                     activeFilters={getActiveFilters("company_id")}
                   >
                     Company
+                  </TableHead>
+                )}
+                {showCustomerColumn && (
+                  <TableHead 
+                    className="border border-gray-300"
+                    showFilter={true}
+                    filterData={data}
+                    filterField="customer_id"
+                    onFilter={setFilter}
+                    activeFilters={getActiveFilters("customer_id")}
+                  >
+                    Customer
                   </TableHead>
                 )}
                 <TableHead 
@@ -267,6 +289,25 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                           {companies.map((company) => (
                             <SelectItem key={company.id} value={company.id}>
                               {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  )}
+                  {showCustomerColumn && (
+                    <TableCell className="border border-gray-300 p-1">
+                      <Select
+                        value={item.customer_id || ""}
+                        onValueChange={(value) => updateItem(item.id, 'customer_id', value)}
+                      >
+                        <SelectTrigger className="border-0 p-1 h-8">
+                          <SelectValue placeholder="Select customer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

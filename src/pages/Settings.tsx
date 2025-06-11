@@ -196,6 +196,8 @@ const Settings = () => {
               data={projects} 
               setter={setProjects} 
               title="Project List"
+              showCustomerColumn={true}
+              customers={customers}
               service={projectsService}
             />
           </TabsContent>
