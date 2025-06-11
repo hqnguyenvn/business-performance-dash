@@ -60,10 +60,10 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
 
   const addNewExchangeRate = useCallback(() => {
     const newRate: ExchangeRateDisplay = {
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Temporary ID
       year: new Date().getFullYear(),
       month: "Jan",
-      currencyID: "",
+      currencyID: "", // Empty currency ID that will be selected by user
       exchangeRate: 0,
     };
     setExchangeRates(prev => [...prev, newRate]);
@@ -111,11 +111,11 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
         // Check if it's a new item (has timestamp ID) or existing item
         const isNewItem = !isNaN(Number(item.id));
         
-        if (isNewItem && (item.currencyID || item.exchangeRate)) {
+        if (isNewItem && item.currencyID) {
           // Create new item
           const { id, ...itemData } = item;
           return await exchangeRateService.create(itemData);
-        } else if (!isNewItem && (item.currencyID || item.exchangeRate)) {
+        } else if (!isNewItem && item.currencyID) {
           // Update existing item
           return await exchangeRateService.update(item.id, item);
         }

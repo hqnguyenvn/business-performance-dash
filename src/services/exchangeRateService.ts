@@ -21,7 +21,7 @@ export class ExchangeRateService {
   async getAll(): Promise<ExchangeRateDisplay[]> {
     const { data, error } = await supabase
       .from('exchange_rates')
-      .select('*')
+      .select('*, currencies:currency_id(code)')
       .order('year', { ascending: false })
       .order('month', { ascending: false });
     
@@ -35,16 +35,37 @@ export class ExchangeRateService {
       id: rate.id,
       year: rate.year,
       month: this.getMonthName(rate.month),
-      currencyID: rate.currency_id,
+      currencyID: rate.currencies?.code || rate.currency_id,
       exchangeRate: rate.exchange_rate
     }));
   }
 
   async create(item: Omit<ExchangeRateDisplay, 'id'>): Promise<ExchangeRateDisplay> {
+    // First, we need to get the currency_id from the currency code
+    let currency_id = item.currencyID;
+    
+    // If the currencyID is a code, we need to find the corresponding ID
+    if (item.currencyID && !item.currencyID.includes('-')) {
+      const { data, error } = await supabase
+        .from('currencies')
+        .select('id')
+        .eq('code', item.currencyID)
+        .single();
+      
+      if (error) {
+        console.error('Error finding currency by code:', error);
+        throw error;
+      }
+      
+      if (data) {
+        currency_id = data.id;
+      }
+    }
+
     const dbItem = {
       year: item.year,
       month: this.getMonthNumber(item.month),
-      currency_id: item.currencyID,
+      currency_id: currency_id,
       exchange_rate: item.exchangeRate
     };
 
@@ -63,17 +84,42 @@ export class ExchangeRateService {
       id: data.id,
       year: data.year,
       month: this.getMonthName(data.month),
-      currencyID: data.currency_id,
+      currencyID: item.currencyID, // Use the original currencyID for consistency
       exchangeRate: data.exchange_rate
     };
   }
 
   async update(id: string, item: Partial<ExchangeRateDisplay>): Promise<ExchangeRateDisplay> {
     const dbItem: any = {};
+    
     if (item.year !== undefined) dbItem.year = item.year;
     if (item.month !== undefined) dbItem.month = this.getMonthNumber(item.month);
-    if (item.currencyID !== undefined) dbItem.currency_id = item.currencyID;
     if (item.exchangeRate !== undefined) dbItem.exchange_rate = item.exchangeRate;
+    
+    // If currencyID is provided, find the corresponding ID
+    if (item.currencyID !== undefined) {
+      // First, check if it's a currency code
+      if (!item.currencyID.includes('-')) {
+        const { data, error } = await supabase
+          .from('currencies')
+          .select('id')
+          .eq('code', item.currencyID)
+          .single();
+        
+        if (error) {
+          console.error('Error finding currency by code:', error);
+          throw error;
+        }
+        
+        if (data) {
+          dbItem.currency_id = data.id;
+        } else {
+          dbItem.currency_id = item.currencyID;
+        }
+      } else {
+        dbItem.currency_id = item.currencyID;
+      }
+    }
 
     const { data, error } = await supabase
       .from('exchange_rates')
@@ -91,7 +137,7 @@ export class ExchangeRateService {
       id: data.id,
       year: data.year,
       month: this.getMonthName(data.month),
-      currencyID: data.currency_id,
+      currencyID: item.currencyID || "", // Keep the original currencyID for UI consistency
       exchangeRate: data.exchange_rate
     };
   }
