@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -6,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
-import { RevenueFilters } from "@/components/RevenueFilters";
+import RevenueFilters from "@/components/RevenueFilters";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RevenueDialog } from "@/components/RevenueDialog";
+import RevenueDialog from "@/components/RevenueDialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Copy, Trash2, Upload } from "lucide-react";
+import { Edit, Copy, Trash2, Upload, Plus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Revenue,
@@ -49,7 +50,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Pagination } from "@/components/ui/pagination"
+import { PaginationControls } from "@/components/PaginationControls"
+import CloneDataDialog from "@/components/CloneDataDialog"
+import { NumberInput } from "@/components/ui/number-input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -284,6 +298,7 @@ const Revenues = () => {
                   <Upload className="h-4 w-4 mr-2" />
                   Xuất CSV
                 </Button>
+                <CloneDataDialog onClone={handleCloneData} />
               </div>
             </div>
 
@@ -294,6 +309,7 @@ const Revenues = () => {
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">No.</TableHead>
                     <TableHead className="w-[50px]">Năm</TableHead>
                     <TableHead>Tháng</TableHead>
                     <TableHead>Khách hàng</TableHead>
@@ -305,14 +321,15 @@ const Revenues = () => {
                     <TableHead>Tiền tệ</TableHead>
                     <TableHead className="text-right">Đơn giá</TableHead>
                     <TableHead className="text-right">BMM</TableHead>
-                    <TableHead className="text-right">Doanh thu gốc</TableHead>
-                    <TableHead className="text-right">Doanh thu VND</TableHead>
+                    <TableHead className="text-right">Original Revenue</TableHead>
+                    <TableHead className="text-right">VND Revenue</TableHead>
                     <TableHead className="text-center">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {revenues.map((revenue) => (
+                  {revenues.map((revenue, index) => (
                     <TableRow key={revenue.id}>
+                      <TableCell className="font-medium">{(searchParams.page - 1) * searchParams.pageSize + index + 1}</TableCell>
                       <TableCell className="font-medium">{revenue.year}</TableCell>
                       <TableCell>{revenue.month}</TableCell>
                       <TableCell>
@@ -337,21 +354,21 @@ const Revenues = () => {
                         {currencies.find(cr => cr.id === revenue.currency_id)?.code}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
+                        <NumberInput
                           value={revenue.unit_price || 0}
                           onChange={(value) => handleInlineEdit(revenue.id, 'unit_price', value)}
                           className="w-32 text-right"
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
+                        <NumberInput
                           value={revenue.quantity || 1}
                           onChange={(value) => handleInlineEdit(revenue.id, 'quantity', value)}
                           className="w-24 text-right"
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
+                        <NumberInput
                           value={revenue.original_amount}
                           onChange={() => {}}
                           className="w-32 text-right"
@@ -359,7 +376,7 @@ const Revenues = () => {
                         />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
+                        <NumberInput
                           value={revenue.vnd_revenue}
                           onChange={() => {}}
                           className="w-32 text-right"
@@ -367,11 +384,28 @@ const Revenues = () => {
                         />
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex justify-center gap-2">
+                        <div className="flex justify-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleAddRevenue(revenue)}
+                            title="Add"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => handleOpenDialog(revenue, 'view')}
+                            title="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleOpenDialog(revenue, 'edit')}
+                            title="Edit"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -379,16 +413,35 @@ const Revenues = () => {
                             variant="outline"
                             size="icon"
                             onClick={() => handleDuplicateRevenue(revenue)}
+                            title="Duplicate"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDeleteRevenue(revenue.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bạn có chắc chắn muốn xóa bản ghi doanh thu này không? Hành động này không thể hoàn tác.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteRevenue(revenue.id)}>
+                                  Xóa
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -397,7 +450,7 @@ const Revenues = () => {
               </Table>
             </div>
 
-            <Pagination
+            <PaginationControls
               total={total}
               currentPage={searchParams.page}
               pageSize={searchParams.pageSize}

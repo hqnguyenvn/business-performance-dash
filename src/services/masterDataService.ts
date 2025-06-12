@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface MasterData {
@@ -438,3 +437,25 @@ export const projectsService = new ProjectsService();
 export const projectTypesService = new ProjectTypesService();
 export const resourcesService = new ResourcesService();
 export const currenciesService = new CurrenciesService();
+
+// Utility function to get master data by type
+export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
+  switch (type) {
+    case 'customers':
+      return customersService.getAll();
+    case 'companies':
+      return companiesService.getAll();
+    case 'divisions':
+      return divisionsService.getAll();
+    case 'projects':
+      return projectsService.getAll();
+    case 'project_types':
+      return projectTypesService.getAll();
+    case 'resources':
+      return resourcesService.getAll();
+    case 'currencies':
+      return currenciesService.getAll();
+    default:
+      throw new Error(`Unknown master data type: ${type}`);
+  }
+};
