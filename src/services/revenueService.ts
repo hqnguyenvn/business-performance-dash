@@ -61,10 +61,10 @@ export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueR
     throw error;
   }
 
-  // Ensure project_name is properly handled
+  // Ensure project_name is properly handled by casting to any first, then to Revenue
   const processedData = (data || []).map(item => ({
     ...item,
-    project_name: item.project_name || ''
+    project_name: (item as any).project_name || ''
   })) as Revenue[];
 
   return {
@@ -123,7 +123,7 @@ export const createRevenue = async (revenue: Partial<Revenue>): Promise<Revenue>
 
   return {
     ...data,
-    project_name: data.project_name || ''
+    project_name: (data as any).project_name || ''
   } as Revenue;
 };
 
@@ -178,7 +178,7 @@ export const updateRevenue = async (id: string, revenue: Partial<Revenue>): Prom
 
   return {
     ...data,
-    project_name: data.project_name || ''
+    project_name: (data as any).project_name || ''
   } as Revenue;
 };
 
