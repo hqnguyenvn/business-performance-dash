@@ -65,7 +65,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
         <CardTitle>Filter Revenue Records</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-6 items-start">
+        <div className="flex flex-wrap gap-4 items-start">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Year:</label>
             <Select
@@ -85,7 +85,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
             </Select>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Months:</label>
               <div className="flex gap-2">
@@ -93,7 +93,6 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAll}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
                   Select All
                 </Button>
@@ -101,13 +100,12 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleClearAll}
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
                   Clear All
                 </Button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-w-lg">
               {months.map((month) => (
                 <div key={month.value} className="flex items-center space-x-1">
                   <Checkbox
@@ -116,7 +114,6 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
                     onCheckedChange={(checked) => 
                       handleMonthToggle(month.value, Boolean(checked))
                     }
-                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                   />
                   <label 
                     htmlFor={`month-${month.value}`} 
