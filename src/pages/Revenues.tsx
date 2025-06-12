@@ -462,9 +462,12 @@ const Revenues = () => {
             </div>
 
             <PaginationControls
+              total={total}
               currentPage={searchParams.page!}
-              totalPages={Math.ceil(total / (searchParams.pageSize || 10))}
+              pageSize={searchParams.pageSize!}
               onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              totalPages={Math.ceil(total / (searchParams.pageSize || 10))}
               onNextPage={() => handlePageChange((searchParams.page || 1) + 1)}
               onPreviousPage={() => handlePageChange((searchParams.page || 1) - 1)}
               totalItems={total}
