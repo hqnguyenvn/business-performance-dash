@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -49,7 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import PaginationControls from "@/components/PaginationControls"
+import { PaginationControls } from "@/components/PaginationControls"
 import CloneDataDialog from "@/components/CloneDataDialog"
 import { NumberInput } from "@/components/ui/number-input";
 import {
@@ -74,10 +75,9 @@ const Revenues = () => {
   const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useState<RevenueSearchParams>({
     year: new Date().getFullYear(),
-    months: Array.from({ length: new Date().getMonth() + 1 }, (_, i) => i + 1),
+    months: [new Date().getMonth() + 1],
     page: 1,
     pageSize: 10,
   });
@@ -220,17 +220,6 @@ const Revenues = () => {
     // TODO: Implement export CSV
   };
 
-  const handleCloneData = (data: any) => {
-    // TODO: Implement clone data functionality
-    console.log("Clone data:", data);
-  };
-
-  const handleAddRevenue = (revenue: Revenue) => {
-    // Open dialog to add a new revenue based on the existing one
-    const newRevenue = { ...revenue, id: '' };
-    handleOpenDialog(newRevenue, 'edit');
-  };
-
   const handleInlineEdit = async (id: string, field: keyof Revenue, value: any) => {
     try {
       setIsInlineEditing(true);
@@ -340,7 +329,7 @@ const Revenues = () => {
                 <TableBody>
                   {revenues.map((revenue, index) => (
                     <TableRow key={revenue.id}>
-                      <TableCell className="font-medium">{(searchParams.page! - 1) * searchParams.pageSize! + index + 1}</TableCell>
+                      <TableCell className="font-medium">{(searchParams.page - 1) * searchParams.pageSize + index + 1}</TableCell>
                       <TableCell className="font-medium">{revenue.year}</TableCell>
                       <TableCell>{revenue.month}</TableCell>
                       <TableCell>
@@ -463,16 +452,10 @@ const Revenues = () => {
 
             <PaginationControls
               total={total}
-              currentPage={searchParams.page!}
-              pageSize={searchParams.pageSize!}
+              currentPage={searchParams.page}
+              pageSize={searchParams.pageSize}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
-              totalPages={Math.ceil(total / (searchParams.pageSize || 10))}
-              onNextPage={() => handlePageChange((searchParams.page || 1) + 1)}
-              onPreviousPage={() => handlePageChange((searchParams.page || 1) - 1)}
-              totalItems={total}
-              startIndex={(searchParams.page! - 1) * searchParams.pageSize! + 1}
-              endIndex={Math.min(searchParams.page! * searchParams.pageSize!, total)}
             />
           </CardContent>
         </Card>
