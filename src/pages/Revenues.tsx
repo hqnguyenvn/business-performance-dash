@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -142,20 +141,25 @@ const Revenues = () => {
 
   const getExchangeRate = (currencyId: string, year: number, month: number) => {
     const currency = currencies.find(c => c.id === currencyId);
-    if (!currency) return 0;
+    if (!currency) return 1;
 
     const rate = exchangeRates.find(
       rate => rate.currencyID === currency.code && 
                rate.year === year && 
-               rate.month === month
+               rate.month === getMonthName(month)
     );
-    return rate ? rate.exchangeRate : 0;
+    return rate ? rate.exchangeRate : 1;
+  };
+
+  const getMonthName = (monthNumber: number): string => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return monthNames[monthNumber - 1] || "Jan";
   };
 
   const calculateVndRevenue = (revenue: Revenue) => {
-    if (!revenue.currency_id || !revenue.original_amount) return 0;
-    const exchangeRate = getExchangeRate(revenue.currency_id, revenue.year, revenue.month);
-    return exchangeRate > 0 ? revenue.original_amount * exchangeRate : 0;
+    const exchangeRate = getExchangeRate(revenue.currency_id || '', revenue.year, revenue.month);
+    return revenue.original_amount * exchangeRate;
   };
 
   const handleYearChange = (year: number) => {
@@ -268,35 +272,6 @@ const Revenues = () => {
         title: "Revenue record cloned successfully!",
       });
       fetchData();
-    } catch (error) {
-      console.error("Error cloning revenue:", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem cloning the revenue record.",
-      });
-    }
-  };
-
-  const handleInlineClone = async (revenue: Revenue, index: number) => {
-    try {
-      const clonedRevenue = {
-        ...revenue,
-        id: '', // Remove ID to create new record
-        created_at: undefined,
-        updated_at: undefined,
-      };
-      
-      const newRevenue = await createRevenue(clonedRevenue);
-      
-      // Insert the new revenue right after the current one in the local state
-      const newRevenues = [...revenues];
-      newRevenues.splice(index + 1, 0, newRevenue);
-      setRevenues(newRevenues);
-      
-      toast({
-        title: "Revenue record cloned successfully!",
-      });
     } catch (error) {
       console.error("Error cloning revenue:", error);
       toast({
@@ -447,7 +422,7 @@ const Revenues = () => {
                       <TableCell>
                         <Input
                           value={revenue.project_name || ''}
-                          onChange={(e) => handleInlineEdit(revenue.id, 'project_name', e.target.value)}
+                          onChange={(e) => handleInlineEdit(revenue.id, 'project_name' as keyof Revenue, e.target.value)}
                           className="w-32"
                           placeholder="Tên dự án"
                         />
@@ -505,7 +480,7 @@ const Revenues = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => handleInlineClone(revenue, index)}
+                            onClick={() => handleCloneRevenue(revenue)}
                             title="Clone"
                             className="border-blue-600 text-blue-600 hover:bg-blue-50"
                           >

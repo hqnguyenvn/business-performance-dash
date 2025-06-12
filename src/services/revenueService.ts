@@ -9,7 +9,6 @@ export interface Revenue {
   company_id?: string;
   division_id?: string;
   project_id?: string;
-  project_name: string;
   project_type_id?: string;
   resource_id?: string;
   currency_id?: string;
@@ -18,16 +17,20 @@ export interface Revenue {
   original_amount: number;
   vnd_revenue: number;
   notes?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface RevenueSearchParams {
-  year: number;
-  months: number[];
+  year?: number;
+  months?: number[];
   page?: number;
   pageSize?: number;
-  search?: string;
+  customer_id?: string;
+  company_id?: string;
+  division_id?: string;
+  project_id?: string;
+  project_type_id?: string;
+  resource_id?: string;
+  currency_id?: string;
 }
 
 export interface RevenueResponse {
@@ -36,150 +39,94 @@ export interface RevenueResponse {
 }
 
 export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueResponse> => {
-  let query = supabase
-    .from('revenues')
-    .select('*', { count: 'exact' });
-
+  let query = supabase.from('revenues').select('*', { count: 'exact' });
+  
   if (params.year) {
     query = query.eq('year', params.year);
   }
-
+  
   if (params.months && params.months.length > 0) {
     query = query.in('month', params.months);
   }
-
+  
+  if (params.customer_id) {
+    query = query.eq('customer_id', params.customer_id);
+  }
+  
+  if (params.company_id) {
+    query = query.eq('company_id', params.company_id);
+  }
+  
+  if (params.division_id) {
+    query = query.eq('division_id', params.division_id);
+  }
+  
+  if (params.project_id) {
+    query = query.eq('project_id', params.project_id);
+  }
+  
+  if (params.project_type_id) {
+    query = query.eq('project_type_id', params.project_type_id);
+  }
+  
+  if (params.resource_id) {
+    query = query.eq('resource_id', params.resource_id);
+  }
+  
+  if (params.currency_id) {
+    query = query.eq('currency_id', params.currency_id);
+  }
+  
   const pageSize = params.pageSize || 10;
   const page = params.page || 1;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-
+  
   query = query.range(from, to);
-
+  query = query.order('year', { ascending: false }).order('month', { ascending: false });
+  
   const { data, error, count } = await query;
-
+  
   if (error) {
+    console.error('Error fetching revenues:', error);
     throw error;
   }
-
-  // Ensure project_name is properly handled by casting to any first, then to Revenue
-  const processedData = (data || []).map(item => ({
-    ...item,
-    project_name: (item as any).project_name || ''
-  })) as Revenue[];
-
+  
   return {
-    data: processedData,
-    total: count || 0,
+    data: data || [],
+    total: count || 0
   };
 };
 
-export const createRevenue = async (revenue: Partial<Revenue>): Promise<Revenue> => {
-  // Extract only the fields that exist in the database
-  const {
-    company_id,
-    currency_id,
-    customer_id,
-    division_id,
-    month,
-    notes,
-    original_amount,
-    project_id,
-    project_name,
-    project_type_id,
-    quantity,
-    resource_id,
-    unit_price,
-    vnd_revenue,
-    year
-  } = revenue;
-
-  const insertData = {
-    company_id,
-    currency_id,
-    customer_id,
-    division_id,
-    month: month!,
-    notes,
-    original_amount: original_amount!,
-    project_id,
-    project_name: project_name || '',
-    project_type_id,
-    quantity,
-    resource_id,
-    unit_price,
-    vnd_revenue: vnd_revenue!,
-    year: year!
-  };
-
+export const createRevenue = async (revenue: Omit<Revenue, 'id'>): Promise<Revenue> => {
   const { data, error } = await supabase
     .from('revenues')
-    .insert(insertData)
+    .insert(revenue)
     .select()
     .single();
-
+  
   if (error) {
+    console.error('Error creating revenue:', error);
     throw error;
   }
-
-  return {
-    ...data,
-    project_name: (data as any).project_name || ''
-  } as Revenue;
+  
+  return data;
 };
 
 export const updateRevenue = async (id: string, revenue: Partial<Revenue>): Promise<Revenue> => {
-  // Extract only the fields that exist in the database
-  const {
-    company_id,
-    currency_id,
-    customer_id,
-    division_id,
-    month,
-    notes,
-    original_amount,
-    project_id,
-    project_name,
-    project_type_id,
-    quantity,
-    resource_id,
-    unit_price,
-    vnd_revenue,
-    year
-  } = revenue;
-
-  const updateData: any = {};
-  
-  if (company_id !== undefined) updateData.company_id = company_id;
-  if (currency_id !== undefined) updateData.currency_id = currency_id;
-  if (customer_id !== undefined) updateData.customer_id = customer_id;
-  if (division_id !== undefined) updateData.division_id = division_id;
-  if (month !== undefined) updateData.month = month;
-  if (notes !== undefined) updateData.notes = notes;
-  if (original_amount !== undefined) updateData.original_amount = original_amount;
-  if (project_id !== undefined) updateData.project_id = project_id;
-  if (project_name !== undefined) updateData.project_name = project_name;
-  if (project_type_id !== undefined) updateData.project_type_id = project_type_id;
-  if (quantity !== undefined) updateData.quantity = quantity;
-  if (resource_id !== undefined) updateData.resource_id = resource_id;
-  if (unit_price !== undefined) updateData.unit_price = unit_price;
-  if (vnd_revenue !== undefined) updateData.vnd_revenue = vnd_revenue;
-  if (year !== undefined) updateData.year = year;
-
   const { data, error } = await supabase
     .from('revenues')
-    .update(updateData)
+    .update(revenue)
     .eq('id', id)
     .select()
     .single();
-
+  
   if (error) {
+    console.error('Error updating revenue:', error);
     throw error;
   }
-
-  return {
-    ...data,
-    project_name: (data as any).project_name || ''
-  } as Revenue;
+  
+  return data;
 };
 
 export const deleteRevenue = async (id: string): Promise<void> => {
@@ -187,8 +134,63 @@ export const deleteRevenue = async (id: string): Promise<void> => {
     .from('revenues')
     .delete()
     .eq('id', id);
-
+  
   if (error) {
+    console.error('Error deleting revenue:', error);
     throw error;
   }
 };
+
+export class RevenueService {
+  async getAll(): Promise<Revenue[]> {
+    const { data, error } = await supabase
+      .from('revenues')
+      .select('*')
+      .order('year', { ascending: false })
+      .order('month', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching revenues:', error);
+      throw error;
+    }
+    
+    return data || [];
+  }
+
+  async create(item: Omit<Revenue, 'id'>): Promise<Revenue> {
+    return createRevenue(item);
+  }
+
+  async update(id: string, item: Partial<Revenue>): Promise<Revenue> {
+    return updateRevenue(id, item);
+  }
+
+  async delete(id: string): Promise<void> {
+    return deleteRevenue(id);
+  }
+
+  async getByFilters(filters: {
+    year?: number;
+    month?: number;
+    customer_id?: string;
+    project_id?: string;
+  }): Promise<Revenue[]> {
+    let query = supabase.from('revenues').select('*');
+    
+    if (filters.year) query = query.eq('year', filters.year);
+    if (filters.month) query = query.eq('month', filters.month);
+    if (filters.customer_id) query = query.eq('customer_id', filters.customer_id);
+    if (filters.project_id) query = query.eq('project_id', filters.project_id);
+    
+    const { data, error } = await query.order('year', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching filtered revenues:', error);
+      throw error;
+    }
+    
+    return data || [];
+  }
+}
+
+export const revenueService = new RevenueService();

@@ -65,7 +65,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
         <CardTitle>Filter Revenue Records</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-6 items-center">
+        <div className="flex flex-wrap gap-6 items-start">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Year:</label>
             <Select
