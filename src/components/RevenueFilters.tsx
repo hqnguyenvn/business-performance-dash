@@ -25,6 +25,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
   onMonthChange,
 }) => {
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
   const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
   
   const months = [
@@ -50,13 +51,21 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
     }
   };
 
+  const handleSelectAll = () => {
+    onMonthChange(months.map(m => m.value));
+  };
+
+  const handleClearAll = () => {
+    onMonthChange([]);
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader>
         <CardTitle>Filter Revenue Records</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-start">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Year:</label>
             <Select
@@ -76,9 +85,27 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
             </Select>
           </div>
           
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Months:</label>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Months:</label>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                >
+                  Clear All
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 max-w-lg">
               {months.map((month) => (
                 <div key={month.value} className="flex items-center space-x-1">
                   <Checkbox

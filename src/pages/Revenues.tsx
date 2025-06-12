@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { DollarSign, Plus, Save, Trash2, Eye, Edit, Copy } from "lucide-react";
+import { DollarSign, Plus, Save, Trash2, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import {
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { TableFilter } from "@/components/ui/table-filter";
 import { revenueService, Revenue } from "@/services/revenueService";
 import { exchangeRateService } from "@/services/exchangeRateService";
 import {
@@ -50,6 +51,7 @@ import {
 } from "@/services/masterDataService";
 import RevenueFilters from "@/components/RevenueFilters";
 import CloneDataDialog from "@/components/CloneDataDialog";
+import RevenueDialog from "@/components/RevenueDialog";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -65,11 +67,18 @@ const Revenues = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Filter states
+  // Dialog states
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
+  const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
+
+  // Filter states - default to current year and months 1 to current month
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedMonths, setSelectedMonths] = useState([currentMonth]);
+  const [selectedMonths, setSelectedMonths] = useState(
+    Array.from({ length: currentMonth }, (_, i) => i + 1)
+  );
 
   // Add table filtering
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(revenues);
@@ -147,17 +156,12 @@ const Revenues = () => {
 
   const loadFilteredRevenues = async () => {
     try {
+      // Load all revenues for the selected year
       const revenuesData = await revenueService.getByFilters({
-        year: selectedYear,
-        month: selectedMonths.length === 12 ? undefined : selectedMonths[0]
+        year: selectedYear
       });
       
-      // Filter by selected months if not all months are selected
-      const filteredRevenues = selectedMonths.length === 12 
-        ? revenuesData 
-        : revenuesData.filter(r => selectedMonths.includes(r.month));
-      
-      setRevenues(filteredRevenues);
+      setRevenues(revenuesData);
     } catch (error) {
       console.error('Error loading filtered revenues:', error);
       toast({
@@ -169,12 +173,22 @@ const Revenues = () => {
   };
 
   const getExchangeRate = (year: number, month: number, currencyId: string): number => {
+    const currencyCode = getCurrencyCode(currencyId);
     const rate = exchangeRates.find(rate => 
       rate.year === year && 
-      rate.month === month && 
-      rate.currencyID === getCurrencyCode(currencyId)
+      getMonthNumber(rate.month) === month && 
+      rate.currencyID === currencyCode
     );
-    return rate ? rate.exchangeRate : 1;
+    return rate ? rate.exchangeRate : 0; // Return 0 if no exchange rate found
+  };
+
+  const getMonthNumber = (monthName: string): number => {
+    const monthMap: { [key: string]: number } = {
+      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
+      'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
+      'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+    };
+    return monthMap[monthName] || 1;
   };
 
   const calculateVNDRevenue = (originalAmount: number, year: number, month: number, currencyId: string): number => {
@@ -365,6 +379,18 @@ const Revenues = () => {
     }
   };
 
+  const openDialog = (revenue: Revenue, mode: 'view' | 'edit') => {
+    setSelectedRevenue(revenue);
+    setDialogMode(mode);
+    setDialogOpen(true);
+  };
+
+  const handleDialogSave = (updatedRevenue: Revenue) => {
+    setRevenues(prev => prev.map(item => 
+      item.id === updatedRevenue.id ? updatedRevenue : item
+    ));
+  };
+
   // Get filtered projects based on selected customer
   const getFilteredProjects = (customerId: string) => {
     if (!customerId) return projects;
@@ -405,6 +431,11 @@ const Revenues = () => {
     const currency = currencies.find(c => c.id === currencyId);
     return currency ? currency.code : "";
   };
+
+  // Filter display data based on selected months
+  const displayRevenues = filteredData.filter(revenue => 
+    selectedMonths.includes(revenue.month)
+  );
 
   if (loading) {
     return (
@@ -457,21 +488,141 @@ const Revenues = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="border border-gray-300">No.</TableHead>
-                    <TableHead className="border border-gray-300">Year</TableHead>
-                    <TableHead className="border border-gray-300">Month</TableHead>
-                    <TableHead className="border border-gray-300">Customer</TableHead>
-                    <TableHead className="border border-gray-300">Company</TableHead>
-                    <TableHead className="border border-gray-300">Division</TableHead>
-                    <TableHead className="border border-gray-300">Project</TableHead>
-                    <TableHead className="border border-gray-300">Project Type</TableHead>
-                    <TableHead className="border border-gray-300">Resource</TableHead>
-                    <TableHead className="border border-gray-300">Currency</TableHead>
-                    <TableHead className="border border-gray-300">Unit Price</TableHead>
-                    <TableHead className="border border-gray-300">Quantity</TableHead>
-                    <TableHead className="border border-gray-300">Original Revenue</TableHead>
-                    <TableHead className="border border-gray-300">VND Revenue</TableHead>
-                    <TableHead className="border border-gray-300">Notes</TableHead>
+                    <TableHead className="border border-gray-300">
+                      No.
+                      <TableFilter
+                        data={displayRevenues}
+                        field="id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Year
+                      <TableFilter
+                        data={displayRevenues}
+                        field="year"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("year")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Month
+                      <TableFilter
+                        data={displayRevenues}
+                        field="month"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("month")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Customer
+                      <TableFilter
+                        data={displayRevenues}
+                        field="customer_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("customer_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Company
+                      <TableFilter
+                        data={displayRevenues}
+                        field="company_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("company_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Division
+                      <TableFilter
+                        data={displayRevenues}
+                        field="division_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("division_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Project
+                      <TableFilter
+                        data={displayRevenues}
+                        field="project_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("project_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Project Type
+                      <TableFilter
+                        data={displayRevenues}
+                        field="project_type_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("project_type_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Resource
+                      <TableFilter
+                        data={displayRevenues}
+                        field="resource_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("resource_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Currency
+                      <TableFilter
+                        data={displayRevenues}
+                        field="currency_id"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("currency_id")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Unit Price
+                      <TableFilter
+                        data={displayRevenues}
+                        field="unit_price"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("unit_price")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      BMM
+                      <TableFilter
+                        data={displayRevenues}
+                        field="quantity"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("quantity")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Original Revenue
+                      <TableFilter
+                        data={displayRevenues}
+                        field="original_amount"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("original_amount")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      VND Revenue
+                      <TableFilter
+                        data={displayRevenues}
+                        field="vnd_revenue"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("vnd_revenue")}
+                      />
+                    </TableHead>
+                    <TableHead className="border border-gray-300">
+                      Notes
+                      <TableFilter
+                        data={displayRevenues}
+                        field="notes"
+                        onFilter={setFilter}
+                        activeFilters={getActiveFilters("notes")}
+                      />
+                    </TableHead>
                     <TableHead className="border border-gray-300 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -622,30 +773,34 @@ const Revenues = () => {
                         <NumberInput
                           value={revenue.unit_price || 0}
                           onChange={(value) => updateRevenue(revenue.id, 'unit_price', value)}
-                          className="border-0 p-1 h-8"
+                          className="border-0 p-1 h-8 text-right"
+                          formatter={(value) => Math.round(value).toLocaleString()}
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
                         <NumberInput
                           value={revenue.quantity || 1}
                           onChange={(value) => updateRevenue(revenue.id, 'quantity', value)}
-                          className="border-0 p-1 h-8"
+                          className="border-0 p-1 h-8 text-right"
+                          formatter={(value) => Math.round(value).toLocaleString()}
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
                         <NumberInput
                           value={revenue.original_amount}
                           onChange={() => {}} // readonly
-                          className="border-0 p-1 h-8 bg-gray-100"
+                          className="border-0 p-1 h-8 bg-gray-100 text-right"
                           disabled
+                          formatter={(value) => Math.round(value).toLocaleString()}
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
                         <NumberInput
                           value={revenue.vnd_revenue}
                           onChange={() => {}} // readonly
-                          className="border-0 p-1 h-8 bg-gray-100"
+                          className="border-0 p-1 h-8 bg-gray-100 text-right"
                           disabled
+                          formatter={(value) => Math.round(value).toLocaleString()}
                         />
                       </TableCell>
                       <TableCell className="border border-gray-300 p-1">
@@ -668,6 +823,7 @@ const Revenues = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => openDialog(revenue, 'view')}
                             className="text-blue-600 hover:text-blue-700"
                           >
                             <Eye className="h-4 w-4" />
@@ -675,6 +831,7 @@ const Revenues = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => openDialog(revenue, 'edit')}
                             className="text-orange-600 hover:text-orange-700"
                           >
                             <Edit className="h-4 w-4" />
@@ -727,6 +884,21 @@ const Revenues = () => {
           </CardContent>
         </Card>
       </div>
+
+      <RevenueDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        revenue={selectedRevenue}
+        mode={dialogMode}
+        customers={customers}
+        companies={companies}
+        divisions={divisions}
+        projects={projects}
+        projectTypes={projectTypes}
+        resources={resources}
+        currencies={currencies}
+        onSave={handleDialogSave}
+      />
     </div>
   );
 };
