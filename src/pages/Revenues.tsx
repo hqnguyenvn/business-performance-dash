@@ -63,6 +63,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { exchangeRateService } from "@/services/exchangeRateService";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -102,6 +103,7 @@ const Revenues = () => {
         projectTypesData,
         resourcesData,
         currenciesData,
+        exchangeRatesData,
       ] = await Promise.all([
         getRevenues(searchParams),
         getMasterDatas('customers'),
@@ -111,6 +113,7 @@ const Revenues = () => {
         getMasterDatas('project_types'),
         getMasterDatas('resources'),
         getMasterDatas('currencies'),
+        exchangeRateService.getAll(),
       ]);
       setRevenues(revenuesData.data);
       setTotal(revenuesData.total);
@@ -121,6 +124,7 @@ const Revenues = () => {
       setProjectTypes(projectTypesData);
       setResources(resourcesData);
       setCurrencies(currenciesData);
+      setExchangeRates(exchangeRatesData);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -134,6 +138,29 @@ const Revenues = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const getExchangeRate = (currencyId: string, year: number, month: number) => {
+    const currency = currencies.find(c => c.id === currencyId);
+    if (!currency) return 1;
+
+    const rate = exchangeRates.find(
+      rate => rate.currencyID === currency.code && 
+               rate.year === year && 
+               rate.month === getMonthName(month)
+    );
+    return rate ? rate.exchangeRate : 1;
+  };
+
+  const getMonthName = (monthNumber: number): string => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return monthNames[monthNumber - 1] || "Jan";
+  };
+
+  const calculateVndRevenue = (revenue: Revenue) => {
+    const exchangeRate = getExchangeRate(revenue.currency_id || '', revenue.year, revenue.month);
+    return revenue.original_amount * exchangeRate;
+  };
 
   const handleYearChange = (year: number) => {
     setSearchParams({ ...searchParams, year });
@@ -231,6 +258,30 @@ const Revenues = () => {
     handleOpenDialog(newRevenue, 'edit');
   };
 
+  const handleCloneRevenue = async (revenue: Revenue) => {
+    try {
+      const clonedRevenue = {
+        ...revenue,
+        id: '', // Remove ID to create new record
+        created_at: undefined,
+        updated_at: undefined,
+      };
+      
+      await createRevenue(clonedRevenue);
+      toast({
+        title: "Revenue record cloned successfully!",
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error cloning revenue:", error);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem cloning the revenue record.",
+      });
+    }
+  };
+
   const handleInlineEdit = async (id: string, field: keyof Revenue, value: any) => {
     try {
       setIsInlineEditing(true);
@@ -298,14 +349,26 @@ const Revenues = () => {
                 onChange={handleSearch}
               />
               <div className="flex gap-2">
-                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
+                <Button 
+                  onClick={() => handleOpenDialog({} as Revenue, 'edit')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
                   Thêm doanh thu
                 </Button>
-                <Button variant="outline" onClick={handleImportCSV}>
+                <Button 
+                  variant="outline" 
+                  onClick={handleImportCSV}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Nhập CSV
                 </Button>
-                <Button variant="outline" onClick={handleExportCSV}>
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportCSV}
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Xuất CSV
                 </Button>
@@ -327,6 +390,7 @@ const Revenues = () => {
                     <TableHead>Công ty</TableHead>
                     <TableHead>Đơn vị</TableHead>
                     <TableHead>Dự án</TableHead>
+                    <TableHead>Tên dự án</TableHead>
                     <TableHead>Loại dự án</TableHead>
                     <TableHead>Nguồn lực</TableHead>
                     <TableHead>Tiền tệ</TableHead>
@@ -354,6 +418,14 @@ const Revenues = () => {
                       </TableCell>
                       <TableCell>
                         {projects.find(p => p.id === revenue.project_id)?.code}
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={revenue.project_name || ''}
+                          onChange={(e) => handleInlineEdit(revenue.id, 'project_name' as keyof Revenue, e.target.value)}
+                          className="w-32"
+                          placeholder="Tên dự án"
+                        />
                       </TableCell>
                       <TableCell>
                         {projectTypes.find(pt => pt.id === revenue.project_type_id)?.code}
@@ -388,7 +460,7 @@ const Revenues = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <NumberInput
-                          value={revenue.vnd_revenue}
+                          value={calculateVndRevenue(revenue)}
                           onChange={() => {}}
                           className="w-32 text-right"
                           disabled
@@ -401,14 +473,25 @@ const Revenues = () => {
                             size="icon"
                             onClick={() => handleAddRevenue(revenue)}
                             title="Add"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
+                            onClick={() => handleCloneRevenue(revenue)}
+                            title="Clone"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => handleOpenDialog(revenue, 'view')}
                             title="View"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -417,16 +500,9 @@ const Revenues = () => {
                             size="icon"
                             onClick={() => handleOpenDialog(revenue, 'edit')}
                             title="Edit"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDuplicateRevenue(revenue)}
-                            title="Duplicate"
-                          >
-                            <Copy className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
