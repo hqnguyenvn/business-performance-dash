@@ -50,7 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { PaginationControls } from "@/components/PaginationControls"
+import PaginationControls from "@/components/PaginationControls"
 import CloneDataDialog from "@/components/CloneDataDialog"
 import { NumberInput } from "@/components/ui/number-input";
 import {
@@ -64,6 +64,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { exchangeRateService } from "@/services/exchangeRateService";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -75,6 +76,7 @@ const Revenues = () => {
   const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useState<RevenueSearchParams>({
     year: new Date().getFullYear(),
     months: [new Date().getMonth() + 1],
@@ -102,6 +104,7 @@ const Revenues = () => {
         projectTypesData,
         resourcesData,
         currenciesData,
+        exchangeRatesData,
       ] = await Promise.all([
         getRevenues(searchParams),
         getMasterDatas('customers'),
@@ -111,6 +114,7 @@ const Revenues = () => {
         getMasterDatas('project_types'),
         getMasterDatas('resources'),
         getMasterDatas('currencies'),
+        exchangeRateService.getAll(),
       ]);
       setRevenues(revenuesData.data);
       setTotal(revenuesData.total);
@@ -121,6 +125,7 @@ const Revenues = () => {
       setProjectTypes(projectTypesData);
       setResources(resourcesData);
       setCurrencies(currenciesData);
+      setExchangeRates(exchangeRatesData);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -220,24 +225,67 @@ const Revenues = () => {
     // TODO: Implement export CSV
   };
 
+  const handleCloneData = () => {
+    // TODO: Implement clone data
+  };
+
+  const calculateVNDRevenue = (revenue: Revenue) => {
+    if (!revenue.original_amount || !revenue.currency_id) return 0;
+    
+    // Find the exchange rate for the specific year and month
+    const exchangeRate = exchangeRates.find(rate => 
+      rate.year === revenue.year && 
+      rate.month === getMonthName(revenue.month) &&
+      rate.currencyID === (currencies.find(c => c.id === revenue.currency_id)?.code || '')
+    );
+    
+    if (exchangeRate) {
+      return revenue.original_amount * exchangeRate.exchangeRate;
+    }
+    
+    return revenue.original_amount; // Default to original amount if no exchange rate found
+  };
+
+  const getMonthName = (monthNumber: number): string => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return monthNames[monthNumber - 1] || "Jan";
+  };
+
   const handleInlineEdit = async (id: string, field: keyof Revenue, value: any) => {
     try {
       setIsInlineEditing(true);
-      // Find the revenue item being edited
       const revenueToUpdate = revenues.find((revenue) => revenue.id === id);
       if (!revenueToUpdate) {
         console.error(`Revenue with id ${id} not found`);
         return;
       }
 
+      // Calculate new values based on the field being updated
+      let updatedRevenue = { ...revenueToUpdate, [field]: value };
+      
+      // Recalculate original_amount if unit_price or quantity changes
+      if (field === 'unit_price' || field === 'quantity') {
+        const unitPrice = field === 'unit_price' ? value : updatedRevenue.unit_price || 0;
+        const quantity = field === 'quantity' ? value : updatedRevenue.quantity || 1;
+        updatedRevenue.original_amount = unitPrice * quantity;
+      }
+
+      // Recalculate VND revenue
+      updatedRevenue.vnd_revenue = calculateVNDRevenue(updatedRevenue);
+
       // Optimistically update the local state
       const updatedRevenues = revenues.map((revenue) =>
-        revenue.id === id ? { ...revenue, [field]: value } : revenue
+        revenue.id === id ? updatedRevenue : revenue
       );
       setRevenues(updatedRevenues);
 
       // Prepare the update object
-      const updateData: Partial<Revenue> = { [field]: value };
+      const updateData: Partial<Revenue> = { 
+        [field]: value,
+        original_amount: updatedRevenue.original_amount,
+        vnd_revenue: updatedRevenue.vnd_revenue
+      };
 
       // Call the API to update the revenue
       await updateRevenue(id, updateData);
@@ -256,6 +304,36 @@ const Revenues = () => {
       fetchData();
     } finally {
       setIsInlineEditing(false);
+    }
+  };
+
+  const handleCloneRevenue = async (sourceRevenue: Revenue) => {
+    try {
+      const clonedRevenue = {
+        ...sourceRevenue,
+        id: '', // Remove id to create new record
+        created_at: '',
+        updated_at: '',
+      };
+      
+      const newRevenue = await createRevenue(clonedRevenue);
+      
+      // Insert the new revenue right after the source revenue in the list
+      const sourceIndex = revenues.findIndex(r => r.id === sourceRevenue.id);
+      const updatedRevenues = [...revenues];
+      updatedRevenues.splice(sourceIndex + 1, 0, newRevenue);
+      setRevenues(updatedRevenues);
+      
+      toast({
+        title: "Revenue record cloned successfully!",
+      });
+    } catch (error) {
+      console.error("Error cloning revenue:", error);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem cloning the revenue record.",
+      });
     }
   };
 
@@ -287,9 +365,6 @@ const Revenues = () => {
                 onChange={handleSearch}
               />
               <div className="flex gap-2">
-                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
-                  Thêm doanh thu
-                </Button>
                 <Button variant="outline" onClick={handleImportCSV}>
                   <Upload className="h-4 w-4 mr-2" />
                   Nhập CSV
@@ -299,6 +374,12 @@ const Revenues = () => {
                   Xuất CSV
                 </Button>
                 <CloneDataDialog onClone={handleCloneData} />
+                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
+                  Add New
+                </Button>
+                <Button variant="outline">
+                  Save
+                </Button>
               </div>
             </div>
 
@@ -316,6 +397,7 @@ const Revenues = () => {
                     <TableHead>Công ty</TableHead>
                     <TableHead>Đơn vị</TableHead>
                     <TableHead>Dự án</TableHead>
+                    <TableHead>Project Name</TableHead>
                     <TableHead>Loại dự án</TableHead>
                     <TableHead>Nguồn lực</TableHead>
                     <TableHead>Tiền tệ</TableHead>
@@ -343,6 +425,14 @@ const Revenues = () => {
                       </TableCell>
                       <TableCell>
                         {projects.find(p => p.id === revenue.project_id)?.code}
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={revenue.project_name || ''}
+                          onChange={(e) => handleInlineEdit(revenue.id, 'project_name', e.target.value)}
+                          className="w-32"
+                          maxLength={50}
+                        />
                       </TableCell>
                       <TableCell>
                         {projectTypes.find(pt => pt.id === revenue.project_type_id)?.code}
@@ -377,7 +467,7 @@ const Revenues = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <NumberInput
-                          value={revenue.vnd_revenue}
+                          value={calculateVNDRevenue(revenue)}
                           onChange={() => {}}
                           className="w-32 text-right"
                           disabled
@@ -388,10 +478,18 @@ const Revenues = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => handleAddRevenue(revenue)}
+                            onClick={() => handleOpenDialog({} as Revenue, 'edit')}
                             title="Add"
                           >
                             <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleCloneRevenue(revenue)}
+                            title="Clone"
+                          >
+                            <Copy className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
@@ -408,14 +506,6 @@ const Revenues = () => {
                             title="Edit"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleDuplicateRevenue(revenue)}
-                            title="Duplicate"
-                          >
-                            <Copy className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -451,11 +541,14 @@ const Revenues = () => {
             </div>
 
             <PaginationControls
-              total={total}
               currentPage={searchParams.page}
-              pageSize={searchParams.pageSize}
+              totalPages={Math.ceil(total / searchParams.pageSize)}
               onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
+              onNextPage={() => handlePageChange(searchParams.page + 1)}
+              onPreviousPage={() => handlePageChange(searchParams.page - 1)}
+              totalItems={total}
+              startIndex={(searchParams.page - 1) * searchParams.pageSize + 1}
+              endIndex={Math.min(searchParams.page * searchParams.pageSize, total)}
             />
           </CardContent>
         </Card>

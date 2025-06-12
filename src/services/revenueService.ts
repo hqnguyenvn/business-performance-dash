@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Revenue {
@@ -17,6 +16,7 @@ export interface Revenue {
   original_amount: number;
   vnd_revenue: number;
   notes?: string;
+  project_name?: string;
 }
 
 export interface RevenueSearchParams {
@@ -93,7 +93,10 @@ export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueR
   }
   
   return {
-    data: data || [],
+    data: (data || []).map(item => ({
+      ...item,
+      project_name: item.project_name || ''
+    })) as Revenue[],
     total: count || 0
   };
 };
@@ -110,7 +113,10 @@ export const createRevenue = async (revenue: Omit<Revenue, 'id'>): Promise<Reven
     throw error;
   }
   
-  return data;
+  return {
+    ...data,
+    project_name: data.project_name || ''
+  } as Revenue;
 };
 
 export const updateRevenue = async (id: string, revenue: Partial<Revenue>): Promise<Revenue> => {
@@ -126,7 +132,10 @@ export const updateRevenue = async (id: string, revenue: Partial<Revenue>): Prom
     throw error;
   }
   
-  return data;
+  return {
+    ...data,
+    project_name: data.project_name || ''
+  } as Revenue;
 };
 
 export const deleteRevenue = async (id: string): Promise<void> => {
@@ -154,7 +163,10 @@ export class RevenueService {
       throw error;
     }
     
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      project_name: item.project_name || ''
+    })) as Revenue[];
   }
 
   async create(item: Omit<Revenue, 'id'>): Promise<Revenue> {
@@ -189,7 +201,10 @@ export class RevenueService {
       throw error;
     }
     
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      project_name: item.project_name || ''
+    })) as Revenue[];
   }
 }
 

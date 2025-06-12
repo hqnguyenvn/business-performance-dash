@@ -65,7 +65,8 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
         <CardTitle>Filter Revenue Records</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-4 items-start">
+        <div className="flex flex-wrap gap-6 items-start">
+          {/* Year Selection */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Year:</label>
             <Select
@@ -85,7 +86,8 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
             </Select>
           </div>
           
-          <div className="flex flex-col gap-2">
+          {/* Months Selection */}
+          <div className="flex items-start gap-4">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Months:</label>
               <div className="flex gap-2">
