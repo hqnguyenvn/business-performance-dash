@@ -130,7 +130,7 @@ const Revenues = () => {
       console.error("Error fetching data:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
+        title: "Error!",
         description: "There was a problem fetching data.",
       });
     }
@@ -141,11 +141,11 @@ const Revenues = () => {
   }, [fetchData]);
 
   const handleYearChange = (year: number) => {
-    setSearchParams({ ...searchParams, year });
+    setSearchParams({ ...searchParams, year, page: 1 });
   };
 
   const handleMonthChange = (months: number[]) => {
-    setSearchParams({ ...searchParams, months });
+    setSearchParams({ ...searchParams, months, page: 1 });
   };
 
   const handlePageChange = (page: number) => {
@@ -168,6 +168,7 @@ const Revenues = () => {
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
+    setRevenueInDialog(null);
   };
 
   const handleSaveRevenue = async (revenue: Revenue) => {
@@ -188,7 +189,7 @@ const Revenues = () => {
       console.error("Error saving revenue:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
+        title: "Error!",
         description: "There was a problem saving the revenue record.",
       });
     } finally {
@@ -207,7 +208,7 @@ const Revenues = () => {
       console.error("Error deleting revenue:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
+        title: "Error!",
         description: "There was a problem deleting the revenue record.",
       });
     }
@@ -235,12 +236,12 @@ const Revenues = () => {
     // Find the exchange rate for the specific year and month
     const exchangeRate = exchangeRates.find(rate => 
       rate.year === revenue.year && 
-      rate.month === getMonthName(revenue.month) &&
-      rate.currencyID === (currencies.find(c => c.id === revenue.currency_id)?.code || '')
+      rate.month === revenue.month &&
+      rate.currency_id === revenue.currency_id
     );
     
     if (exchangeRate) {
-      return revenue.original_amount * exchangeRate.exchangeRate;
+      return revenue.original_amount * exchangeRate.exchange_rate;
     }
     
     return revenue.original_amount; // Default to original amount if no exchange rate found
@@ -297,7 +298,7 @@ const Revenues = () => {
       console.error("Error updating revenue:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
+        title: "Error!",
         description: "There was a problem updating the revenue record.",
       });
       // Revert the local state in case of an error
@@ -335,8 +336,46 @@ const Revenues = () => {
       console.error("Error cloning revenue:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
+        title: "Error!",
         description: "There was a problem cloning the revenue record.",
+      });
+    }
+  };
+
+  const handleAddNewRow = async () => {
+    try {
+      const newRevenue: Omit<Revenue, 'id'> = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        customer_id: '',
+        company_id: '',
+        division_id: '',
+        project_id: '',
+        project_type_id: '',
+        resource_id: '',
+        currency_id: '',
+        unit_price: 0,
+        quantity: 1,
+        original_amount: 0,
+        vnd_revenue: 0,
+        notes: '',
+        project_name: '',
+      };
+      
+      const createdRevenue = await createRevenue(newRevenue);
+      
+      // Add the new revenue to the end of the current list
+      setRevenues([...revenues, createdRevenue]);
+      
+      toast({
+        title: "New revenue record added successfully!",
+      });
+    } catch (error) {
+      console.error("Error adding new revenue:", error);
+      toast({
+        variant: "destructive",
+        title: "Error!",
+        description: "There was a problem adding the new revenue record.",
       });
     }
   };
@@ -381,7 +420,8 @@ const Revenues = () => {
                 <Button variant="outline">
                   Save
                 </Button>
-                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
+                <Button onClick={handleAddNewRow}>
+                  <Plus className="h-4 w-4 mr-2" />
                   Add New
                 </Button>
               </div>
@@ -596,7 +636,7 @@ const Revenues = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => handleOpenDialog({} as Revenue, 'edit')}
+                            onClick={handleAddNewRow}
                             title="Add"
                           >
                             <Plus className="h-4 w-4" />
