@@ -97,6 +97,7 @@ const Revenues = () => {
 
   const fetchData = useCallback(async () => {
     try {
+      console.log('Fetching data with params:', searchParams);
       const [
         revenuesData,
         customersData,
@@ -143,11 +144,11 @@ const Revenues = () => {
   }, [fetchData]);
 
   const handleYearChange = (year: number) => {
-    setSearchParams({ ...searchParams, year });
+    setSearchParams({ ...searchParams, year, page: 1 });
   };
 
   const handleMonthChange = (months: number[]) => {
-    setSearchParams({ ...searchParams, months });
+    setSearchParams({ ...searchParams, months, page: 1 });
   };
 
   const handlePageChange = (page: number) => {
@@ -256,6 +257,7 @@ const Revenues = () => {
 
   const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
     try {
+      console.log('Editing cell:', { id, field, value });
       setIsInlineEditing(true);
       const revenueToUpdate = revenues.find((revenue) => revenue.id === id);
       if (!revenueToUpdate) {
@@ -312,6 +314,7 @@ const Revenues = () => {
 
   const handleAddNewRow = async () => {
     try {
+      console.log('Adding new row...');
       const newRevenue: Omit<Revenue, 'id'> = {
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
@@ -331,6 +334,9 @@ const Revenues = () => {
       };
       
       const createdRevenue = await createRevenue(newRevenue);
+      console.log('New revenue created:', createdRevenue);
+      
+      // Add to the end of current revenues list
       setRevenues([...revenues, createdRevenue]);
       
       toast({
@@ -348,6 +354,7 @@ const Revenues = () => {
 
   const handleInsertRowBelow = async (afterIndex: number) => {
     try {
+      console.log('Inserting row below index:', afterIndex);
       const newRevenue: Omit<Revenue, 'id'> = {
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
@@ -367,6 +374,7 @@ const Revenues = () => {
       };
       
       const createdRevenue = await createRevenue(newRevenue);
+      console.log('New revenue created:', createdRevenue);
       
       // Insert the new row at the correct position
       const updatedRevenues = [...revenues];
@@ -388,14 +396,27 @@ const Revenues = () => {
 
   const handleCloneRevenue = async (sourceRevenue: Revenue, afterIndex: number) => {
     try {
-      const clonedRevenue = {
-        ...sourceRevenue,
-        id: '', // Remove id to create new record
-        created_at: '',
-        updated_at: '',
+      console.log('Cloning revenue:', sourceRevenue);
+      const clonedData: Omit<Revenue, 'id'> = {
+        year: sourceRevenue.year,
+        month: sourceRevenue.month,
+        customer_id: sourceRevenue.customer_id,
+        company_id: sourceRevenue.company_id,
+        division_id: sourceRevenue.division_id,
+        project_id: sourceRevenue.project_id,
+        project_type_id: sourceRevenue.project_type_id,
+        resource_id: sourceRevenue.resource_id,
+        currency_id: sourceRevenue.currency_id,
+        unit_price: sourceRevenue.unit_price,
+        quantity: sourceRevenue.quantity,
+        original_amount: sourceRevenue.original_amount,
+        vnd_revenue: sourceRevenue.vnd_revenue,
+        notes: sourceRevenue.notes,
+        project_name: sourceRevenue.project_name,
       };
       
-      const newRevenue = await createRevenue(clonedRevenue);
+      const newRevenue = await createRevenue(clonedData);
+      console.log('Cloned revenue created:', newRevenue);
       
       // Insert the new revenue right after the source revenue in the list
       const updatedRevenues = [...revenues];
@@ -479,7 +500,7 @@ const Revenues = () => {
         const option = options.find(opt => opt.id === value);
         return option?.code || '';
       }
-      if (type === 'number' && field === 'year') {
+      if (field === 'year') {
         return value?.toString() || '';
       }
       if (type === 'number') {
@@ -507,8 +528,8 @@ const Revenues = () => {
 
       <div className="p-6">
         <RevenueFilters
-          selectedYear={searchParams.year}
-          selectedMonths={searchParams.months}
+          selectedYear={searchParams.year || new Date().getFullYear()}
+          selectedMonths={searchParams.months || []}
           onYearChange={handleYearChange}
           onMonthChange={handleMonthChange}
         />
@@ -572,7 +593,7 @@ const Revenues = () => {
                 <TableBody>
                   {revenues.map((revenue, index) => (
                     <TableRow key={revenue.id}>
-                      <TableCell className="font-medium">{(searchParams.page - 1) * searchParams.pageSize + index + 1}</TableCell>
+                      <TableCell className="font-medium">{(searchParams.page! - 1) * searchParams.pageSize! + index + 1}</TableCell>
                       <TableCell>
                         {renderEditableCell(revenue, 'year', revenue.year, 'number')}
                       </TableCell>
@@ -692,14 +713,14 @@ const Revenues = () => {
             </div>
 
             <PaginationControls
-              currentPage={searchParams.page}
-              totalPages={Math.ceil(total / searchParams.pageSize)}
+              currentPage={searchParams.page!}
+              totalPages={Math.ceil(total / searchParams.pageSize!)}
               onPageChange={handlePageChange}
-              onNextPage={() => handlePageChange(searchParams.page + 1)}
-              onPreviousPage={() => handlePageChange(searchParams.page - 1)}
+              onNextPage={() => handlePageChange(searchParams.page! + 1)}
+              onPreviousPage={() => handlePageChange(searchParams.page! - 1)}
               totalItems={total}
-              startIndex={(searchParams.page - 1) * searchParams.pageSize + 1}
-              endIndex={Math.min(searchParams.page * searchParams.pageSize, total)}
+              startIndex={(searchParams.page! - 1) * searchParams.pageSize! + 1}
+              endIndex={Math.min(searchParams.page! * searchParams.pageSize!, total)}
             />
           </CardContent>
         </Card>

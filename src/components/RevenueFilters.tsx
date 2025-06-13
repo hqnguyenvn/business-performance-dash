@@ -107,9 +107,9 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-12 gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-3">
             {months.map((month) => (
-              <div key={month.value} className="flex items-center justify-center space-x-1">
+              <div key={month.value} className="flex items-center space-x-1">
                 <Checkbox
                   id={`month-${month.value}`}
                   checked={selectedMonths.includes(month.value)}
@@ -119,7 +119,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
                 />
                 <label 
                   htmlFor={`month-${month.value}`} 
-                  className="text-xs cursor-pointer whitespace-nowrap"
+                  className="text-sm cursor-pointer whitespace-nowrap"
                 >
                   {month.label}
                 </label>
