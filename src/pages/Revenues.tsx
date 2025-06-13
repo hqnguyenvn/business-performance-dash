@@ -307,6 +307,10 @@ const Revenues = () => {
     }
   };
 
+  const handleInlineSelectChange = async (id: string, field: keyof Revenue, value: string) => {
+    await handleInlineEdit(id, field, value);
+  };
+
   const handleCloneRevenue = async (sourceRevenue: Revenue) => {
     try {
       const clonedRevenue = {
@@ -340,8 +344,8 @@ const Revenues = () => {
   return (
     <div>
       <PageHeader
-        title="Quản lý doanh thu"
-        description="Quản lý thông tin doanh thu"
+        title="Revenue Management"
+        description="Manage revenue information"
       />
 
       <div className="p-6">
@@ -354,31 +358,31 @@ const Revenues = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Danh sách doanh thu</CardTitle>
+            <CardTitle>Revenue Records</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
               <Input
                 type="search"
-                placeholder="Tìm kiếm..."
+                placeholder="Search..."
                 className="md:w-1/3"
                 onChange={handleSearch}
               />
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleImportCSV}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Nhập CSV
+                  Import CSV
                 </Button>
                 <Button variant="outline" onClick={handleExportCSV}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Xuất CSV
+                  Export CSV
                 </Button>
                 <CloneDataDialog onClone={handleCloneData} />
-                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
-                  Add New
-                </Button>
                 <Button variant="outline">
                   Save
+                </Button>
+                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
+                  Add New
                 </Button>
               </div>
             </div>
@@ -386,45 +390,117 @@ const Revenues = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableCaption>
-                  A list of your recent invoices.
+                  A list of your recent revenue records.
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[50px]">No.</TableHead>
-                    <TableHead className="w-[50px]">Năm</TableHead>
-                    <TableHead>Tháng</TableHead>
-                    <TableHead>Khách hàng</TableHead>
-                    <TableHead>Công ty</TableHead>
-                    <TableHead>Đơn vị</TableHead>
-                    <TableHead>Dự án</TableHead>
+                    <TableHead className="w-[50px]">Year</TableHead>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Division</TableHead>
+                    <TableHead>Project</TableHead>
                     <TableHead>Project Name</TableHead>
-                    <TableHead>Loại dự án</TableHead>
-                    <TableHead>Nguồn lực</TableHead>
-                    <TableHead>Tiền tệ</TableHead>
-                    <TableHead className="text-right">Đơn giá</TableHead>
-                    <TableHead className="text-right">BMM</TableHead>
+                    <TableHead>Project Type</TableHead>
+                    <TableHead>Resource</TableHead>
+                    <TableHead>Currency</TableHead>
+                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
                     <TableHead className="text-right">Original Revenue</TableHead>
                     <TableHead className="text-right">VND Revenue</TableHead>
-                    <TableHead className="text-center">Thao tác</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {revenues.map((revenue, index) => (
                     <TableRow key={revenue.id}>
                       <TableCell className="font-medium">{(searchParams.page - 1) * searchParams.pageSize + index + 1}</TableCell>
-                      <TableCell className="font-medium">{revenue.year}</TableCell>
-                      <TableCell>{revenue.month}</TableCell>
-                      <TableCell>
-                        {customers.find(c => c.id === revenue.customer_id)?.code}
+                      <TableCell className="font-medium">
+                        <NumberInput
+                          value={revenue.year}
+                          onChange={(value) => handleInlineEdit(revenue.id, 'year', value)}
+                          className="w-20"
+                          min={2000}
+                          max={2100}
+                        />
                       </TableCell>
                       <TableCell>
-                        {companies.find(c => c.id === revenue.company_id)?.code}
+                        <NumberInput
+                          value={revenue.month}
+                          onChange={(value) => handleInlineEdit(revenue.id, 'month', value)}
+                          className="w-16"
+                          min={1}
+                          max={12}
+                        />
                       </TableCell>
                       <TableCell>
-                        {divisions.find(d => d.id === revenue.division_id)?.code}
+                        <Select 
+                          value={revenue.customer_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'customer_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id}>
+                                {customer.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
-                        {projects.find(p => p.id === revenue.project_id)?.code}
+                        <Select 
+                          value={revenue.company_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'company_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {companies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select 
+                          value={revenue.division_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'division_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {divisions.map((division) => (
+                              <SelectItem key={division.id} value={division.id}>
+                                {division.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select 
+                          value={revenue.project_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'project_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Input
@@ -435,13 +511,55 @@ const Revenues = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        {projectTypes.find(pt => pt.id === revenue.project_type_id)?.code}
+                        <Select 
+                          value={revenue.project_type_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'project_type_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projectTypes.map((projectType) => (
+                              <SelectItem key={projectType.id} value={projectType.id}>
+                                {projectType.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
-                        {resources.find(r => r.id === revenue.resource_id)?.code}
+                        <Select 
+                          value={revenue.resource_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'resource_id', value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {resources.map((resource) => (
+                              <SelectItem key={resource.id} value={resource.id}>
+                                {resource.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
-                        {currencies.find(cr => cr.id === revenue.currency_id)?.code}
+                        <Select 
+                          value={revenue.currency_id || ''} 
+                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'currency_id', value)}
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {currencies.map((currency) => (
+                              <SelectItem key={currency.id} value={currency.id}>
+                                {currency.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-right">
                         <NumberInput
@@ -519,15 +637,15 @@ const Revenues = () => {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                                <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Bạn có chắc chắn muốn xóa bản ghi doanh thu này không? Hành động này không thể hoàn tác.
+                                  Are you sure you want to delete this revenue record? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDeleteRevenue(revenue.id)}>
-                                  Xóa
+                                  Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
