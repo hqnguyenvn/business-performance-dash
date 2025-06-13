@@ -77,9 +77,14 @@ const Revenues = () => {
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<any[]>([]);
+  
+  // Default to months 1 to current month
+  const currentMonth = new Date().getMonth() + 1;
+  const defaultMonths = Array.from({ length: currentMonth }, (_, i) => i + 1);
+  
   const [searchParams, setSearchParams] = useState<RevenueSearchParams>({
     year: new Date().getFullYear(),
-    months: [new Date().getMonth() + 1],
+    months: defaultMonths,
     page: 1,
     pageSize: 10,
   });
@@ -88,10 +93,7 @@ const Revenues = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit'>('view');
   const [isInlineEditing, setIsInlineEditing] = useState(false);
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), 0, 1),
-    to: new Date(),
-  })
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -252,7 +254,7 @@ const Revenues = () => {
     return monthNames[monthNumber - 1] || "Jan";
   };
 
-  const handleInlineEdit = async (id: string, field: keyof Revenue, value: any) => {
+  const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
     try {
       setIsInlineEditing(true);
       const revenueToUpdate = revenues.find((revenue) => revenue.id === id);
@@ -304,14 +306,87 @@ const Revenues = () => {
       fetchData();
     } finally {
       setIsInlineEditing(false);
+      setEditingCell(null);
     }
   };
 
-  const handleInlineSelectChange = async (id: string, field: keyof Revenue, value: string) => {
-    await handleInlineEdit(id, field, value);
+  const handleAddNewRow = async () => {
+    try {
+      const newRevenue: Omit<Revenue, 'id'> = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        customer_id: '',
+        company_id: '',
+        division_id: '',
+        project_id: '',
+        project_type_id: '',
+        resource_id: '',
+        currency_id: '',
+        unit_price: 0,
+        quantity: 1,
+        original_amount: 0,
+        vnd_revenue: 0,
+        notes: '',
+        project_name: '',
+      };
+      
+      const createdRevenue = await createRevenue(newRevenue);
+      setRevenues([...revenues, createdRevenue]);
+      
+      toast({
+        title: "New revenue record added successfully!",
+      });
+    } catch (error) {
+      console.error("Error adding new revenue:", error);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem adding the new revenue record.",
+      });
+    }
   };
 
-  const handleCloneRevenue = async (sourceRevenue: Revenue) => {
+  const handleInsertRowBelow = async (afterIndex: number) => {
+    try {
+      const newRevenue: Omit<Revenue, 'id'> = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        customer_id: '',
+        company_id: '',
+        division_id: '',
+        project_id: '',
+        project_type_id: '',
+        resource_id: '',
+        currency_id: '',
+        unit_price: 0,
+        quantity: 1,
+        original_amount: 0,
+        vnd_revenue: 0,
+        notes: '',
+        project_name: '',
+      };
+      
+      const createdRevenue = await createRevenue(newRevenue);
+      
+      // Insert the new row at the correct position
+      const updatedRevenues = [...revenues];
+      updatedRevenues.splice(afterIndex + 1, 0, createdRevenue);
+      setRevenues(updatedRevenues);
+      
+      toast({
+        title: "New revenue record inserted successfully!",
+      });
+    } catch (error) {
+      console.error("Error inserting new revenue:", error);
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem inserting the new revenue record.",
+      });
+    }
+  };
+
+  const handleCloneRevenue = async (sourceRevenue: Revenue, afterIndex: number) => {
     try {
       const clonedRevenue = {
         ...sourceRevenue,
@@ -323,9 +398,8 @@ const Revenues = () => {
       const newRevenue = await createRevenue(clonedRevenue);
       
       // Insert the new revenue right after the source revenue in the list
-      const sourceIndex = revenues.findIndex(r => r.id === sourceRevenue.id);
       const updatedRevenues = [...revenues];
-      updatedRevenues.splice(sourceIndex + 1, 0, newRevenue);
+      updatedRevenues.splice(afterIndex + 1, 0, newRevenue);
       setRevenues(updatedRevenues);
       
       toast({
@@ -339,6 +413,89 @@ const Revenues = () => {
         description: "There was a problem cloning the revenue record.",
       });
     }
+  };
+
+  const renderEditableCell = (revenue: Revenue, field: keyof Revenue, value: any, type: 'text' | 'number' | 'select', options?: any[]) => {
+    const isEditing = editingCell?.id === revenue.id && editingCell?.field === field;
+    
+    if (isEditing && type === 'select' && options) {
+      return (
+        <Select 
+          value={value || ''} 
+          onValueChange={(newValue) => handleCellEdit(revenue.id, field, newValue)}
+          onOpenChange={(open) => {
+            if (!open) setEditingCell(null);
+          }}
+        >
+          <SelectTrigger className="w-full h-8">
+            <SelectValue placeholder="Select" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                {option.code}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    
+    if (isEditing && type === 'number') {
+      return (
+        <Input
+          type="number"
+          value={value || 0}
+          onChange={(e) => handleCellEdit(revenue.id, field, parseFloat(e.target.value) || 0)}
+          onBlur={() => setEditingCell(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setEditingCell(null);
+          }}
+          className="w-full h-8"
+          autoFocus
+        />
+      );
+    }
+    
+    if (isEditing && type === 'text') {
+      return (
+        <Input
+          value={value || ''}
+          onChange={(e) => handleCellEdit(revenue.id, field, e.target.value)}
+          onBlur={() => setEditingCell(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setEditingCell(null);
+          }}
+          className="w-full h-8"
+          maxLength={field === 'project_name' ? 50 : undefined}
+          autoFocus
+        />
+      );
+    }
+    
+    // Display mode
+    const displayValue = () => {
+      if (type === 'select' && options) {
+        const option = options.find(opt => opt.id === value);
+        return option?.code || '';
+      }
+      if (type === 'number' && field === 'year') {
+        return value?.toString() || '';
+      }
+      if (type === 'number') {
+        return (value || 0).toLocaleString();
+      }
+      return value || '';
+    };
+    
+    return (
+      <div 
+        className="w-full h-8 px-2 py-1 cursor-pointer hover:bg-gray-50 flex items-center"
+        onClick={() => setEditingCell({ id: revenue.id, field })}
+      >
+        {displayValue()}
+      </div>
+    );
   };
 
   return (
@@ -381,7 +538,7 @@ const Revenues = () => {
                 <Button variant="outline">
                   Save
                 </Button>
-                <Button onClick={() => handleOpenDialog({} as Revenue, 'edit')}>
+                <Button onClick={handleAddNewRow}>
                   Add New
                 </Button>
               </div>
@@ -395,217 +552,90 @@ const Revenues = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[50px]">No.</TableHead>
-                    <TableHead className="w-[50px]">Year</TableHead>
-                    <TableHead>Month</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Division</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>Project Name</TableHead>
-                    <TableHead>Project Type</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Currency</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Original Revenue</TableHead>
-                    <TableHead className="text-right">VND Revenue</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
+                    <TableHead className="w-[60px]">Year</TableHead>
+                    <TableHead className="w-[60px]">Month</TableHead>
+                    <TableHead className="w-[100px]">Customer</TableHead>
+                    <TableHead className="w-[100px]">Company</TableHead>
+                    <TableHead className="w-[100px]">Division</TableHead>
+                    <TableHead className="w-[100px]">Project</TableHead>
+                    <TableHead className="w-[120px]">Project Name</TableHead>
+                    <TableHead className="w-[100px]">Project Type</TableHead>
+                    <TableHead className="w-[100px]">Resource</TableHead>
+                    <TableHead className="w-[80px]">Currency</TableHead>
+                    <TableHead className="w-[100px] text-right">Unit Price</TableHead>
+                    <TableHead className="w-[80px] text-right">Quantity</TableHead>
+                    <TableHead className="w-[120px] text-right">Original Revenue</TableHead>
+                    <TableHead className="w-[120px] text-right">VND Revenue</TableHead>
+                    <TableHead className="w-[140px] text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {revenues.map((revenue, index) => (
                     <TableRow key={revenue.id}>
                       <TableCell className="font-medium">{(searchParams.page - 1) * searchParams.pageSize + index + 1}</TableCell>
-                      <TableCell className="font-medium">
-                        <NumberInput
-                          value={revenue.year}
-                          onChange={(value) => handleInlineEdit(revenue.id, 'year', value)}
-                          className="w-20"
-                          min={2000}
-                          max={2100}
-                        />
+                      <TableCell>
+                        {renderEditableCell(revenue, 'year', revenue.year, 'number')}
                       </TableCell>
                       <TableCell>
-                        <NumberInput
-                          value={revenue.month}
-                          onChange={(value) => handleInlineEdit(revenue.id, 'month', value)}
-                          className="w-16"
-                          min={1}
-                          max={12}
-                        />
+                        {renderEditableCell(revenue, 'month', revenue.month, 'number')}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.customer_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'customer_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'customer_id', revenue.customer_id, 'select', customers)}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.company_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'company_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {companies.map((company) => (
-                              <SelectItem key={company.id} value={company.id}>
-                                {company.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'company_id', revenue.company_id, 'select', companies)}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.division_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'division_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {divisions.map((division) => (
-                              <SelectItem key={division.id} value={division.id}>
-                                {division.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'division_id', revenue.division_id, 'select', divisions)}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.project_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'project_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {projects.map((project) => (
-                              <SelectItem key={project.id} value={project.id}>
-                                {project.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'project_id', revenue.project_id, 'select', projects)}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          value={revenue.project_name || ''}
-                          onChange={(e) => handleInlineEdit(revenue.id, 'project_name', e.target.value)}
-                          className="w-32"
-                          maxLength={50}
-                        />
+                        {renderEditableCell(revenue, 'project_name', revenue.project_name, 'text')}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.project_type_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'project_type_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {projectTypes.map((projectType) => (
-                              <SelectItem key={projectType.id} value={projectType.id}>
-                                {projectType.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'project_type_id', revenue.project_type_id, 'select', projectTypes)}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.resource_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'resource_id', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {resources.map((resource) => (
-                              <SelectItem key={resource.id} value={resource.id}>
-                                {resource.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'resource_id', revenue.resource_id, 'select', resources)}
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={revenue.currency_id || ''} 
-                          onValueChange={(value) => handleInlineSelectChange(revenue.id, 'currency_id', value)}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {currencies.map((currency) => (
-                              <SelectItem key={currency.id} value={currency.id}>
-                                {currency.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {renderEditableCell(revenue, 'currency_id', revenue.currency_id, 'select', currencies)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <NumberInput
-                          value={revenue.unit_price || 0}
-                          onChange={(value) => handleInlineEdit(revenue.id, 'unit_price', value)}
-                          className="w-32 text-right"
-                        />
+                        {renderEditableCell(revenue, 'unit_price', revenue.unit_price, 'number')}
                       </TableCell>
                       <TableCell className="text-right">
-                        <NumberInput
-                          value={revenue.quantity || 1}
-                          onChange={(value) => handleInlineEdit(revenue.id, 'quantity', value)}
-                          className="w-24 text-right"
-                        />
+                        {renderEditableCell(revenue, 'quantity', revenue.quantity, 'number')}
                       </TableCell>
                       <TableCell className="text-right">
-                        <NumberInput
-                          value={revenue.original_amount}
-                          onChange={() => {}}
-                          className="w-32 text-right"
-                          disabled
-                        />
+                        <div className="px-2 py-1">
+                          {(revenue.original_amount || 0).toLocaleString()}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <NumberInput
-                          value={calculateVNDRevenue(revenue)}
-                          onChange={() => {}}
-                          className="w-32 text-right"
-                          disabled
-                        />
+                        <div className="px-2 py-1">
+                          {calculateVNDRevenue(revenue).toLocaleString()}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center gap-1">
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => handleOpenDialog({} as Revenue, 'edit')}
+                            onClick={() => handleInsertRowBelow(index)}
                             title="Add"
+                            className="h-8 w-8"
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => handleCloneRevenue(revenue)}
+                            onClick={() => handleCloneRevenue(revenue, index)}
                             title="Clone"
+                            className="h-8 w-8"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -614,6 +644,7 @@ const Revenues = () => {
                             size="icon"
                             onClick={() => handleOpenDialog(revenue, 'view')}
                             title="View"
+                            className="h-8 w-8"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -622,6 +653,7 @@ const Revenues = () => {
                             size="icon"
                             onClick={() => handleOpenDialog(revenue, 'edit')}
                             title="Edit"
+                            className="h-8 w-8"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -631,6 +663,7 @@ const Revenues = () => {
                                 variant="destructive"
                                 size="icon"
                                 title="Delete"
+                                className="h-8 w-8"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
