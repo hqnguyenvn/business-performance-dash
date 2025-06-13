@@ -66,65 +66,68 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          {/* Year Selection */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Year:</label>
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(value) => onYearChange(parseInt(value))}
-            >
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Months Selection */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Months:</label>
-            <div className="flex items-center justify-center gap-4 mb-2">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
-                  Select All
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearAll}
-                >
-                  Clear All
-                </Button>
-              </div>
+          {/* Year and Month Selection Row */}
+          <div className="flex flex-wrap items-start gap-6">
+            {/* Year Selection */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Year:</label>
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => onYearChange(parseInt(value))}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center justify-center flex-wrap gap-4">
-              {months.map((month) => (
-                <div key={month.value} className="flex items-center space-x-1">
-                  <Checkbox
-                    id={`month-${month.value}`}
-                    checked={selectedMonths.includes(month.value)}
-                    onCheckedChange={(checked) => 
-                      handleMonthToggle(month.value, Boolean(checked))
-                    }
-                  />
-                  <label 
-                    htmlFor={`month-${month.value}`} 
-                    className="text-xs cursor-pointer whitespace-nowrap"
+            
+            {/* Months Selection */}
+            <div className="flex items-start gap-4 flex-1">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Months:</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAll}
                   >
-                    {month.label}
-                  </label>
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearAll}
+                  >
+                    Clear All
+                  </Button>
                 </div>
-              ))}
+              </div>
+              <div className="grid grid-cols-12 gap-2 flex-1">
+                {months.map((month) => (
+                  <div key={month.value} className="flex items-center space-x-1">
+                    <Checkbox
+                      id={`month-${month.value}`}
+                      checked={selectedMonths.includes(month.value)}
+                      onCheckedChange={(checked) => 
+                        handleMonthToggle(month.value, Boolean(checked))
+                      }
+                    />
+                    <label 
+                      htmlFor={`month-${month.value}`} 
+                      className="text-xs cursor-pointer whitespace-nowrap"
+                    >
+                      {month.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
