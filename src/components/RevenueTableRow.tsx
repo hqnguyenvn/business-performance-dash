@@ -199,7 +199,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   };
 
   return (
-    <TableRow key={revenue.id}>
+    <TableRow key={revenue.id} className="h-[53px]">
       <TableCell className="font-medium border-r">{(pageIndex - 1) * pageSize + index + 1}</TableCell>
       <TableCell className="border-r">
         {renderEditableCell('year', revenue.year, 'number')}
