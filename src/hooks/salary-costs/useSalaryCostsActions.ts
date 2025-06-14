@@ -95,10 +95,7 @@ export const useSalaryCostsActions = ({
     if (!originalCost) return;
     
     const updatedCost = { ...originalCost, [field]: value };
-    setSalaryCosts(prev => prev.map(c => c.id === id ? updatedCost : c));
-    
-    const { ...costToUpdate } = updatedCost;
-    updateSalaryCostMutation.mutate(costToUpdate);
+    updateSalaryCostMutation.mutate(updatedCost);
   };
 
   return { addNewRow, insertRowBelow, cloneRow, updateSalaryCost };

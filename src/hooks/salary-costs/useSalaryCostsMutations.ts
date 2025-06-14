@@ -18,11 +18,23 @@ export const useSalaryCostsMutations = () => {
 
   const updateSalaryCostMutation = useMutation({
     mutationFn: (cost: SalaryCost) => upsertSalaryCosts([cost]),
+    onMutate: async (updatedCost: SalaryCost) => {
+      await queryClient.cancelQueries({ queryKey: ['salaryCosts'] });
+      const previousCosts = queryClient.getQueryData<SalaryCost[]>(['salaryCosts']);
+      queryClient.setQueryData<SalaryCost[]>(['salaryCosts'], (old) =>
+        old?.map(c => c.id === updatedCost.id ? updatedCost : c) ?? []
+      );
+      return { previousCosts };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['salaryCosts'] });
       toast({ title: "Success", description: "Salary cost updated." });
     },
-    onError: (error) => toast({ variant: "destructive", title: "Error", description: `Failed to update cost: ${error.message}` }),
+    onError: (error: Error, _variables: SalaryCost, context: { previousCosts: SalaryCost[] | undefined } | undefined) => {
+      if (context?.previousCosts) {
+        queryClient.setQueryData(['salaryCosts'], context.previousCosts);
+      }
+      toast({ variant: "destructive", title: "Error", description: `Failed to update cost: ${error.message}` });
+    },
   });
 
   const deleteSalaryCostMutation = useMutation({
