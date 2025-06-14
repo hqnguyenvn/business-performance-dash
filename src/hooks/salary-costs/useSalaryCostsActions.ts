@@ -1,4 +1,3 @@
-
 import { SalaryCost, SalaryCostInsert } from '@/services/salaryCostService';
 import { MasterData } from '@/services/masterDataService';
 import { useSalaryCostsMutations } from './useSalaryCostsMutations';
@@ -42,13 +41,12 @@ export const useSalaryCostsActions = ({
   };
 
   const insertRowBelow = (id: string) => {
-    const baseRow = salaryCosts.find(c => c.id === id);
     const newCost: SalaryCostInsert = {
       year: new Date().getFullYear(),
       month: new Date().getMonth() + 1,
-      company_id: baseRow?.company_id || null,
-      division_id: baseRow?.division_id || null,
-      customer_id: baseRow?.customer_id || null,
+      company_id: null,
+      division_id: null,
+      customer_id: null,
       amount: 0,
       notes: ''
     };
