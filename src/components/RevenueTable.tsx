@@ -229,7 +229,9 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
         </TableHeader>
         <TableBody>
           {filteredData.map((revenue, pageSpecificIndex) => {
-            const globalIndex = (searchParams.page! - 1) * searchParams.pageSize! + pageSpecificIndex;
+            const globalIndex = searchParams.pageSize === 'all' 
+              ? pageSpecificIndex 
+              : (searchParams.page! - 1) * (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 5) + pageSpecificIndex;
             
             return (
               <RevenueTableRow

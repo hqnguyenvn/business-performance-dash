@@ -101,7 +101,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         </div>
       )}
       
-      {totalPages > 1 && pageSize !== 'all' && (
+      {totalPages > 1 && (
         <Pagination>
           <PaginationContent>
             <PaginationItem>
@@ -111,21 +111,29 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               />
             </PaginationItem>
             
-            {getVisiblePages().map((page, index) => (
-              <PaginationItem key={index}>
-                {page === "..." ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PaginationLink
-                    onClick={() => onPageChange(page as number)}
-                    isActive={currentPage === page}
-                    className="cursor-pointer"
-                  >
-                    {page}
-                  </PaginationLink>
-                )}
+            {pageSize === 'all' ? (
+              <PaginationItem>
+                <PaginationLink isActive className="cursor-default">
+                  All
+                </PaginationLink>
               </PaginationItem>
-            ))}
+            ) : (
+              getVisiblePages().map((page, index) => (
+                <PaginationItem key={index}>
+                  {page === "..." ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      onClick={() => onPageChange(page as number)}
+                      isActive={currentPage === page}
+                      className="cursor-pointer"
+                    >
+                      {page}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))
+            )}
             
             <PaginationItem>
               <PaginationNext 

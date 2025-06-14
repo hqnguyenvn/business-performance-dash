@@ -10,7 +10,7 @@ interface RevenueTableRowProps {
   revenue: Revenue;
   index: number; // pageSpecificIndex (0-based)
   pageIndex: number; // 1-based current page number from searchParams
-  pageSize: number; // Items per page from searchParams
+  pageSize: number | 'all'; // Items per page from searchParams
   editingCell: { id: string; field: string } | null;
   customers: MasterData[];
   companies: MasterData[];
@@ -58,7 +58,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   const rowContext: RowContext = {
     pageSpecificIndex: index,
     pageIndex,
-    pageSize,
+    pageSize: typeof pageSize === 'number' ? pageSize : 0, // For compatibility with RowContext
     getMonthName,
     calculateVNDRevenue,
   };
@@ -66,7 +66,14 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   const cellConfigs: CellConfig[] = [
     {
       type: 'index',
-      valueGetter: (_rev, ctx) => (ctx.pageIndex - 1) * ctx.pageSize + ctx.pageSpecificIndex + 1,
+      valueGetter: (_rev, ctx) => {
+        // When pageSize is 'all', just use index + 1
+        if (pageSize === 'all') {
+          return ctx.pageSpecificIndex + 1;
+        }
+        // For normal pagination
+        return (ctx.pageIndex - 1) * (typeof pageSize === 'number' ? pageSize : 5) + ctx.pageSpecificIndex + 1;
+      },
       cellClassName: "font-medium",
     },
     { field: 'year', type: 'number', step: "1" },
