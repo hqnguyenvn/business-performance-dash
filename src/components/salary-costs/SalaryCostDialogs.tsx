@@ -2,20 +2,20 @@
 import * as React from "react";
 import { SalaryCostEditorDialog } from './SalaryCostEditorDialog';
 import { DeleteCostDialog } from '@/components/costs/DeleteCostDialog';
-import { SalaryCostWithStatus } from "@/hooks/useSalaryCosts";
+import { SalaryCost } from "@/hooks/useSalaryCosts";
 import { MasterData } from "@/services/masterDataService";
 
 interface SalaryCostDialogsProps {
   isDialogOpen: boolean;
   setIsDialogOpen: (open: boolean) => void;
   dialogMode: 'view' | 'edit';
-  selectedCost: SalaryCostWithStatus | null;
-  setSelectedCost: React.Dispatch<React.SetStateAction<SalaryCostWithStatus | null>>;
+  selectedCost: SalaryCost | null;
+  setSelectedCost: React.Dispatch<React.SetStateAction<SalaryCost | null>>;
   saveChanges: () => void;
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
   confirmDelete: () => void;
-  setCostToDelete: (cost: SalaryCostWithStatus | null) => void;
+  setCostToDelete: (cost: SalaryCost | null) => void;
   companies: MasterData[];
   divisions: MasterData[];
   customers: MasterData[];

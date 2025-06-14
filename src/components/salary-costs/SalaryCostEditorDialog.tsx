@@ -6,15 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber } from "@/lib/format";
-import { SalaryCostWithStatus, MONTHS } from "@/hooks/useSalaryCosts";
+import { SalaryCost } from "@/hooks/useSalaryCosts";
 import { MasterData } from "@/services/masterDataService";
 
 interface SalaryCostEditorDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'view' | 'edit';
-  cost: SalaryCostWithStatus | null;
-  onCostChange: React.Dispatch<React.SetStateAction<SalaryCostWithStatus | null>>;
+  cost: SalaryCost | null;
+  onCostChange: React.Dispatch<React.SetStateAction<SalaryCost | null>>;
   onSave: () => void;
   companies: MasterData[];
   divisions: MasterData[];
