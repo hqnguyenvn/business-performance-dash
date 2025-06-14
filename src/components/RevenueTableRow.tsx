@@ -35,7 +35,8 @@ function getCellConfigs(
   projectTypes: MasterData[], resources: MasterData[], currencies: MasterData[],
   getMonthName: (monthNumber: number) => string,
   calculateVNDRevenue: (revenue: Revenue) => number,
-  pageSize: number | 'all'
+  pageSize: number | 'all',
+  isTempRow?: boolean
 ): CellConfig[] {
   return [
     {
@@ -70,13 +71,15 @@ function getCellConfigs(
     },
     {
       field: 'original_amount',
-      type: 'static',
+      type: isTempRow ? 'number' : 'static', // <--- Editable nếu là dòng tạm
+      step: "1",
       valueGetter: (rev) => (rev.original_amount || 0).toLocaleString(),
       cellClassName: "text-right",
     },
     {
       field: 'vnd_revenue',
-      type: 'static',
+      type: isTempRow ? 'number' : 'static', // <--- Editable nếu là dòng tạm
+      step: "1",
       valueGetter: (rev, ctx) => ctx.calculateVNDRevenue ? ctx.calculateVNDRevenue(rev).toLocaleString() : 'N/A',
       cellClassName: "text-right",
     },
@@ -119,9 +122,10 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
     calculateVNDRevenue,
   };
 
+  // Truyền thêm isTempRow vào getCellConfigs
   const cellConfigs = getCellConfigs(
     customers, companies, divisions, projects, projectTypes, resources, currencies,
-    getMonthName, calculateVNDRevenue, pageSize
+    getMonthName, calculateVNDRevenue, pageSize, isTempRow
   );
 
   return (
