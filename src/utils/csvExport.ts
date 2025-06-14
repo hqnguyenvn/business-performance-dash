@@ -1,4 +1,3 @@
-
 import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 import { Cost } from "@/services/costService";
@@ -34,7 +33,7 @@ export const exportCostsCSV = ({
   const rows = costs.map((cost) => {
     return [
       cost.year,
-      getMonthName(cost.month),
+      getMonthName(cost.month).substring(0, 3),
       cost.description || '',
       cost.price || 0,
       cost.volume || 0,
