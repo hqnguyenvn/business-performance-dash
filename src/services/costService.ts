@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Cost {
@@ -15,6 +14,8 @@ export interface Cost {
   is_cost?: boolean;
   is_checked?: boolean;
   notes?: string;
+  price?: number;
+  volume?: number;
 }
 
 export class CostService {

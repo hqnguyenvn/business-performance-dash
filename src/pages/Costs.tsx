@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,20 +30,11 @@ import {
   TableCell
 } from "@/components/ui/table";
 import { useTableFilter } from "@/hooks/useTableFilter";
+import { costService, Cost as DbCost } from "@/services/costService";
+import { costTypesService, MasterData } from "@/services/masterDataService";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface Cost {
-  id: string;
-  year: number;
-  month: number;
-  description: string;
-  price: number;
-  volume: number;
-  cost: number;
-  category: string;
-  isCost: boolean;
-  checked: boolean;
-  notes: string;
-}
+interface Cost extends DbCost {}
 
 const MONTHS = [
   { value: 1, label: "January" },
@@ -67,6 +59,8 @@ const COST_CATEGORIES = [
 
 const Costs = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [costs, setCosts] = useState<Cost[]>([]);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -79,46 +73,73 @@ const Costs = () => {
   
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [costToDelete, setCostToDelete] = useState<string | null>(null);
+  const [costToDelete, setCostToDelete] = useState<Cost | null>(null);
+  const [deletedCostIds, setDeletedCostIds] = useState<string[]>([]);
 
-  // Load data from localStorage on component mount
-  useEffect(() => {
-    const savedCosts = localStorage.getItem('costs');
-    if (savedCosts) {
-      setCosts(JSON.parse(savedCosts));
-    }
-  }, []);
-
-  // Save data to localStorage whenever costs change
-  useEffect(() => {
-    localStorage.setItem('costs', JSON.stringify(costs));
-  }, [costs]);
-
-  // Get unique years from cost data, including current year
-  const availableYears = Array.from(new Set([...costs.map(c => c.year), currentYear])).sort((a, b) => b - a);
-
-  // Filter costs based on selected year and months
-  const baseCosts = costs.filter(cost => {
-    const yearMatch = cost.year === parseInt(selectedYear);
-    const monthMatch = selectedMonths.includes(cost.month);
-    return yearMatch && monthMatch;
+  const { data: dbCosts, isLoading: isLoadingCosts } = useQuery({
+    queryKey: ["costs"],
+    queryFn: () => costService.getAll(),
   });
 
-  // Add table filtering
+  const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery({
+    queryKey: ["cost_types"],
+    queryFn: () => costTypesService.getAll(),
+  });
+
+  useEffect(() => {
+    if (dbCosts) {
+      setCosts(dbCosts);
+    }
+  }, [dbCosts]);
+
+  const availableYears = useMemo(() => {
+    const yearsFromData = dbCosts?.map(c => c.year) || [];
+    return Array.from(new Set([...yearsFromData, currentYear])).sort((a, b) => b - a);
+  }, [dbCosts, currentYear]);
+
+  const baseCosts = useMemo(() => {
+    return costs.filter(cost => {
+      const yearMatch = cost.year === parseInt(selectedYear);
+      const monthMatch = selectedMonths.includes(cost.month);
+      return yearMatch && monthMatch;
+    });
+  }, [costs, selectedYear, selectedMonths]);
+
   const { filteredData: filteredCosts, setFilter, getActiveFilters } = useTableFilter(baseCosts);
+  
+  const createCostMutation = useMutation({
+    mutationFn: (cost: Omit<DbCost, 'id'>) => costService.create(cost),
+    onError: (error) => {
+      toast({ title: "Error", description: `Could not create cost: ${error.message}`, variant: "destructive" });
+    }
+  });
+
+  const updateCostMutation = useMutation({
+    mutationFn: (cost: DbCost) => costService.update(cost.id, cost),
+    onError: (error) => {
+      toast({ title: "Error", description: `Could not update cost: ${error.message}`, variant: "destructive" });
+    }
+  });
+
+  const deleteCostMutation = useMutation({
+    mutationFn: (id: string) => costService.delete(id),
+    onError: (error) => {
+      toast({ title: "Error", description: `Could not delete cost: ${error.message}`, variant: "destructive" });
+    }
+  });
 
   const addNewRow = () => {
     const newCost: Cost = {
-      id: Date.now().toString(),
+      id: `new_${Date.now()}`,
       year: parseInt(selectedYear),
       month: selectedMonths.length > 0 ? selectedMonths[0] : currentMonth,
       description: "",
       price: 0,
       volume: 0,
       cost: 0,
-      category: "Infrastructure",
-      isCost: true,
-      checked: false,
+      cost_type: costTypes.length > 0 ? costTypes[0].id : "",
+      is_cost: true,
+      is_checked: false,
       notes: "",
     };
     setCosts([...costs, newCost]);
@@ -128,9 +149,8 @@ const Costs = () => {
     setCosts(costs.map(cost => {
       if (cost.id === id) {
         const updated = { ...cost, [field]: value };
-        // Auto calculate cost
         if (field === 'price' || field === 'volume') {
-          updated.cost = updated.price * updated.volume;
+          updated.cost = (updated.price || 0) * (updated.volume || 0);
         }
         return updated;
       }
@@ -139,24 +159,25 @@ const Costs = () => {
   };
 
   const openDialog = (cost: Cost, mode: 'view' | 'edit') => {
-    setSelectedCost(cost);
+    setSelectedCost({ ...cost });
     setDialogMode(mode);
     setIsDialogOpen(true);
   };
 
-  // Modified to open confirmation dialog first
-  const deleteCost = (id: string) => {
-    setCostToDelete(id);
+  const deleteCost = (cost: Cost) => {
+    setCostToDelete(cost);
     setIsDeleteDialogOpen(true);
   };
 
-  // Confirm deletion and actually delete the item
   const confirmDelete = () => {
     if (costToDelete) {
-      setCosts(prev => prev.filter(cost => cost.id !== costToDelete));
+      if (!costToDelete.id.startsWith('new_')) {
+        setDeletedCostIds(prev => [...prev, costToDelete.id]);
+      }
+      setCosts(prev => prev.filter(cost => cost.id !== costToDelete.id));
       toast({
-        title: "Deleted",
-        description: "Item successfully deleted",
+        title: "Marked for Deletion",
+        description: "Item will be deleted when you click 'Save All'",
       });
       setIsDeleteDialogOpen(false);
       setCostToDelete(null);
@@ -165,27 +186,47 @@ const Costs = () => {
 
   const saveChanges = () => {
     if (selectedCost) {
-      updateCost(selectedCost.id, 'description', selectedCost.description);
-      updateCost(selectedCost.id, 'price', selectedCost.price);
-      updateCost(selectedCost.id, 'volume', selectedCost.volume);
-      updateCost(selectedCost.id, 'category', selectedCost.category);
-      updateCost(selectedCost.id, 'isCost', selectedCost.isCost);
-      updateCost(selectedCost.id, 'checked', selectedCost.checked);
-      updateCost(selectedCost.id, 'notes', selectedCost.notes);
+      setCosts(costs.map(c => c.id === selectedCost.id ? selectedCost : c));
       setIsDialogOpen(false);
       toast({
-        title: "Save Successful",
-        description: "Cost data has been updated",
+        title: "Changes Queued",
+        description: "Cost data has been updated locally. Click 'Save All' to persist.",
       });
     }
   };
 
-  const saveAllData = () => {
-    localStorage.setItem('costs', JSON.stringify(costs));
-    toast({
-      title: "Save All Data",
-      description: "All cost data has been saved successfully",
-    });
+  const saveAllData = async () => {
+    const creationPromises = costs
+      .filter(c => c.id.startsWith('new_'))
+      .map(c => {
+        const { id, ...newCost } = c;
+        return createCostMutation.mutateAsync(newCost);
+      });
+
+    const updatePromises = costs
+      .filter(c => !c.id.startsWith('new_'))
+      .map(c => updateCostMutation.mutateAsync(c));
+
+    const deletionPromises = deletedCostIds.map(id => deleteCostMutation.mutateAsync(id));
+
+    try {
+      await Promise.all([...creationPromises, ...updatePromises, ...deletionPromises]);
+      
+      toast({
+        title: "Save All Data",
+        description: "All cost data has been saved successfully",
+      });
+      
+      setDeletedCostIds([]);
+      queryClient.invalidateQueries({ queryKey: ['costs'] });
+
+    } catch (error) {
+       toast({
+        title: "Error Saving Data",
+        description: "An error occurred while saving data.",
+        variant: "destructive"
+      });
+    }
   };
 
   const exportToCSV = () => {
@@ -212,6 +253,19 @@ const Costs = () => {
     const month = MONTHS.find(m => m.value === monthNumber);
     return month ? month.label : monthNumber.toString();
   };
+
+  const getCostTypeName = (costTypeId: string) => {
+    return costTypes.find(c => c.id === costTypeId)?.code || costTypeId;
+  };
+
+  if (isLoadingCosts || isLoadingCostTypes) {
+    return (
+      <div className="p-6">
+        <Skeleton className="h-24 w-full mb-6" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -294,106 +348,16 @@ const Costs = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-red-50">
-                    <TableHead 
-                      className="border border-gray-300"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="year"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("year")}
-                    >
-                      Year
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="month"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("month")}
-                    >
-                      Month
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="description"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("description")}
-                    >
-                      Description
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300 text-right"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="price"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("price")}
-                    >
-                      Unit Price
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300 text-right"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="volume"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("volume")}
-                    >
-                      Volume
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300 text-right"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="cost"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("cost")}
-                    >
-                      Cost
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="category"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("category")}
-                    >
-                      Category
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300 text-center"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="isCost"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("isCost")}
-                    >
-                      Is Cost
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300 text-center"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="checked"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("checked")}
-                    >
-                      Checked
-                    </TableHead>
-                    <TableHead 
-                      className="border border-gray-300"
-                      showFilter={true}
-                      filterData={baseCosts}
-                      filterField="notes"
-                      onFilter={setFilter}
-                      activeFilters={getActiveFilters("notes")}
-                    >
-                      Notes
-                    </TableHead>
+                    <TableHead className="border border-gray-300">Year</TableHead>
+                    <TableHead className="border border-gray-300">Month</TableHead>
+                    <TableHead className="border border-gray-300">Description</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Volume</TableHead>
+                    <TableHead className="border border-gray-300 text-right">Cost</TableHead>
+                    <TableHead className="border border-gray-300">Category</TableHead>
+                    <TableHead className="border border-gray-300 text-center">Is Cost</TableHead>
+                    <TableHead className="border border-gray-300 text-center">Checked</TableHead>
+                    <TableHead className="border border-gray-300">Notes</TableHead>
                     <TableHead className="border border-gray-300 text-center">
                       Actions
                       <Button
@@ -448,21 +412,21 @@ const Costs = () => {
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
                           <Input
-                            value={cost.description}
+                            value={cost.description || ''}
                             onChange={(e) => updateCost(cost.id, 'description', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
                           <NumberInput
-                            value={cost.price}
+                            value={cost.price || 0}
                             onChange={(value) => updateCost(cost.id, 'price', value)}
                             className="border-0 p-1 h-8"
                           />
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
                           <NumberInput
-                            value={cost.volume}
+                            value={cost.volume || 0}
                             onChange={(value) => updateCost(cost.id, 'volume', value)}
                             className="border-0 p-1 h-8"
                           />
@@ -476,34 +440,34 @@ const Costs = () => {
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
                           <Select
-                            value={cost.category}
-                            onValueChange={(value) => updateCost(cost.id, 'category', value)}
+                            value={cost.cost_type}
+                            onValueChange={(value) => updateCost(cost.id, 'cost_type', value)}
                           >
                             <SelectTrigger className="border-0 p-1 h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {COST_CATEGORIES.map(category => (
-                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              {costTypes.map(category => (
+                                <SelectItem key={category.id} value={category.id}>{category.code}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </TableCell>
                         <TableCell className="border border-gray-300 p-2 text-center">
                           <Checkbox
-                            checked={cost.isCost}
-                            onCheckedChange={(checked) => updateCost(cost.id, 'isCost', checked)}
+                            checked={cost.is_cost}
+                            onCheckedChange={(checked) => updateCost(cost.id, 'is_cost', checked)}
                           />
                         </TableCell>
                         <TableCell className="border border-gray-300 p-2 text-center">
                           <Checkbox
-                            checked={cost.checked}
-                            onCheckedChange={(checked) => updateCost(cost.id, 'checked', checked)}
+                            checked={cost.is_checked}
+                            onCheckedChange={(checked) => updateCost(cost.id, 'is_checked', checked)}
                           />
                         </TableCell>
                         <TableCell className="border border-gray-300 p-1">
                           <Input
-                            value={cost.notes}
+                            value={cost.notes || ''}
                             onChange={(e) => updateCost(cost.id, 'notes', e.target.value)}
                             className="border-0 p-1 h-8"
                           />
@@ -529,7 +493,7 @@ const Costs = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => deleteCost(cost.id)}
+                              onClick={() => deleteCost(cost)}
                               className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -573,7 +537,7 @@ const Costs = () => {
                   <div className="p-2 bg-gray-50 rounded">{selectedCost.description}</div>
                 ) : (
                   <Input
-                    value={selectedCost.description}
+                    value={selectedCost.description || ''}
                     onChange={(e) => setSelectedCost({...selectedCost, description: e.target.value})}
                   />
                 )}
@@ -583,13 +547,13 @@ const Costs = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Unit Price</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.price)}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.price || 0)}</div>
                   ) : (
                     <Input
-                      value={formatNumber(selectedCost.price)}
+                      value={formatNumber(selectedCost.price || 0)}
                       onChange={(e) => {
                         const value = parseFormattedNumber(e.target.value);
-                        setSelectedCost({...selectedCost, price: value});
+                        setSelectedCost(prev => prev && {...prev, price: value});
                       }}
                       className="text-right"
                     />
@@ -598,13 +562,13 @@ const Costs = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Volume</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.volume)}</div>
+                    <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.volume || 0)}</div>
                   ) : (
                     <Input
-                      value={formatNumber(selectedCost.volume)}
+                      value={formatNumber(selectedCost.volume || 0)}
                       onChange={(e) => {
                         const value = parseFormattedNumber(e.target.value);
-                        setSelectedCost({...selectedCost, volume: value});
+                        setSelectedCost(prev => prev && {...prev, volume: value});
                       }}
                       className="text-right"
                     />
@@ -614,24 +578,24 @@ const Costs = () => {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Cost</label>
-                <div className="p-2 bg-gray-50 rounded text-right">{formatNumber(selectedCost.price * selectedCost.volume)}</div>
+                <div className="p-2 bg-gray-50 rounded text-right">{formatNumber((selectedCost.price || 0) * (selectedCost.volume || 0))}</div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Cost Category</label>
                 {dialogMode === 'view' ? (
-                  <div className="p-2 bg-gray-50 rounded">{selectedCost.category}</div>
+                  <div className="p-2 bg-gray-50 rounded">{getCostTypeName(selectedCost.cost_type)}</div>
                 ) : (
                   <Select
-                    value={selectedCost.category}
-                    onValueChange={(value) => setSelectedCost({...selectedCost, category: value})}
+                    value={selectedCost.cost_type}
+                    onValueChange={(value) => setSelectedCost(prev => prev && {...prev, cost_type: value})}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {COST_CATEGORIES.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      {costTypes.map(category => (
+                        <SelectItem key={category.id} value={category.id}>{category.code}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -642,28 +606,28 @@ const Costs = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Is Cost</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedCost.isCost ? 'Yes' : 'No'}</div>
+                    <div className="p-2 bg-gray-50 rounded">{selectedCost.is_cost ? 'Yes' : 'No'}</div>
                   ) : (
                     <div className="flex items-center space-x-2 p-2">
                       <Checkbox
-                        checked={selectedCost.isCost}
-                        onCheckedChange={(checked) => setSelectedCost({...selectedCost, isCost: Boolean(checked)})}
+                        checked={selectedCost.is_cost}
+                        onCheckedChange={(checked) => setSelectedCost(prev => prev && {...prev, is_cost: Boolean(checked)})}
                       />
-                      <span className="text-sm">{selectedCost.isCost ? 'Yes' : 'No'}</span>
+                      <span className="text-sm">{selectedCost.is_cost ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Checked</label>
                   {dialogMode === 'view' ? (
-                    <div className="p-2 bg-gray-50 rounded">{selectedCost.checked ? 'Yes' : 'No'}</div>
+                    <div className="p-2 bg-gray-50 rounded">{selectedCost.is_checked ? 'Yes' : 'No'}</div>
                   ) : (
                     <div className="flex items-center space-x-2 p-2">
                       <Checkbox
-                        checked={selectedCost.checked}
-                        onCheckedChange={(checked) => setSelectedCost({...selectedCost, checked: Boolean(checked)})}
+                        checked={selectedCost.is_checked}
+                        onCheckedChange={(checked) => setSelectedCost(prev => prev && {...prev, is_checked: Boolean(checked)})}
                       />
-                      <span className="text-sm">{selectedCost.checked ? 'Yes' : 'No'}</span>
+                      <span className="text-sm">{selectedCost.is_checked ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                 </div>
@@ -675,8 +639,8 @@ const Costs = () => {
                   <div className="p-2 bg-gray-50 rounded min-h-[60px]">{selectedCost.notes}</div>
                 ) : (
                   <Input
-                    value={selectedCost.notes}
-                    onChange={(e) => setSelectedCost({...selectedCost, notes: e.target.value})}
+                    value={selectedCost.notes || ''}
+                    onChange={(e) => setSelectedCost(prev => prev && {...prev, notes: e.target.value})}
                   />
                 )}
               </div>
@@ -702,7 +666,7 @@ const Costs = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this cost record.
+              This action cannot be undone. This will permanently delete this cost record. Click 'Save All' to confirm deletion from the database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
