@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,14 +35,6 @@ interface CostData {
   [key: string]: any;
 }
 
-interface SalaryCostData {
-  id: string;
-  year: number;
-  month: number;
-  amount: number;
-  [key: string]: any;
-}
-
 export const MONTHS = [
   { value: 1, label: "January", short: "Jan" },
   { value: 2, label: "February", short: "Feb" },
@@ -68,7 +59,6 @@ export const useBusinessReport = () => {
   const [bonusRate, setBonusRate] = useState<number>(15);
   const [revenues, setRevenues] = useState<RevenueData[]>([]);
   const [costs, setCosts] = useState<CostData[]>([]);
-  const [salaryCosts, setSalaryCosts] = useState<SalaryCostData[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -85,14 +75,9 @@ export const useBusinessReport = () => {
         if (costError) throw costError;
         setCosts(costData || []);
 
-        const { data: salaryData, error: salaryError } = await supabase.from('salary_costs').select('*');
-        if (salaryError) throw salaryError;
-        setSalaryCosts(salaryData || []);
-
         const revenueYears = revenueData?.map(r => r.year) || [];
         const costYears = costData?.map(c => c.year) || [];
-        const salaryYears = salaryData?.map(s => s.year) || [];
-        const allYears = Array.from(new Set([...revenueYears, ...costYears, ...salaryYears, currentYear])).sort((a, b) => b - a);
+        const allYears = Array.from(new Set([...revenueYears, ...costYears, currentYear])).sort((a, b) => b - a);
         setAvailableYears(allYears);
 
       } catch (error) {
@@ -129,18 +114,11 @@ export const useBusinessReport = () => {
       if (entry) entry.cost += c.cost || 0;
     });
 
-    salaryCosts.filter(s => s.year === parseInt(selectedYear)).forEach(s => {
-      const entry = businessDataMap.get(`${s.year}-${s.month}`);
-      if (entry) entry.cost += s.amount || 0;
-    });
-
     Array.from(businessDataMap.values()).forEach(data => {
       data.grossProfit = data.revenue - data.cost;
       data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
       
-      const monthlySalaryCosts = salaryCosts.filter(s => s.year === data.year && s.month === data.monthNumber);
-      const totalSalaryCost = monthlySalaryCosts.reduce((sum, s) => sum + (s.amount || 0), 0);
-      data.bonus = totalSalaryCost * (bonusRate / 100);
+      data.bonus = 0;
       
       data.totalCost = data.cost + data.incomeTax + data.bonus;
       data.netProfit = data.revenue - data.totalCost;
@@ -149,7 +127,7 @@ export const useBusinessReport = () => {
     });
 
     return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
-  }, [revenues, costs, salaryCosts, selectedYear, incomeTaxRate, bonusRate]);
+  }, [revenues, costs, selectedYear, incomeTaxRate]);
 
   const businessData = useMemo(() => allBusinessData.filter(data => 
     selectedMonths.includes(data.monthNumber)
@@ -205,4 +183,3 @@ export const useBusinessReport = () => {
     MONTHS,
   };
 };
-
