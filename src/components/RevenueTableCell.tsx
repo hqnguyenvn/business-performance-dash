@@ -57,8 +57,8 @@ const RevenueTableCell: React.FC<RevenueTableCellProps> = ({
       }
     }
     return (
-      <TableCell className={`border-r ${config.cellClassName || ''}`}>
-        <div className="px-2 py-1 h-8 flex items-center"> {/* Ensured h-8 and flex items-center for consistency */}
+      <TableCell className={`border-r p-0 ${config.cellClassName || ''}`}> {/* Changed: Added p-0 */}
+        <div className={`px-2 h-full flex items-center ${config.type === 'index' ? 'justify-center' : ''}`}> {/* Changed: px-2 py-1 h-8 to px-2 h-full. Added justify-center for index. */}
           {displayValue}
         </div>
       </TableCell>
@@ -68,7 +68,7 @@ const RevenueTableCell: React.FC<RevenueTableCellProps> = ({
   // For editable cells, config.field must be defined.
   if (!config.field) {
     console.error("Editable cell type requires a 'field' in CellConfig:", config);
-    return <TableCell className={`border-r ${config.cellClassName || ''}`}>Error</TableCell>;
+    return <TableCell className={`border-r p-0 ${config.cellClassName || ''}`}>Error</TableCell>; // Ensured p-0 for error cell consistency
   }
 
   return (
@@ -92,3 +92,4 @@ const RevenueTableCell: React.FC<RevenueTableCellProps> = ({
 };
 
 export default RevenueTableCell;
+

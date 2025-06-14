@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -165,11 +164,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
     return initialValue || '';
   };
 
-  const alignmentClass = (type === 'number' || field === 'unit_price' || field === 'quantity') ? 'text-right' : '';
+  const alignmentClass = (type === 'number' || field === 'unit_price' || field === 'quantity' || field === 'original_amount' || field === 'vnd_revenue') ? 'justify-end' : 'justify-start';
+  // Note: For text-right behavior, `justify-end` is used with flex. If block layout is needed, `text-right` on the div and content.
 
   return (
     <div
-      className={`w-full h-8 px-2 py-1 cursor-pointer hover:bg-gray-50 flex items-center ${alignmentClass}`}
+      className={`w-full h-full px-2 cursor-pointer hover:bg-gray-50 flex items-center ${alignmentClass}`}
       onClick={() => setEditingCell({ id: revenueId, field })}
     >
       {displayValue()}
