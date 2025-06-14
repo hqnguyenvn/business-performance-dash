@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Receipt, Plus, Download, Edit, Eye, Save, Trash2 } from "lucide-react";
+import { Receipt, Plus, Download, Edit, Eye, Save, Trash2, Import } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
@@ -93,9 +93,10 @@ const Costs = () => {
   }, [dbCosts]);
 
   const availableYears = useMemo(() => {
-    const yearsFromData = dbCosts?.map(c => c.year) || [];
-    return Array.from(new Set([...yearsFromData, currentYear])).sort((a, b) => b - a);
-  }, [dbCosts, currentYear]);
+    const startYear = 2020;
+    const endYear = 2035;
+    return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
+  }, []);
 
   const baseCosts = useMemo(() => {
     return costs.filter(cost => {
@@ -236,6 +237,13 @@ const Costs = () => {
     });
   };
 
+  const importFromCSV = () => {
+    toast({
+      title: "Import from CSV",
+      description: "This function is not yet available.",
+    });
+  };
+
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
   };
@@ -273,22 +281,6 @@ const Costs = () => {
         title="Cost Management"
         description="Record costs by year and month"
         icon={Receipt}
-        actions={
-          <>
-            <Button variant="outline" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button variant="outline" onClick={saveAllData}>
-              <Save className="h-4 w-4 mr-2" />
-              Save All
-            </Button>
-            <Button onClick={addNewRow}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Row
-            </Button>
-          </>
-        }
       />
 
       <div className="p-6">
@@ -341,7 +333,27 @@ const Costs = () => {
 
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Cost Data ({filteredCosts.length} records)</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Cost Data ({filteredCosts.length} records)</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={importFromCSV}>
+                  <Import className="h-4 w-4 mr-2" />
+                  Import CSV
+                </Button>
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
+                <Button variant="outline" onClick={saveAllData}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save All
+                </Button>
+                <Button onClick={addNewRow}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Row
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -404,7 +416,7 @@ const Costs = () => {
                             <SelectContent>
                               {MONTHS.map(month => (
                                 <SelectItem key={month.value} value={month.value.toString()}>
-                                  {month.label}
+                                  {month.label.substring(0, 3)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
