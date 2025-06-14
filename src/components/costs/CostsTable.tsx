@@ -9,7 +9,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { formatNumber } from "@/lib/format";
 import { Cost, MONTHS } from "@/hooks/useCosts";
 import { MasterData } from "@/services/masterDataService";
-import { Plus, Edit, Eye, Trash2 } from "lucide-react";
+import { Plus, Edit, Eye, Trash2, Copy } from "lucide-react";
 
 interface CostsTableProps {
   costs: Cost[];
@@ -19,6 +19,8 @@ interface CostsTableProps {
   openDialog: (cost: Cost, mode: 'view' | 'edit') => void;
   deleteCost: (cost: Cost) => void;
   addNewRow: () => void;
+  insertRowBelow: (id: string) => void;
+  cloneRow: (id: string) => void;
 }
 
 export const CostsTable = ({
@@ -28,7 +30,9 @@ export const CostsTable = ({
   updateCost,
   openDialog,
   deleteCost,
-  addNewRow
+  addNewRow,
+  insertRowBelow,
+  cloneRow
 }: CostsTableProps) => {
   const currentYear = new Date().getFullYear();
 
@@ -169,7 +173,25 @@ export const CostsTable = ({
                       />
                     </TableCell>
                     <TableCell className="border border-gray-300 p-1">
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => insertRowBelow(cost.id)}
+                          className="h-6 w-6 p-0"
+                          title="Add Row Below"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => cloneRow(cost.id)}
+                          className="h-6 w-6 p-0"
+                          title="Clone Row"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"

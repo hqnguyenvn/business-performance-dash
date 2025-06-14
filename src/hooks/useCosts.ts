@@ -93,7 +93,7 @@ export const useCosts = () => {
       month: selectedMonths.length > 0 ? selectedMonths[0] : currentMonth,
       description: "",
       price: 0,
-      volume: 0,
+      volume: 1, // Default volume is 1 as requested
       cost: 0,
       cost_type: costTypes.length > 0 ? costTypes[0].id : "",
       is_cost: true,
@@ -107,6 +107,60 @@ export const useCosts = () => {
       updated_at: null,
     };
     setCosts(prev => [...prev, newCost]);
+  };
+
+  const insertRowBelow = (anchorCostId: string) => {
+    const anchorCost = costs.find(c => c.id === anchorCostId);
+    if (!anchorCost) return;
+
+    setCosts(prevCosts => {
+      const anchorIndex = prevCosts.findIndex(c => c.id === anchorCostId);
+      if (anchorIndex === -1) return prevCosts;
+
+      const newCost: Cost = {
+        id: `new_${Date.now()}`,
+        year: anchorCost.year,
+        month: currentMonth,
+        description: "",
+        price: 0,
+        volume: 1,
+        cost: 0,
+        cost_type: costTypes.length > 0 ? costTypes[0].id : "",
+        is_cost: true,
+        is_checked: false,
+        notes: "",
+        company_id: null,
+        division_id: null,
+        project_id: null,
+        resource_id: null,
+        created_at: null,
+        updated_at: null,
+      };
+
+      const newCosts = [...prevCosts];
+      newCosts.splice(anchorIndex + 1, 0, newCost);
+      return newCosts;
+    });
+  };
+
+  const cloneRow = (costToCloneId: string) => {
+    setCosts(prevCosts => {
+      const costToClone = prevCosts.find(c => c.id === costToCloneId);
+      const anchorIndex = prevCosts.findIndex(c => c.id === costToCloneId);
+      
+      if (!costToClone || anchorIndex === -1) return prevCosts;
+
+      const { id, ...restOfCost } = costToClone;
+
+      const clonedCost: Cost = {
+        ...restOfCost,
+        id: `new_${Date.now()}`,
+      };
+
+      const newCosts = [...prevCosts];
+      newCosts.splice(anchorIndex + 1, 0, clonedCost);
+      return newCosts;
+    });
   };
 
   const updateCost = (id: string, field: keyof Cost, value: any) => {
@@ -299,6 +353,8 @@ export const useCosts = () => {
     availableYears,
     filteredCosts,
     addNewRow,
+    insertRowBelow,
+    cloneRow,
     updateCost,
     openDialog,
     deleteCost,

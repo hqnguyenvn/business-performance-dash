@@ -41,6 +41,8 @@ const Costs = () => {
     handleMonthToggle,
     getMonthName,
     getCostTypeName,
+    insertRowBelow,
+    cloneRow,
   } = useCosts();
 
   if (isLoading) {
@@ -96,6 +98,8 @@ const Costs = () => {
             openDialog={openDialog}
             deleteCost={deleteCost}
             addNewRow={addNewRow}
+            insertRowBelow={insertRowBelow}
+            cloneRow={cloneRow}
           />
         </div>
       </div>
