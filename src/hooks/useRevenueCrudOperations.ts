@@ -29,36 +29,59 @@ export const useRevenueCrudOperations = (
     }
 
     const updatedFields: Partial<Revenue> = {};
-    updatedFields[field] = value;
+    let processedValue = value;
+
+    // Coerce to number for numeric fields, handling potential NaN or empty strings
+    if (field === 'year' || field === 'month' || field === 'original_amount' || field === 'vnd_revenue') {
+        processedValue = parseFloat(String(value));
+        if (isNaN(processedValue)) processedValue = 0; // Default to 0 for required numbers if NaN
+    } else if (field === 'unit_price' || field === 'quantity') {
+        if (value === null || String(value).trim() === '') {
+            processedValue = undefined; // Optional numeric fields can be undefined
+        } else {
+            processedValue = parseFloat(String(value));
+            if (isNaN(processedValue)) processedValue = undefined; // Or some other default like 0
+        }
+    }
+    
+    updatedFields[field] = processedValue;
+
 
     // Create a temporary complete object for calculations
-    let tempCalcRevenue: Revenue = { ...currentRevenue, [field]: value };
+    let tempCalcRevenue: Revenue = { ...currentRevenue, ...updatedFields }; // Spread updatedFields to include all changes
 
     if (field === 'unit_price' || field === 'quantity') {
-      const newOriginalAmount = (tempCalcRevenue.unit_price || 0) * (tempCalcRevenue.quantity || 0);
+      const newOriginalAmount = (numericOrZero(tempCalcRevenue.unit_price)) * (numericOrZero(tempCalcRevenue.quantity));
       updatedFields.original_amount = newOriginalAmount;
       tempCalcRevenue.original_amount = newOriginalAmount; // Update for subsequent VND calculation
     }
     
-    // Check if any field that affects VND revenue has changed
-    // This includes direct changes to currency, year, month, or indirect changes via unit_price/quantity (affecting original_amount)
     if (
       field === 'unit_price' || 
       field === 'quantity' || 
       field === 'currency_id' || 
       field === 'year' || 
       field === 'month' ||
-      (updatedFields.original_amount !== undefined && updatedFields.original_amount !== currentRevenue.original_amount) // if original_amount changed
+      (updatedFields.original_amount !== undefined && updatedFields.original_amount !== currentRevenue.original_amount)
     ) {
       const newVndRevenue = calculateVNDRevenue(tempCalcRevenue);
       updatedFields.vnd_revenue = newVndRevenue;
+      tempCalcRevenue.vnd_revenue = newVndRevenue; // ensure tempCalcRevenue has the latest
+    }
+    
+    // Ensure all calculated fields are part of updatedFields if they changed
+    if (tempCalcRevenue.original_amount !== currentRevenue.original_amount) {
+        updatedFields.original_amount = tempCalcRevenue.original_amount;
+    }
+    if (tempCalcRevenue.vnd_revenue !== currentRevenue.vnd_revenue) {
+        updatedFields.vnd_revenue = tempCalcRevenue.vnd_revenue;
     }
 
-    if (Object.keys(updatedFields).length === 0) return; // No actual changes to save
+
+    if (Object.keys(updatedFields).length === 0) return; 
 
     try {
       await updateRevenue(id, updatedFields);
-      // Optimistic update or refetch
       setRevenues(prevRevenues =>
         prevRevenues.map(r =>
           r.id === id ? { ...r, ...updatedFields } : r
@@ -71,9 +94,13 @@ export const useRevenueCrudOperations = (
         title: "Lỗi cập nhật",
         description: error?.message || "Không thể cập nhật dữ liệu.",
       });
-      // Optionally, revert optimistic update or call fetchData() to get consistent state
       fetchData();
     }
+  };
+
+  const numericOrZero = (value: any): number => {
+    const num = parseFloat(String(value));
+    return isNaN(num) ? 0 : num;
   };
 
   const handleAddNewRow = async (baseRevenue?: Partial<Revenue>) => {
@@ -142,26 +169,26 @@ export const useRevenueCrudOperations = (
   };
 
   const handleCloneRevenue = async (revenueToClone: Revenue, globalIndex: number) => {
-    const { id, created_at, updated_at, ...cloneData } = revenueToClone;
+    // Remove id, created_at, and updated_at for cloning
+    // The Revenue type doesn't have created_at/updated_at, so we only destructure id.
+    const { id, ...cloneDataWithoutId } = revenueToClone; 
+    const cloneData = cloneDataWithoutId; // Alias for clarity
+
     const now = new Date();
-    cloneData.year = now.getFullYear(); // Default to current year/month or let user edit
+    cloneData.year = now.getFullYear(); 
     cloneData.month = now.getMonth() + 1;
 
-    // Recalculate VND revenue for the cloned entry if its currency/original_amount exists
     if (cloneData.currency_id && cloneData.original_amount !== undefined) {
        cloneData.vnd_revenue = calculateVNDRevenue(cloneData);
     }
 
     try {
       const created = await createRevenue(cloneData);
-      // Insert into local state correctly
       const newRevenues = [...revenues];
       newRevenues.splice(globalIndex + 1, 0, created);
       setRevenues(newRevenues);
-      // fetchData(); // Or update locally
       toast({ title: "Đã nhân bản dòng!" });
     } catch (error) {
-      // ... error handling
       toast({ variant: "destructive", title: "Lỗi khi nhân bản dòng" });
     }
   };

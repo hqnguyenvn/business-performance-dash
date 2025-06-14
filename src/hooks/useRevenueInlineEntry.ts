@@ -31,22 +31,42 @@ export function useRevenueInlineEntry(
     if (!tempRow || tempRow.id !== id) return;
 
     let updatedTempRow = { ...tempRow, [field]: value };
+    
+    const numericValue = (val: any): number => {
+        const num = parseFloat(String(val));
+        return isNaN(num) ? 0 : num;
+    };
 
+    // Calculate original_amount if unit_price or quantity changed
     if (field === 'unit_price' || field === 'quantity') {
-      updatedTempRow.original_amount = (updatedTempRow.unit_price || 0) * (updatedTempRow.quantity || 0);
+        const unitPrice = (field === 'unit_price') ? numericValue(value) : numericValue(updatedTempRow.unit_price);
+        const quantity = (field === 'quantity') ? numericValue(value) : numericValue(updatedTempRow.quantity);
+        updatedTempRow.original_amount = unitPrice * quantity;
     }
 
-    // Recalculate VND revenue if relevant fields change or original_amount was just calculated
-    if (
-      field === 'unit_price' ||
-      field === 'quantity' ||
-      field === 'currency_id' ||
-      field === 'year' ||
-      field === 'month' ||
-      (field === 'unit_price' || field === 'quantity') // to trigger after original_amount update
-    ) {
-      updatedTempRow.vnd_revenue = calculateVNDRevenue(updatedTempRow);
+    // Determine if VND revenue needs recalculation
+    const fieldsImpactingVndDirectly: (keyof Revenue)[] = ['currency_id', 'year', 'month'];
+    let needsVndRecalculation = fieldsImpactingVndDirectly.includes(field);
+
+    // Also recalculate if unit_price or quantity changed (as they affect original_amount, which affects VND revenue)
+    if (field === 'unit_price' || field === 'quantity') {
+        needsVndRecalculation = true;
     }
+    
+    if (needsVndRecalculation) {
+        // Ensure original_amount is up-to-date in updatedTempRow before calculating VND revenue
+        if (field !== 'original_amount') { // if original_amount was not the field being edited directly
+             const currentUnitPrice = numericValue(updatedTempRow.unit_price);
+             const currentQuantity = numericValue(updatedTempRow.quantity);
+             if (field === 'unit_price' || field === 'quantity') { // if one of them just changed
+                updatedTempRow.original_amount = currentUnitPrice * currentQuantity;
+             } else if (tempRow.original_amount === undefined) { // ensure it has a value if it was undefined
+                updatedTempRow.original_amount = currentUnitPrice * currentQuantity;
+             }
+        }
+        updatedTempRow.vnd_revenue = calculateVNDRevenue(updatedTempRow);
+    }
+
     setTempRow(updatedTempRow);
   };
 
@@ -70,7 +90,7 @@ export function useRevenueInlineEntry(
         year: toCreate.year!,
         month: toCreate.month!,
         original_amount: toCreate.original_amount!,
-        vnd_revenue: calculateVNDRevenue(toCreate),
+        vnd_revenue: calculateVNDRevenue(toCreate), // Recalculate one last time
         project_name: toCreate.project_name || "",
         customer_id: toCreate.customer_id || undefined,
         company_id: toCreate.company_id || undefined,
@@ -79,8 +99,8 @@ export function useRevenueInlineEntry(
         project_type_id: toCreate.project_type_id || undefined,
         resource_id: toCreate.resource_id || undefined,
         currency_id: toCreate.currency_id || undefined,
-        unit_price: toCreate.unit_price || undefined,
-        quantity: toCreate.quantity || undefined,
+        unit_price: typeof toCreate.unit_price === 'number' ? toCreate.unit_price : undefined,
+        quantity: typeof toCreate.quantity === 'number' ? toCreate.quantity : undefined,
         notes: toCreate.notes || undefined,
       };
 

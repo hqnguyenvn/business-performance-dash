@@ -19,6 +19,7 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
 import { exportRevenueCSV } from "@/utils/csvExport";
 import { Revenue } from "@/services/revenueService";
+import { MasterData } from "@/services/masterDataService"; // Added MasterData import
 import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
 import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
 
@@ -60,18 +61,19 @@ const Revenues = () => {
   );
   const {
     handleInsertRowBelow,
-    handleCloneRevenue,
+    handleCloneRevenue: originalHandleCloneRevenue, // Renamed to avoid conflict
     handleCellEdit: handleCellEditDb
   } = crudOperations;
-
+  
   const inlineEntryUtils = useRevenueInlineEntry(fetchData, calculateVNDRevenue);
   const {
     editingCell,
     setEditingCell,
     tempRow,
+    // Removed handleEditTempRow from destructuring as it's internal to the hook
     handleAddNewRowInline,
     handleCommitTempRow,
-    handleCellEdit
+    handleCellEdit // This is the combined one from inlineEntryUtils
   } = inlineEntryUtils;
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -141,7 +143,8 @@ const Revenues = () => {
   const handleSearch = () => {};
 
   const handleCombinedCellEdit = (id: string, field: keyof Revenue, value: any) => {
-    inlineEntryUtils.handleCellEdit(id, field, value, handleCellEditDb as any);
+    // The handleCellEdit from inlineEntryUtils is already designed to call handleCellEditDb internally.
+    handleCellEdit(id, field, value, handleCellEditDb as any);
   };
 
   const handleExportCSV = () => {
@@ -188,10 +191,10 @@ const Revenues = () => {
     const obj = arr.find((item) => (item.code || "").toString().trim().toLowerCase() === (code || "").toString().trim().toLowerCase());
     return obj ? obj.id : null;
   }
-
+  
   const handleImportCSV = async (
     data: any[],
-    masterDataRefs: { // Renamed to avoid conflict with component-level masterData
+    masterDataRefs: { 
       customers: MasterData[],
       companies: MasterData[],
       divisions: MasterData[],
@@ -289,7 +292,6 @@ const Revenues = () => {
           project_name: row["Project Name"] || row["project_name"] || "",
         };
         
-        // Calculate VND Revenue based on the imported data
         const vnd_revenue = calculateVNDRevenue(newRevenuePartial);
 
         const finalNewRevenue: Omit<Revenue, 'id'> = {
@@ -297,7 +299,7 @@ const Revenues = () => {
             year: newRevenuePartial.year!,
             month: newRevenuePartial.month!,
             original_amount: newRevenuePartial.original_amount!,
-            project_name: newRevenuePartial.project_name || "", // Ensure not undefined
+            project_name: newRevenuePartial.project_name || "", 
             vnd_revenue: vnd_revenue,
         };
         
@@ -321,7 +323,7 @@ const Revenues = () => {
         title: "Kết quả Import CSV",
         description: <pre className="whitespace-pre-wrap max-h-60 overflow-y-auto">{msg}</pre>,
         variant: "destructive",
-        duration: errorRows.length > 5 ? 15000 : 9000, // Longer duration for many errors
+        duration: errorRows.length > 5 ? 15000 : 9000,
       });
     } else {
        toast({
@@ -358,23 +360,24 @@ const Revenues = () => {
 
       for (const rev of sourceRevenues) {
         try {
-          const { id, created_at, updated_at, ...cloneBase } = rev; // Exclude audit timestamps
+          // The Revenue type does not include created_at/updated_at.
+          // We only need to exclude 'id' when creating a new record.
+          const { id, ...cloneBase } = rev; 
           const clonedEntry: Omit<Revenue, 'id'> = {
             ...cloneBase,
             year: targetYear,
             month: targetMonth,
           };
-          // Recalculate VND revenue for the cloned entry
           clonedEntry.vnd_revenue = calculateVNDRevenue(clonedEntry);
 
           await (await import("@/services/revenueService")).createRevenue(clonedEntry);
           cloneSuccess++;
         } catch (err: any) {
           cloneFail++;
-          failReasons.push(`- Project "${rev.project_name || "N/A"}": ${err?.message || err}`);
+          failReasons.push(`- Project "${rev.project_name || "N/A"}": ${err?.message || String(err)}`);
         }
       }
-      fetchData(); // Refresh data to show cloned entries
+      fetchData(); 
       
       let description = `Tạo mới ${cloneSuccess} dòng dữ liệu từ ${getMonthName(sourceMonth)}/${sourceYear} sang ${getMonthName(targetMonth)}/${targetYear}.`;
       if (cloneFail > 0) {
@@ -396,7 +399,7 @@ const Revenues = () => {
       });
     }
   };
-
+  
   const tableRows = useMemo(() => {
     const rowsToDisplay = searchTerm ? filteredRevenues : revenues;
     if (tempRow) {
@@ -408,7 +411,7 @@ const Revenues = () => {
         vnd_revenue: tempRow.vnd_revenue || 0,
         project_name: tempRow.project_name || "",
         id: tempRow.id || "temp-id",
-      } as Revenue;
+      } as Revenue; // Cast to Revenue, ensuring all required fields are present
       return [displayTempRow, ...rowsToDisplay];
     }
     return rowsToDisplay;
@@ -480,11 +483,11 @@ const Revenues = () => {
               searchParams={searchParams}
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
-              onCellEdit={handleCombinedCellEdit}
+              onCellEdit={handleCombinedCellEdit} // Use the correctly wired handler
               editingCell={editingCell}
               setEditingCell={setEditingCell}
               onInsertRowBelow={handleInsertRowBelow}
-              onCloneRevenue={handleCloneRevenue}
+              onCloneRevenue={originalHandleCloneRevenue} // Use the original one from crudOperations
               onOpenDialog={handleOpenDialog}
               onDeleteRevenue={handleDeleteRevenue}
               tempRow={tempRow}
