@@ -70,6 +70,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     return rangeWithDots;
   };
 
+  // Không ẩn pagination ngay cả khi pageSize === 'all'
   if (totalPages <= 1 && position === 'bottom') return null;
 
   return (
@@ -100,52 +101,55 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           Showing {startIndex} to {endIndex} of {totalItems} entries
         </div>
       )}
-      
-      {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
+
+      {/* Pagination controls luôn hiển thị kể cả khi chọn all */}
+      <Pagination>
+        <PaginationContent>
+          {/* Previous button - disable nếu là All hoặc ở trang đầu */}
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={pageSize === 'all' || currentPage <= 1 ? undefined : onPreviousPage}
+              className={pageSize === 'all' || currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          
+          {/* Nếu chọn All, hiển thị duy nhất nút All nổi bật và disable */}
+          {pageSize === 'all' ? (
             <PaginationItem>
-              <PaginationPrevious 
-                onClick={onPreviousPage}
-                className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-              />
+              <PaginationLink isActive className="cursor-default">
+                All
+              </PaginationLink>
             </PaginationItem>
-            
-            {pageSize === 'all' ? (
-              <PaginationItem>
-                <PaginationLink isActive className="cursor-default">
-                  All
-                </PaginationLink>
+          ) : (
+            getVisiblePages().map((page, index) => (
+              <PaginationItem key={index}>
+                {page === "..." ? (
+                  <PaginationEllipsis />
+                ) : (
+                  <PaginationLink
+                    onClick={() => onPageChange(page as number)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                )}
               </PaginationItem>
-            ) : (
-              getVisiblePages().map((page, index) => (
-                <PaginationItem key={index}>
-                  {page === "..." ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      onClick={() => onPageChange(page as number)}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))
-            )}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={onNextPage}
-                className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+            ))
+          )}
+          
+          {/* Next button - disable nếu là All hoặc ở trang cuối */}
+          <PaginationItem>
+            <PaginationNext 
+              onClick={pageSize === 'all' || currentPage >= totalPages ? undefined : onNextPage}
+              className={pageSize === 'all' || currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
 
 export default PaginationControls;
+
