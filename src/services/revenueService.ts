@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Revenue {
@@ -83,8 +82,8 @@ export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueR
     query = query.ilike('notes', `%${params.q}%`);
   }
   
-  // Only apply pagination if pageSize is not 'all'
-  if (params.pageSize !== 'all') {
+  // Only apply pagination if pageSize is a number and not 'all'
+  if (params.pageSize && params.pageSize !== 'all') {
     const pageSize = typeof params.pageSize === 'number' ? params.pageSize : 10;
     const page = params.page || 1;
     const from = (page - 1) * pageSize;
