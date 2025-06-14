@@ -1,0 +1,4 @@
+
+ALTER TABLE public.costs
+ADD COLUMN price NUMERIC,
+ADD COLUMN volume NUMERIC;

@@ -1,12 +1,11 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { costService, Cost as DbCost } from "@/services/costService";
+import { costService, Cost as DbCost, NewCost } from "@/services/costService";
 import { costTypesService, MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
 
-export interface Cost extends DbCost {}
+export type Cost = DbCost;
 
 export const MONTHS = [
   { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
@@ -67,7 +66,7 @@ export const useCosts = () => {
   const { filteredData: filteredCosts, setFilter, getActiveFilters } = useTableFilter(baseCosts);
   
   const createCostMutation = useMutation({
-    mutationFn: (cost: Omit<DbCost, 'id'>) => costService.create(cost),
+    mutationFn: (cost: NewCost) => costService.create(cost),
     onError: (error) => {
       toast({ title: "Error", description: `Could not create cost: ${error.message}`, variant: "destructive" });
     }
@@ -158,8 +157,12 @@ export const useCosts = () => {
     const creationPromises = costs
       .filter(c => c.id.startsWith('new_'))
       .map(c => {
-        const { id, ...newCost } = c;
-        return createCostMutation.mutateAsync(newCost);
+        const { id, created_at, updated_at, ...newCostData } = c;
+        const costToCreate: NewCost = {
+          ...newCostData,
+          cost: newCostData.cost || 0,
+        };
+        return createCostMutation.mutateAsync(costToCreate);
       });
 
     const updatePromises = costs

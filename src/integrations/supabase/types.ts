@@ -76,9 +76,11 @@ export type Database = {
           is_cost: boolean | null
           month: number
           notes: string | null
+          price: number | null
           project_id: string | null
           resource_id: string | null
           updated_at: string | null
+          volume: number | null
           year: number
         }
         Insert: {
@@ -93,9 +95,11 @@ export type Database = {
           is_cost?: boolean | null
           month: number
           notes?: string | null
+          price?: number | null
           project_id?: string | null
           resource_id?: string | null
           updated_at?: string | null
+          volume?: number | null
           year: number
         }
         Update: {
@@ -110,9 +114,11 @@ export type Database = {
           is_cost?: boolean | null
           month?: number
           notes?: string | null
+          price?: number | null
           project_id?: string | null
           resource_id?: string | null
           updated_at?: string | null
+          volume?: number | null
           year?: number
         }
         Relationships: [

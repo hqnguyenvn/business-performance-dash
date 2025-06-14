@@ -1,4 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+export type Cost = Database['public']['Tables']['costs']['Row'];
+export type NewCost = Database['public']['Tables']['costs']['Insert'];
 
 export interface Cost {
   id: string;
@@ -34,7 +38,7 @@ export class CostService {
     return data || [];
   }
 
-  async create(item: Omit<Cost, 'id'>): Promise<Cost> {
+  async create(item: NewCost): Promise<Cost> {
     const { data, error } = await supabase
       .from('costs')
       .insert(item)
