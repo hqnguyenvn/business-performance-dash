@@ -9,12 +9,13 @@ import type { UseMutationResult } from "@tanstack/react-query";
 type Mutations = ReturnType<typeof useCostsMutations>;
 
 interface UseCostsDialogsProps {
+  costs: Cost[];
   setCosts: React.Dispatch<React.SetStateAction<Cost[]>>;
   updateCostMutation: Mutations['updateCostMutation'];
   deleteCostMutation: Mutations['deleteCostMutation'];
 }
 
-export const useCostsDialogs = ({ setCosts, updateCostMutation, deleteCostMutation }: UseCostsDialogsProps) => {
+export const useCostsDialogs = ({ costs, setCosts, updateCostMutation, deleteCostMutation }: UseCostsDialogsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
