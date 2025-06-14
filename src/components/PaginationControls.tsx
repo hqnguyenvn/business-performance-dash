@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Pagination,
@@ -79,7 +80,12 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
           >
             <SelectTrigger className="w-20">
-              <SelectValue />
+              {/* Custom rendering for SelectValue to show proper label */}
+              <SelectValue>
+                {pageSize === 'all'
+                  ? 'All'
+                  : pageSize?.toString() || '5'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="5">5</SelectItem>
@@ -148,3 +154,4 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 };
 
 export default PaginationControls;
+
