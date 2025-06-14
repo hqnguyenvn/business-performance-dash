@@ -1,95 +1,34 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
-export interface SalaryCost {
-  id: string;
-  year: number;
-  month: string;
-  company_id?: string;
-  division?: string;
-  customer_id?: string;
-  amount: number;
-  notes?: string;
-}
+export type SalaryCost = Tables<'salary_costs'>;
+export type SalaryCostInsert = TablesInsert<'salary_costs'>;
+export type SalaryCostUpdate = TablesUpdate<'salary_costs'>;
 
-export class SalaryCostService {
-  async getAll(): Promise<SalaryCost[]> {
-    const { data, error } = await supabase
-      .from('salary_costs')
-      .select('*')
-      .order('year', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching salary costs:', error);
-      throw error;
-    }
-    
-    return data || [];
+export const getSalaryCosts = async (): Promise<SalaryCost[]> => {
+  const { data, error } = await supabase.from('salary_costs').select('*').order('year, month');
+  if (error) {
+    console.error("Error fetching salary costs:", error);
+    throw error;
   }
+  return data || [];
+};
 
-  async create(item: Omit<SalaryCost, 'id'>): Promise<SalaryCost> {
-    const { data, error } = await supabase
-      .from('salary_costs')
-      .insert(item)
-      .select()
-      .single();
-    
+export const upsertSalaryCosts = async (costs: (SalaryCostInsert | SalaryCostUpdate)[]) => {
+    const { data, error } = await supabase.from('salary_costs').upsert(costs).select();
     if (error) {
-      console.error('Error creating salary cost:', error);
+      console.error("Error upserting salary costs:", error);
       throw error;
     }
-    
     return data;
-  }
+};
 
-  async update(id: string, item: Partial<SalaryCost>): Promise<SalaryCost> {
-    const { data, error } = await supabase
-      .from('salary_costs')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
+export const deleteSalaryCosts = async (ids: string[]) => {
+    const { error } = await supabase.from('salary_costs').delete().in('id', ids);
     if (error) {
-      console.error('Error updating salary cost:', error);
+      console.error("Error deleting salary costs:", error);
       throw error;
     }
-    
-    return data;
-  }
-
-  async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('salary_costs')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting salary cost:', error);
-      throw error;
-    }
-  }
-
-  async getByFilters(filters: {
-    year?: number;
-    month?: string;
-    company_id?: string;
-  }): Promise<SalaryCost[]> {
-    let query = supabase.from('salary_costs').select('*');
-    
-    if (filters.year) query = query.eq('year', filters.year);
-    if (filters.month) query = query.eq('month', filters.month);
-    if (filters.company_id) query = query.eq('company_id', filters.company_id);
-    
-    const { data, error } = await query.order('year', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching filtered salary costs:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-}
-
-export const salaryCostService = new SalaryCostService();
+    return true;
+};

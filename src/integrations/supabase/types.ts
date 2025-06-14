@@ -542,9 +542,9 @@ export type Database = {
           company_id: string | null
           created_at: string | null
           customer_id: string | null
-          division: string | null
+          division_id: string | null
           id: string
-          month: string
+          month: number
           notes: string | null
           updated_at: string | null
           year: number
@@ -554,9 +554,9 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           customer_id?: string | null
-          division?: string | null
+          division_id?: string | null
           id?: string
-          month: string
+          month: number
           notes?: string | null
           updated_at?: string | null
           year: number
@@ -566,9 +566,9 @@ export type Database = {
           company_id?: string | null
           created_at?: string | null
           customer_id?: string | null
-          division?: string | null
+          division_id?: string | null
           id?: string
-          month?: string
+          month?: number
           notes?: string | null
           updated_at?: string | null
           year?: number
@@ -579,6 +579,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_costs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_costs_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
             referencedColumns: ["id"]
           },
         ]
