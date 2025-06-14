@@ -1,0 +1,143 @@
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MasterDataTable from "@/components/MasterDataTable";
+import ExchangeRateTable from "@/components/ExchangeRateTable";
+import { MasterData } from "@/services/masterDataService";
+import { ExchangeRateDisplay } from "@/services/exchangeRateService";
+import {
+  customersService,
+  companiesService,
+  divisionsService,
+  projectsService,
+  projectTypesService,
+  resourcesService,
+  currenciesService,
+  costTypesService,
+} from "@/services/masterDataService";
+
+interface SettingsTabsProps {
+  data: {
+    customers: MasterData[];
+    companies: MasterData[];
+    divisions: MasterData[];
+    projects: MasterData[];
+    projectTypes: MasterData[];
+    resources: MasterData[];
+    currencies: MasterData[];
+    costTypes: MasterData[];
+    exchangeRates: ExchangeRateDisplay[];
+  };
+  setters: {
+    setCustomers: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setCompanies: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setDivisions: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setProjects: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setProjectTypes: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setResources: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setCurrencies: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setCostTypes: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
+  };
+}
+
+export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
+  return (
+    <Tabs defaultValue="customers" className="w-full">
+      <TabsList className="grid w-full grid-cols-9">
+        <TabsTrigger value="customers">Customers</TabsTrigger>
+        <TabsTrigger value="companies">Companies</TabsTrigger>
+        <TabsTrigger value="divisions">Divisions</TabsTrigger>
+        <TabsTrigger value="projects">Projects</TabsTrigger>
+        <TabsTrigger value="projectTypes">Project Types</TabsTrigger>
+        <TabsTrigger value="resources">Resources</TabsTrigger>
+        <TabsTrigger value="currencies">Currencies</TabsTrigger>
+        <TabsTrigger value="costTypes">Cost Types</TabsTrigger>
+        <TabsTrigger value="exchangeRates">Exchange Rates</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="customers">
+        <MasterDataTable
+          data={data.customers}
+          setter={setters.setCustomers}
+          title="Customer List"
+          service={customersService}
+        />
+      </TabsContent>
+
+      <TabsContent value="companies">
+        <MasterDataTable
+          data={data.companies}
+          setter={setters.setCompanies}
+          title="Company List"
+          service={companiesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="divisions">
+        <MasterDataTable
+          data={data.divisions}
+          setter={setters.setDivisions}
+          title="Division List"
+          showCompanyColumn={true}
+          companies={data.companies}
+          service={divisionsService}
+        />
+      </TabsContent>
+
+      <TabsContent value="projects">
+        <MasterDataTable
+          data={data.projects}
+          setter={setters.setProjects}
+          title="Project List"
+          showCustomerColumn={true}
+          customers={data.customers}
+          service={projectsService}
+        />
+      </TabsContent>
+
+      <TabsContent value="projectTypes">
+        <MasterDataTable
+          data={data.projectTypes}
+          setter={setters.setProjectTypes}
+          title="Project Type List"
+          service={projectTypesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="resources">
+        <MasterDataTable
+          data={data.resources}
+          setter={setters.setResources}
+          title="Resource List"
+          service={resourcesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="currencies">
+        <MasterDataTable
+          data={data.currencies}
+          setter={setters.setCurrencies}
+          title="Currency List"
+          service={currenciesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="costTypes">
+        <MasterDataTable
+          data={data.costTypes}
+          setter={setters.setCostTypes}
+          title="Cost Type List"
+          service={costTypesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="exchangeRates">
+        <ExchangeRateTable
+          exchangeRates={data.exchangeRates}
+          setExchangeRates={setters.setExchangeRates}
+          currencies={data.currencies}
+        />
+      </TabsContent>
+    </Tabs>
+  );
+};
