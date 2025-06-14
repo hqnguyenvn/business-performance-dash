@@ -16,6 +16,7 @@ import {
   projectTypesService,
   resourcesService,
   currenciesService,
+  costTypesService,
   MasterData
 } from "@/services/masterDataService";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
@@ -29,6 +30,7 @@ const Settings = () => {
   const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
+  const [costTypes, setCostTypes] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +54,7 @@ const Settings = () => {
         projectTypesData,
         resourcesData,
         currenciesData,
+        costTypesData,
         exchangeRatesData
       ] = await Promise.all([
         customersService.getAll(),
@@ -61,6 +64,7 @@ const Settings = () => {
         projectTypesService.getAll(),
         resourcesService.getAll(),
         currenciesService.getAll(),
+        costTypesService.getAll(),
         exchangeRateService.getAll()
       ]);
 
@@ -71,6 +75,7 @@ const Settings = () => {
       setProjectTypes(projectTypesData);
       setResources(resourcesData);
       setCurrencies(currenciesData);
+      setCostTypes(costTypesData);
       setExchangeRates(exchangeRatesData);
 
       console.log("All data loaded successfully from Supabase");
@@ -151,7 +156,7 @@ const Settings = () => {
 
       <div className="p-6">
         <Tabs defaultValue="customers" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="divisions">Divisions</TabsTrigger>
@@ -159,6 +164,7 @@ const Settings = () => {
             <TabsTrigger value="projectTypes">Project Types</TabsTrigger>
             <TabsTrigger value="resources">Resources</TabsTrigger>
             <TabsTrigger value="currencies">Currencies</TabsTrigger>
+            <TabsTrigger value="costTypes">Cost Types</TabsTrigger>
             <TabsTrigger value="exchangeRates">Exchange Rates</TabsTrigger>
           </TabsList>
 
@@ -226,6 +232,15 @@ const Settings = () => {
               setter={setCurrencies} 
               title="Currency List"
               service={currenciesService}
+            />
+          </TabsContent>
+
+          <TabsContent value="costTypes">
+            <MasterDataTable 
+              data={costTypes} 
+              setter={setCostTypes} 
+              title="Cost Type List"
+              service={costTypesService}
             />
           </TabsContent>
 

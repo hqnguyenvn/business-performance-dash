@@ -429,6 +429,66 @@ export class CurrenciesService {
   }
 }
 
+// Cost Types Service
+export class CostTypesService {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('cost_types')
+      .select('*')
+      .order('code');
+    
+    if (error) {
+      console.error('Error fetching cost types:', error);
+      throw error;
+    }
+    
+    return data || [];
+  }
+
+  async create(item: Omit<MasterData, 'id'>) {
+    const { data, error } = await supabase
+      .from('cost_types')
+      .insert(item)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating cost type:', error);
+      throw error;
+    }
+    
+    return data;
+  }
+
+  async update(id: string, item: Partial<MasterData>) {
+    const { data, error } = await supabase
+      .from('cost_types')
+      .update(item)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating cost type:', error);
+      throw error;
+    }
+    
+    return data;
+  }
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('cost_types')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting cost type:', error);
+      throw error;
+    }
+  }
+}
+
 // Service instances
 export const customersService = new CustomersService();
 export const companiesService = new CompaniesService();
@@ -437,6 +497,7 @@ export const projectsService = new ProjectsService();
 export const projectTypesService = new ProjectTypesService();
 export const resourcesService = new ResourcesService();
 export const currenciesService = new CurrenciesService();
+export const costTypesService = new CostTypesService();
 
 // Utility function to get master data by type
 export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
@@ -455,6 +516,8 @@ export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
       return resourcesService.getAll();
     case 'currencies':
       return currenciesService.getAll();
+    case 'cost_types':
+      return costTypesService.getAll();
     default:
       throw new Error(`Unknown master data type: ${type}`);
   }
