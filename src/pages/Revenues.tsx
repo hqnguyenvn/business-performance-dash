@@ -64,27 +64,28 @@ const Revenues = () => {
 
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
   const itemsPerPage = useMemo(() => {
-    // If pageSize is 'all' or greater than total, show all items
-    if (searchParams.pageSize === 'all' || (typeof searchParams.pageSize === 'number' && searchParams.pageSize >= total)) {
+    // If pageSize is 'all', show all items
+    if (searchParams.pageSize === 'all') {
       return total || 1;
     }
-    return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 0) || 5;
+    // Otherwise use the selected pageSize or default to 5
+    return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 5);
   }, [searchParams.pageSize, total]);
   
   const totalPages = useMemo(() => {
-    if (itemsPerPage >= total) return 1;
+    if (searchParams.pageSize === 'all') return 1;
     return Math.ceil(total / itemsPerPage);
-  }, [total, itemsPerPage]);
+  }, [total, itemsPerPage, searchParams.pageSize]);
   
   const startIndex = useMemo(() => {
-    if (itemsPerPage >= total) return 1;
+    if (searchParams.pageSize === 'all') return 1;
     return (currentPage - 1) * itemsPerPage + 1;
-  }, [currentPage, itemsPerPage, total]);
+  }, [currentPage, itemsPerPage, searchParams.pageSize]);
   
   const endIndex = useMemo(() => {
-    if (itemsPerPage >= total) return total;
+    if (searchParams.pageSize === 'all') return total;
     return Math.min(currentPage * itemsPerPage, total);
-  }, [currentPage, itemsPerPage, total]);
+  }, [currentPage, itemsPerPage, total, searchParams.pageSize]);
 
   const [searchTerm, setSearchTerm] = useState("");
 

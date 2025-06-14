@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Revenue {
@@ -82,12 +83,16 @@ export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueR
     query = query.ilike('notes', `%${params.q}%`);
   }
   
-  const pageSize = params.pageSize || 10;
-  const page = params.page || 1;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  // Only apply pagination if pageSize is not 'all'
+  if (params.pageSize !== 'all') {
+    const pageSize = typeof params.pageSize === 'number' ? params.pageSize : 10;
+    const page = params.page || 1;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    
+    query = query.range(from, to);
+  }
   
-  query = query.range(from, to);
   query = query.order('year', { ascending: false }).order('month', { ascending: false });
   
   const { data, error, count } = await query;

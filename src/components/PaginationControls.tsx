@@ -26,7 +26,7 @@ interface PaginationControlsProps {
   totalItems: number;
   startIndex: number;
   endIndex: number;
-  pageSize?: number;
+  pageSize?: number | 'all';
   onPageSizeChange?: (pageSize: number | 'all') => void;
   position?: 'top' | 'bottom';
 }
@@ -78,7 +78,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-700">Show</span>
           <Select
-            value={pageSize === totalItems ? 'all' : pageSize.toString()}
+            value={pageSize === 'all' ? 'all' : pageSize?.toString() || '5'}
             onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
           >
             <SelectTrigger className="w-20">
@@ -101,7 +101,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         </div>
       )}
       
-      {totalPages > 1 && (
+      {totalPages > 1 && pageSize !== 'all' && (
         <Pagination>
           <PaginationContent>
             <PaginationItem>
