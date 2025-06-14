@@ -90,6 +90,36 @@ const Revenues = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Lọc dữ liệu revenues theo searchTerm
+  const filteredRevenues = useMemo(() => {
+    if (!searchTerm.trim()) return revenues;
+    const lower = searchTerm.trim().toLowerCase();
+    return revenues.filter((rev) => {
+      // Bạn có thể tuỳ chọn các trường để tìm kiếm. Ở đây sẽ tìm trên project_name, notes, và code các master data liên quan
+      const customer = customers.find(c => c.id === rev.customer_id)?.code || "";
+      const company = companies.find(c => c.id === rev.company_id)?.code || "";
+      const division = divisions.find(c => c.id === rev.division_id)?.code || "";
+      const project = projects.find(c => c.id === rev.project_id)?.code || "";
+      const projectType = projectTypes.find(c => c.id === rev.project_type_id)?.code || "";
+      const resource = resources.find(c => c.id === rev.resource_id)?.code || "";
+      const currency = currencies.find(c => c.id === rev.currency_id)?.code || "";
+
+      return (
+        (rev.project_name && rev.project_name.toLowerCase().includes(lower)) ||
+        (rev.notes && rev.notes.toLowerCase().includes(lower)) ||
+        customer.toLowerCase().includes(lower) ||
+        company.toLowerCase().includes(lower) ||
+        division.toLowerCase().includes(lower) ||
+        project.toLowerCase().includes(lower) ||
+        projectType.toLowerCase().includes(lower) ||
+        resource.toLowerCase().includes(lower) ||
+        currency.toLowerCase().includes(lower) ||
+        (rev.year && String(rev.year).includes(lower)) ||
+        (rev.month && String(rev.month).includes(lower))
+      );
+    });
+  }, [revenues, searchTerm, customers, companies, divisions, projects, projectTypes, resources, currencies]);
+
   // Hàm chuyển tên tháng sang số
   const monthNameToNumber = (name: string | undefined | null) => {
     if (!name) return null;
@@ -133,14 +163,9 @@ const Revenues = () => {
   };
   
   const handleSearch = () => {
-    console.log("Search triggered with term:", searchTerm);
-    if (!searchTerm.trim()) {
-      fetchData();
-    } else {
-      // If server-side search is active:
-      // setSearchParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
-      // If client-side, ensure RevenueTable receives `searchTerm`
-    }
+    // Đã implement filter client-side, không cần fetch lại
+    // Nếu có searchTerm thì filteredRevenues sẽ áp dụng
+    // Nếu muốn xóa kết quả lọc, gọi setSearchTerm("")
   };
   
   // Hàm tìm id từ code
@@ -351,7 +376,7 @@ const Revenues = () => {
             </div>
 
             <RevenueTable
-              revenues={revenues}
+              revenues={filteredRevenues}
               customers={customers}
               companies={companies}
               divisions={divisions}
@@ -367,19 +392,6 @@ const Revenues = () => {
               onCloneRevenue={handleCloneRevenue}
               onOpenDialog={handleOpenDialog}
               onDeleteRevenue={handleDeleteRevenue}
-            />
-            
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
-              onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
-              totalItems={total}
-              startIndex={startIndex}
-              endIndex={endIndex}
-              pageSize={itemsPerPage}
-              position="bottom"
             />
           </CardContent>
         </Card>
