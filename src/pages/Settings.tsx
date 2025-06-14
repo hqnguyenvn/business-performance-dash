@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings as SettingsIcon, Upload } from "lucide-react";
+import { Settings as SettingsIcon, Upload, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MasterDataTable from "@/components/MasterDataTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
@@ -20,6 +19,8 @@ import {
   MasterData
 } from "@/services/masterDataService";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -33,6 +34,8 @@ const Settings = () => {
   const [costTypes, setCostTypes] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [loading, setLoading] = useState(true);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   // Load data from Supabase on component mount
   useEffect(() => {
@@ -92,6 +95,11 @@ const Settings = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
   const handleImportData = async () => {
     try {
       setLoading(true);
@@ -147,10 +155,16 @@ const Settings = () => {
         description="Manage system master data"
         icon={SettingsIcon}
         actions={
-          <Button onClick={handleImportData} variant="outline" disabled={loading}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import from LocalStorage
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleImportData} variant="outline" disabled={loading}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import from LocalStorage
+            </Button>
+            <Button onClick={handleSignOut} variant="outline">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         }
       />
 
