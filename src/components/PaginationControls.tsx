@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Pagination,
@@ -111,8 +110,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           {pageSize === 'all' ? (
             // Luôn render nút All duy nhất khi pageSize === 'all'
             <PaginationItem>
-              <PaginationLink isActive className="cursor-default">
-                {/* Đảm bảo children là "All" */}
+              <PaginationLink isActive className="cursor-default font-semibold">
                 All
               </PaginationLink>
             </PaginationItem>
