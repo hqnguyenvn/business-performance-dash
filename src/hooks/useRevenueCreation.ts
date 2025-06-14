@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { Revenue, createRevenue } from "@/services/revenueService";
 
@@ -81,10 +80,6 @@ export const useRevenueCreation = (
   const handleCloneRevenue = async (revenueToClone: Revenue, globalIndex: number) => {
     const { id, ...cloneDataWithoutId } = revenueToClone; 
     const cloneData = cloneDataWithoutId; 
-
-    const now = new Date();
-    cloneData.year = now.getFullYear(); 
-    cloneData.month = now.getMonth() + 1;
 
     if (cloneData.currency_id && cloneData.original_amount !== undefined) {
        cloneData.vnd_revenue = calculateVNDRevenue(cloneData);
