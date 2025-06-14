@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,10 +183,11 @@ const EditableCell: React.FC<EditableCellProps> = ({
   };
 
   const alignmentClass = (type === 'number' || field === 'unit_price' || field === 'quantity' || field === 'original_amount' || field === 'vnd_revenue') ? 'justify-end' : 'justify-start';
+  const verticalAlignmentClass = type === 'text' ? 'items-start' : 'items-center';
 
   return (
     <div
-      className={`w-full h-full px-2 py-1 cursor-pointer hover:bg-gray-100 flex items-center ${alignmentClass} text-sm`}
+      className={`w-full h-full px-2 py-1 cursor-pointer hover:bg-gray-100 flex ${verticalAlignmentClass} ${alignmentClass} text-sm`}
       onClick={() => {
         if (type === 'text' || type === 'number' || type === 'select' || type === 'month') { // Ensure only editable types trigger edit mode
            setEditingCell({ id: revenueId, field });

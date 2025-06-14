@@ -56,9 +56,13 @@ const RevenueTableCell: React.FC<RevenueTableCellProps> = ({
         displayValue = val.toLocaleString();
       }
     }
+
+    const isRightAligned = config.cellClassName?.includes('text-right');
+    const justificationClass = config.type === 'index' ? 'justify-center' : isRightAligned ? 'justify-end' : 'justify-start';
+    
     return (
-      <TableCell className={`border-r p-0 ${config.cellClassName || ''}`}> {/* Changed: Added p-0 */}
-        <div className={`px-2 h-full flex items-center ${config.type === 'index' ? 'justify-center' : ''}`}> {/* Changed: px-2 py-1 h-8 to px-2 h-full. Added justify-center for index. */}
+      <TableCell className={`border-r p-0 ${config.cellClassName || ''}`}>
+        <div className={`px-2 h-full flex items-center ${justificationClass}`}>
           {displayValue}
         </div>
       </TableCell>
@@ -92,4 +96,3 @@ const RevenueTableCell: React.FC<RevenueTableCellProps> = ({
 };
 
 export default RevenueTableCell;
-
