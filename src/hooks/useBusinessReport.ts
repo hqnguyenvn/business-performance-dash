@@ -156,8 +156,6 @@ export const useBusinessReport = () => {
     selectedMonths.includes(data.monthNumber)
   ), [allBusinessData, selectedMonths]);
 
-  const pagination = usePagination({ data: businessData, itemsPerPage: 12 });
-
   const exportToCSV = () => {
     toast({
       title: "Export report",
@@ -200,7 +198,6 @@ export const useBusinessReport = () => {
     bonusRate,
     setBonusRate,
     businessData,
-    pagination,
     totals,
     exportToCSV,
     MONTHS,

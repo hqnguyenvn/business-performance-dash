@@ -1,4 +1,3 @@
-
 import { useBusinessReport } from "@/hooks/useBusinessReport";
 import { BusinessReportHeader } from "@/components/business-report/BusinessReportHeader";
 import { BusinessReportFilters } from "@/components/business-report/BusinessReportFilters";
@@ -18,7 +17,6 @@ const BusinessReport = () => {
     bonusRate,
     setBonusRate,
     businessData,
-    pagination,
     totals,
     exportToCSV,
     MONTHS,
@@ -64,8 +62,7 @@ const BusinessReport = () => {
         />
 
         <BusinessReportTable
-          totalRecords={businessData.length}
-          pagination={pagination}
+          businessData={businessData}
         />
       </div>
     </div>

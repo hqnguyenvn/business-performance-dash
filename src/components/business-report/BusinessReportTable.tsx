@@ -1,31 +1,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import PaginationControls from "@/components/PaginationControls";
 import { formatNumber } from "@/lib/format";
 import { BusinessData } from "@/hooks/useBusinessReport";
 
-type PaginationProps = {
-    currentPage: number;
-    totalPages: number;
-    goToPage: (page: number) => void;
-    goToNextPage: () => void;
-    goToPreviousPage: () => void;
-    totalItems: number;
-    startIndex: number;
-    endIndex: number;
-    paginatedData: BusinessData[];
-}
-
 interface BusinessReportTableProps {
-  totalRecords: number;
-  pagination: PaginationProps;
+  businessData: BusinessData[];
 }
 
-export const BusinessReportTable = ({ totalRecords, pagination }: BusinessReportTableProps) => {
+export const BusinessReportTable = ({ businessData }: BusinessReportTableProps) => {
   return (
     <Card className="bg-white">
         <CardHeader>
-            <CardTitle>Detailed Report ({totalRecords} records)</CardTitle>
+            <CardTitle>Detailed Report ({businessData.length} records)</CardTitle>
         </CardHeader>
         <CardContent>
             <div className="overflow-x-auto">
@@ -45,14 +31,14 @@ export const BusinessReportTable = ({ totalRecords, pagination }: BusinessReport
                         </tr>
                     </thead>
                     <tbody>
-                        {pagination.paginatedData.length === 0 ? (
+                        {businessData.length === 0 ? (
                             <tr>
                                 <td colSpan={10} className="border border-gray-300 p-8 text-center text-gray-500">
                                     No data matches the selected filters. Try adjusting the year or month selection.
                                 </td>
                             </tr>
                         ) : (
-                            pagination.paginatedData.map((data) => (
+                            businessData.map((data) => (
                                 <tr key={`${data.year}-${data.monthNumber}`} className="hover:bg-gray-50">
                                     <td className="border border-gray-300 p-2 font-medium">{data.month}</td>
                                     <td className="border border-gray-300 p-2 text-right">{formatNumber(data.revenue)}</td>
@@ -70,18 +56,7 @@ export const BusinessReportTable = ({ totalRecords, pagination }: BusinessReport
                     </tbody>
                 </table>
             </div>
-            <PaginationControls
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
-                onPageChange={pagination.goToPage}
-                onNextPage={pagination.goToNextPage}
-                onPreviousPage={pagination.goToPreviousPage}
-                totalItems={pagination.totalItems}
-                startIndex={pagination.startIndex}
-                endIndex={pagination.endIndex}
-            />
         </CardContent>
     </Card>
   );
 };
-
