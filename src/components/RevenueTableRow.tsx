@@ -1,7 +1,6 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 import RevenueTableCell, { CellConfig, RowContext } from './RevenueTableCell';
 import RevenueRowActions from "./RevenueRowActions";
@@ -195,4 +194,3 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
 };
 
 export default RevenueTableRow;
-

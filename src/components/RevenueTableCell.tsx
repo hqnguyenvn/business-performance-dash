@@ -2,7 +2,7 @@
 import React from 'react';
 import { TableCell } from "@/components/ui/table";
 import EditableCell from "./EditableCell"; // Assumes EditableCell is in the same directory
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 
 export type CellType = 'text' | 'number' | 'select' | 'month' | 'static' | 'index';

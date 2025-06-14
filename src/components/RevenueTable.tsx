@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import RevenueTableRow from "./RevenueTableRow";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
 

@@ -1,13 +1,13 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Revenue, RevenueSearchParams } from "@/types/revenue";
 import {
-  Revenue,
-  RevenueSearchParams,
   createRevenue,
   updateRevenue,
   deleteRevenue,
   getRevenues,
-} from "@/services/revenueService";
+} from "@/services/revenueApi";
 import {
   MasterData,
   getMasterDatas,
