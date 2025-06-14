@@ -1,6 +1,78 @@
 
 import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
+import { Cost } from "@/services/costService";
+
+interface CostsCSVExportOptions {
+  costs: Cost[];
+  costTypes: MasterData[];
+  getMonthName: (monthNumber: number) => string;
+}
+
+export const exportCostsCSV = ({
+  costs,
+  costTypes,
+  getMonthName,
+}: CostsCSVExportOptions) => {
+  const headers = [
+    'Year',
+    'Month',
+    'Description',
+    'Unit Price',
+    'Volume',
+    'Cost',
+    'Category',
+    'Is Cost',
+    'Checked',
+    'Notes'
+  ];
+
+  const getCostTypeName = (costTypeId: string) => {
+    return costTypes.find(c => c.id === costTypeId)?.code || costTypeId;
+  };
+
+  const rows = costs.map((cost) => {
+    return [
+      cost.year,
+      getMonthName(cost.month),
+      cost.description || '',
+      cost.price || 0,
+      cost.volume || 0,
+      cost.cost,
+      getCostTypeName(cost.cost_type),
+      cost.is_cost ? 'TRUE' : 'FALSE',
+      cost.is_checked ? 'TRUE' : 'FALSE',
+      cost.notes || ''
+    ];
+  });
+
+  const csvContent = [headers, ...rows]
+    .map(row => 
+      row.map(field => {
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      }).join(',')
+    )
+    .join('\n');
+
+  const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    const currentDate = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `costs_export_${currentDate}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
 
 interface CSVExportOptions {
   revenues: Revenue[];

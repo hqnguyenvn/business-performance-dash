@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { costService, Cost as DbCost, NewCost } from "@/services/costService";
 import { costTypesService, MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
+import { exportCostsCSV } from "@/utils/csvExport";
+import Papa from "papaparse";
 
 export type Cost = DbCost;
 
@@ -308,17 +310,95 @@ export const useCosts = () => {
   };
 
   const exportToCSV = () => {
+    if (!filteredCosts || filteredCosts.length === 0) {
+        toast({
+            title: "No Data to Export",
+            description: "There are no costs matching the current filters.",
+            variant: "destructive",
+        });
+        return;
+    }
+    exportCostsCSV({
+      costs: filteredCosts,
+      costTypes,
+      getMonthName,
+    });
     toast({
-      title: "Export Data",
-      description: "Cost data has been exported to CSV successfully",
+      title: "Export Initiated",
+      description: `An export of ${filteredCosts.length} cost records has started.`,
     });
   };
 
   const importFromCSV = () => {
-    toast({
-      title: "Import from CSV",
-      description: "This function is not yet available.",
-    });
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e) => {
+      const target = e.target as HTMLInputElement;
+      if (!target.files) return;
+      const file = target.files[0];
+      if (file) {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            if (results.errors.length) {
+              toast({ title: "Import Error", description: `Error parsing CSV: ${results.errors[0].message}`, variant: "destructive" });
+              return;
+            }
+
+            const newCosts: NewCost[] = [];
+            const rows = results.data as Record<string, string>[];
+            
+            for (const row of rows) {
+              const year = parseInt(row.Year, 10);
+              const month = getMonthNumber(row.Month);
+              const cost_type = getCostTypeId(row.Category);
+
+              if (!year || !month || !cost_type) {
+                console.warn("Skipping invalid row:", row);
+                continue;
+              }
+
+              const price = parseFloat(row['Unit Price']) || 0;
+              const volume = parseFloat(row.Volume) || 1;
+
+              newCosts.push({
+                year,
+                month,
+                description: row.Description || "",
+                price,
+                volume,
+                cost: price * volume,
+                cost_type,
+                is_cost: (row['Is Cost'] || 'TRUE').toUpperCase() === 'TRUE',
+                is_checked: (row.Checked || 'FALSE').toUpperCase() === 'FALSE',
+                notes: row.Notes || "",
+                company_id: null,
+                division_id: null,
+                project_id: null,
+                resource_id: null,
+              });
+            }
+
+            if (newCosts.length === 0) {
+              toast({ title: "No Data", description: "No valid data to import from file.", variant: "destructive" });
+              return;
+            }
+
+            toast({ title: "Importing...", description: `Importing ${newCosts.length} new cost records.` });
+            try {
+              await Promise.all(newCosts.map(cost => createCostMutation.mutateAsync(cost)));
+              toast({ title: "Import Successful", description: `Successfully imported ${newCosts.length} records.` });
+              queryClient.invalidateQueries({ queryKey: ['costs'] });
+            } catch (error) {
+              toast({ title: "Import Failed", description: `An error occurred: ${(error as Error).message}`, variant: "destructive" });
+            }
+          },
+        });
+      }
+    };
+    input.click();
   };
 
   const handleYearChange = (value: string) => {
@@ -339,8 +419,16 @@ export const useCosts = () => {
     return month ? month.label : monthNumber.toString();
   };
 
-  const getCostTypeName = (costTypeId: string) => {
-    return costTypes.find(c => c.id === costTypeId)?.code || costTypeId;
+  const getMonthNumber = (monthName: string): number => {
+    if (!monthName) return 0;
+    const month = MONTHS.find(m => m.label.toLowerCase() === monthName.toLowerCase().trim());
+    return month ? month.value : 0;
+  };
+
+  const getCostTypeId = (costTypeCode: string): string => {
+    if (!costTypeCode) return "";
+    const costType = costTypes.find(c => c.code.toLowerCase() === costTypeCode.toLowerCase().trim());
+    return costType ? costType.id : "";
   };
 
   return {
@@ -374,6 +462,6 @@ export const useCosts = () => {
     handleYearChange,
     handleMonthToggle,
     getMonthName,
-    getCostTypeName,
+    getCostTypeId,
   };
 };
