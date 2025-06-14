@@ -19,7 +19,6 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
 import { exportRevenueCSV } from "@/utils/csvExport";
 import { Revenue } from "@/services/revenueService";
-import RevenueInlineRow from "@/components/RevenueInlineRow";
 import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
 import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
 
@@ -55,30 +54,28 @@ const Revenues = () => {
     setIsDialogOpen,
   } = useRevenueDialog();
 
-  const {
-    handleAddNewRow,
-    handleInsertRowBelow,
-    handleCloneRevenue,
-    handleCellEdit: handleCellEditDb
-  } = useRevenueCrudOperations(
+  const crudOperations = useRevenueCrudOperations(
     { revenues, setRevenues, fetchData, searchParams },
     { getMonthNumber, calculateVNDRevenue }
   );
+  const {
+    handleInsertRowBelow,
+    handleCloneRevenue,
+    handleCellEdit: handleCellEditDb
+  } = crudOperations;
 
-  // Hook for inline entry
+  const inlineEntryUtils = useRevenueInlineEntry(fetchData, calculateVNDRevenue);
   const {
     editingCell,
     setEditingCell,
     tempRow,
     handleAddNewRowInline,
-    handleEditTempRow,
     handleCommitTempRow,
-    handleCellEdit,
-  } = useRevenueInlineEntry(fetchData);
+    handleCellEdit
+  } = inlineEntryUtils;
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filtering with custom hook
   const filteredRevenues = useClientRevenueFilter({
     revenues,
     searchTerm,
@@ -100,12 +97,13 @@ const Revenues = () => {
   }, [searchParams.pageSize, total]);
   const totalPages = useMemo(() => {
     if (searchParams.pageSize === 'all') return 1;
+    if (total === 0) return 1;
     return Math.ceil(total / itemsPerPage);
   }, [total, itemsPerPage, searchParams.pageSize]);
   const startIndex = useMemo(() => {
-    if (searchParams.pageSize === 'all') return 1;
-    return (currentPage - 1) * itemsPerPage + 1;
-  }, [currentPage, itemsPerPage, searchParams.pageSize]);
+    if (searchParams.pageSize === 'all') return total > 0 ? 1 : 0;
+    return (currentPage - 1) * itemsPerPage + (total > 0 ? 1 : 0);
+  }, [currentPage, itemsPerPage, searchParams.pageSize, total]);
   const endIndex = useMemo(() => {
     if (searchParams.pageSize === 'all') return total;
     return Math.min(currentPage * itemsPerPage, total);
@@ -118,13 +116,15 @@ const Revenues = () => {
     setSearchParams((prev) => ({ ...prev, months, page: 1 }));
   };
   const handlePageChange = (page: number) => {
-    const effectivePageSize = itemsPerPage;
+    const effectivePageSize = itemsPerPage > 0 ? itemsPerPage : 1;
     const calculatedTotalPages = Math.ceil(total / effectivePageSize);
     let newPage = page;
     if (page < 1) {
       newPage = 1;
     } else if (page > calculatedTotalPages && calculatedTotalPages > 0) {
       newPage = calculatedTotalPages;
+    } else if (calculatedTotalPages === 0 && page > 1) {
+      newPage = 1;
     }
     if (searchParams.page !== newPage) {
       setSearchParams((prev) => ({ ...prev, page: newPage }));
@@ -140,11 +140,14 @@ const Revenues = () => {
 
   const handleSearch = () => {};
 
-  // Export CSV handler unchanged
+  const handleCombinedCellEdit = (id: string, field: keyof Revenue, value: any) => {
+    inlineEntryUtils.handleCellEdit(id, field, value, handleCellEditDb as any);
+  };
+
   const handleExportCSV = () => {
     try {
       exportRevenueCSV({
-        revenues,
+        revenues: filteredRevenues,
         customers,
         companies,
         divisions,
@@ -169,132 +172,163 @@ const Revenues = () => {
     }
   };
 
-  // Clone and Import handlers remain the same as before
-  const monthNameToNumber = (name: string | undefined | null) => {
+  const monthNameToNumber = (name: string | undefined | null): number | null => {
     if (!name) return null;
     const map: Record<string, number> = {
       jan: 1, feb: 2, mar: 3, apr: 4,
       may: 5, jun: 6, jul: 7, aug: 8,
       sep: 9, oct: 10, nov: 11, dec: 12,
     };
-    return map[(name + "").substring(0,3).toLowerCase()] || null;
+    const key = (name + "").substring(0,3).toLowerCase();
+    return map[key] || null;
   };
 
-  // Hàm tìm id từ code
-  function findIdByCode(arr: any[], code: string | undefined | null) {
+  function findIdByCode(arr: MasterData[], code: string | undefined | null): string | null {
     if (!code) return null;
-    const obj = arr.find((item) => (item.code || "").toString().trim() === (code || "").toString().trim());
+    const obj = arr.find((item) => (item.code || "").toString().trim().toLowerCase() === (code || "").toString().trim().toLowerCase());
     return obj ? obj.id : null;
   }
 
-  // MAIN: Handle import csv with mapping
   const handleImportCSV = async (
     data: any[],
-    masterData: {
-      customers: any[],
-      companies: any[],
-      divisions: any[],
-      projects: any[],
-      projectTypes: any[],
-      resources: any[],
-      currencies: any[],
+    masterDataRefs: { // Renamed to avoid conflict with component-level masterData
+      customers: MasterData[],
+      companies: MasterData[],
+      divisions: MasterData[],
+      projects: MasterData[],
+      projectTypes: MasterData[],
+      resources: MasterData[],
+      currencies: MasterData[],
     }
   ) => {
     let successCount = 0;
     let errorRows: { row: number; reason: string }[] = [];
+    const requiredFields = ['Year', 'Month', 'Original Amount']; // VND Revenue is calculated
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
+      let missingRequiredFields: string[] = [];
+      requiredFields.forEach(rf => {
+        const keyVariations = [rf, rf.toLowerCase(), rf.replace(/\s+/g, ''), rf.replace(/\s+/g, '_').toLowerCase()];
+        if (!keyVariations.some(k => row[k] !== undefined && row[k] !== null && row[k] !== '')) {
+          missingRequiredFields.push(rf);
+        }
+      });
 
-      // Defensive: Normalize field names (viết hoa/thường, tiếng Anh...)
-      // Kỳ vọng tên trong file csv: year, month, customer, company, division, project, project_type, resource, currency, unit_price, quantity, original_amount, vnd_revenue, notes, project_name
-      // Map code -> id
-      const customer_id = findIdByCode(masterData.customers, row["Customer"] || row["customer"]);
-      const company_id = findIdByCode(masterData.companies, row["Company"] || row["company"]);
-      const division_id = findIdByCode(masterData.divisions, row["Division"] || row["division"]);
-      const project_id = findIdByCode(masterData.projects, row["Project"] || row["project"]);
-      const project_type_id = findIdByCode(masterData.projectTypes, row["Project Type"] || row["project_type"]);
-      const resource_id = findIdByCode(masterData.resources, row["Resource"] || row["resource"]);
-      const currency_id = findIdByCode(masterData.currencies, row["Currency"] || row["currency"]);
-      // Những trường bắt buộc: year, month, original_amount, vnd_revenue (?)
-      // Trả lỗi nếu thiếu thông tin mapping Id (user sẽ kiểm tra)
-      // Có thể cho phép null nếu trường không bắt buộc
+      if (missingRequiredFields.length > 0) {
+        errorRows.push({ row: i + 2, reason: `Thiếu dữ liệu bắt buộc: ${missingRequiredFields.join(", ")}`});
+        continue;
+      }
+      
+      const customer_code = row["Customer"] || row["customer"];
+      const company_code = row["Company"] || row["company"];
+      const division_code = row["Division"] || row["division"];
+      const project_code = row["Project"] || row["project"];
+      const project_type_code = row["Project Type"] || row["project_type"];
+      const resource_code = row["Resource"] || row["resource"];
+      const currency_code = row["Currency"] || row["currency"];
 
-      // Nếu file import thiếu code (không khớp) sẽ bỏ qua và báo lỗi
-      let missingFields: string[] = [];
-      if ((row["Customer"] || row["customer"]) && !customer_id) missingFields.push("Customer");
-      if ((row["Company"] || row["company"]) && !company_id) missingFields.push("Company");
-      if ((row["Division"] || row["division"]) && !division_id) missingFields.push("Division");
-      if ((row["Project"] || row["project"]) && !project_id) missingFields.push("Project");
-      if ((row["Project Type"] || row["project_type"]) && !project_type_id) missingFields.push("Project Type");
-      if ((row["Resource"] || row["resource"]) && !resource_id) missingFields.push("Resource");
-      if ((row["Currency"] || row["currency"]) && !currency_id) missingFields.push("Currency");
+      const customer_id = findIdByCode(masterDataRefs.customers, customer_code);
+      const company_id = findIdByCode(masterDataRefs.companies, company_code);
+      const division_id = findIdByCode(masterDataRefs.divisions, division_code);
+      const project_id = findIdByCode(masterDataRefs.projects, project_code);
+      const project_type_id = findIdByCode(masterDataRefs.projectTypes, project_type_code);
+      const resource_id = findIdByCode(masterDataRefs.resources, resource_code);
+      const currency_id = findIdByCode(masterDataRefs.currencies, currency_code);
+      
+      let mappingErrors: string[] = [];
+      if (customer_code && !customer_id) mappingErrors.push(`Customer ('${customer_code}')`);
+      if (company_code && !company_id) mappingErrors.push(`Company ('${company_code}')`);
+      if (division_code && !division_id) mappingErrors.push(`Division ('${division_code}')`);
+      if (project_code && !project_id) mappingErrors.push(`Project ('${project_code}')`);
+      if (project_type_code && !project_type_id) mappingErrors.push(`Project Type ('${project_type_code}')`);
+      if (resource_code && !resource_id) mappingErrors.push(`Resource ('${resource_code}')`);
+      if (currency_code && !currency_id) mappingErrors.push(`Currency ('${currency_code}')`);
 
-      if (missingFields.length > 0) {
-        errorRows.push({
-          row: i + 2, // +2 vì có header và index bắt đầu từ 0
-          reason: `Không tìm thấy code cho các cột: ${missingFields.join(", ")}`
-        });
+      if (mappingErrors.length > 0) {
+        errorRows.push({ row: i + 2, reason: `Không tìm thấy mã tương ứng cho: ${mappingErrors.join(", ")}` });
         continue;
       }
 
-      // Build object data cho Revenue
       try {
-        // Convert month: 'Jan' -> 1
         const fileMonthRaw = row["Month"] || row["month"];
         let monthValue: number | null = null;
-        // If month value is string (Jan ...) convert. Else keep number
-        if (fileMonthRaw && typeof fileMonthRaw === "string" && isNaN(Number(fileMonthRaw))) {
-          monthValue = monthNameToNumber(fileMonthRaw);
-        } else if (fileMonthRaw) {
-          monthValue = Number(fileMonthRaw);
+        if (fileMonthRaw) {
+          if (typeof fileMonthRaw === "string" && isNaN(Number(fileMonthRaw))) {
+            monthValue = monthNameToNumber(fileMonthRaw);
+          } else {
+            monthValue = Number(fileMonthRaw);
+          }
         }
-
-        const newRevenue = {
-          // Bắt buộc: year, month, original_amount, vnd_revenue
+        if (!monthValue || monthValue < 1 || monthValue > 12) {
+           errorRows.push({ row: i + 2, reason: `Tháng không hợp lệ: ${fileMonthRaw}` });
+           continue;
+        }
+        
+        const originalAmountRaw = row["Original Amount"] || row["original_amount"] || row["originalamount"];
+        const original_amount = Number(originalAmountRaw);
+        if (isNaN(original_amount)) {
+          errorRows.push({ row: i + 2, reason: `Số tiền gốc không hợp lệ: ${originalAmountRaw}` });
+          continue;
+        }
+        
+        const newRevenuePartial: Partial<Revenue> = {
           year: Number(row["Year"] || row["year"]),
           month: monthValue,
-          customer_id,
-          company_id,
-          division_id,
-          project_id,
-          project_type_id,
-          resource_id,
-          currency_id,
+          customer_id: customer_id || undefined,
+          company_id: company_id || undefined,
+          division_id: division_id || undefined,
+          project_id: project_id || undefined,
+          project_type_id: project_type_id || undefined,
+          resource_id: resource_id || undefined,
+          currency_id: currency_id || undefined,
           unit_price: row["Unit Price"] !== undefined ? Number(row["Unit Price"]) : (row["unit_price"] !== undefined ? Number(row["unit_price"]) : undefined),
           quantity: row["Quantity"] !== undefined ? Number(row["Quantity"]) : (row["quantity"] !== undefined ? Number(row["quantity"]) : undefined),
-          original_amount: Number(row["Original Amount"] || row["original_amount"] || 0),
-          vnd_revenue: Number(row["VND Revenue"] || row["vnd_revenue"] || 0),
-          notes: row["Notes"] || row["notes"] || null,
+          original_amount: original_amount,
+          notes: row["Notes"] || row["notes"] || undefined,
           project_name: row["Project Name"] || row["project_name"] || "",
         };
-        // Validate year, month
-        if (!newRevenue.year || !newRevenue.month) {
-          errorRows.push({ row: i + 2, reason: "Thiếu dữ liệu năm hoặc tháng" });
+        
+        // Calculate VND Revenue based on the imported data
+        const vnd_revenue = calculateVNDRevenue(newRevenuePartial);
+
+        const finalNewRevenue: Omit<Revenue, 'id'> = {
+            ...newRevenuePartial,
+            year: newRevenuePartial.year!,
+            month: newRevenuePartial.month!,
+            original_amount: newRevenuePartial.original_amount!,
+            project_name: newRevenuePartial.project_name || "", // Ensure not undefined
+            vnd_revenue: vnd_revenue,
+        };
+        
+        if (!finalNewRevenue.year) {
+          errorRows.push({ row: i + 2, reason: "Thiếu dữ liệu năm" });
           continue;
         }
-        // Validate số tiền
-        if (isNaN(newRevenue.original_amount) || isNaN(newRevenue.vnd_revenue)) {
-          errorRows.push({ row: i + 2, reason: "Dữ liệu số tiền không hợp lệ" });
-          continue;
-        }
-        // Tạo mới record trong Supabase
-        await (await import("@/services/revenueService")).createRevenue(newRevenue as any);
+
+        await (await import("@/services/revenueService")).createRevenue(finalNewRevenue);
         successCount++;
       } catch (err: any) {
         errorRows.push({ row: i + 2, reason: `Lỗi khi insert: ${err.message}` });
       }
     }
-    // Sau khi import xong thì reload
     fetchData();
     let msg = `Đã import thành công ${successCount} dòng dữ liệu.`;
     if (errorRows.length > 0) {
-      msg += "\nCác dòng lỗi:\n" + errorRows.map(e => `- Dòng ${e.row}: ${e.reason}`).join("\n");
+      const errorDetails = errorRows.map(e => `- Dòng ${e.row}: ${e.reason}`).join("\n");
+      msg += `\n\nCác dòng lỗi (${errorRows.length}):\n${errorDetails}`;
+      toast({
+        title: "Kết quả Import CSV",
+        description: <pre className="whitespace-pre-wrap max-h-60 overflow-y-auto">{msg}</pre>,
+        variant: "destructive",
+        duration: errorRows.length > 5 ? 15000 : 9000, // Longer duration for many errors
+      });
+    } else {
+       toast({
+        title: "Kết quả Import CSV",
+        description: msg,
+      });
     }
-    toast({
-      title: "Kết quả Import CSV",
-      description: msg,
-      variant: errorRows.length > 0 ? "destructive" : undefined,
-    });
   };
 
   const handleCloneData = async (
@@ -313,7 +347,7 @@ const Revenues = () => {
         toast({
           variant: "destructive",
           title: "Không có dữ liệu nguồn.",
-          description: `Không tìm thấy dữ liệu nguồn cho ${sourceMonth}/${sourceYear}.`
+          description: `Không tìm thấy dữ liệu nguồn cho ${getMonthName(sourceMonth)}/${sourceYear}.`
         });
         return;
       }
@@ -324,29 +358,36 @@ const Revenues = () => {
 
       for (const rev of sourceRevenues) {
         try {
-          // Only destructure id to remove it, do NOT try to destructure created_at/updated_at
-          const { id, ...cloneBase } = rev;
-
-          await (await import("@/services/revenueService")).createRevenue({
+          const { id, created_at, updated_at, ...cloneBase } = rev; // Exclude audit timestamps
+          const clonedEntry: Omit<Revenue, 'id'> = {
             ...cloneBase,
             year: targetYear,
             month: targetMonth,
-          });
+          };
+          // Recalculate VND revenue for the cloned entry
+          clonedEntry.vnd_revenue = calculateVNDRevenue(clonedEntry);
 
+          await (await import("@/services/revenueService")).createRevenue(clonedEntry);
           cloneSuccess++;
         } catch (err: any) {
           cloneFail++;
-          failReasons.push(`- Project "${rev.project_name || ""}": ${err?.message || err}`);
+          failReasons.push(`- Project "${rev.project_name || "N/A"}": ${err?.message || err}`);
         }
       }
-      fetchData();
+      fetchData(); // Refresh data to show cloned entries
+      
+      let description = `Tạo mới ${cloneSuccess} dòng dữ liệu từ ${getMonthName(sourceMonth)}/${sourceYear} sang ${getMonthName(targetMonth)}/${targetYear}.`;
+      if (cloneFail > 0) {
+        description += `\n\n${cloneFail} dòng bị lỗi:\n` + failReasons.join("\n");
+      }
+
       toast({
         title: "Đã clone dữ liệu thành công!",
-        description:
-          `Tạo mới ${cloneSuccess} dòng dữ liệu từ ${sourceMonth}/${sourceYear} sang ${targetMonth}/${targetYear}.` +
-          (cloneFail > 0 ? `\n${cloneFail} dòng bị lỗi:\n${failReasons.join("\n")}` : ""),
+        description: <pre className="whitespace-pre-wrap max-h-60 overflow-y-auto">{description}</pre>,
         variant: cloneFail > 0 ? "destructive" : undefined,
+        duration: cloneFail > 0 ? 9000: 5000,
       });
+
     } catch (err: any) {
       toast({
         variant: "destructive",
@@ -356,13 +397,22 @@ const Revenues = () => {
     }
   };
 
-  // Compose rows
   const tableRows = useMemo(() => {
+    const rowsToDisplay = searchTerm ? filteredRevenues : revenues;
     if (tempRow) {
-      return [tempRow, ...filteredRevenues];
+      const displayTempRow = {
+        ...tempRow,
+        year: tempRow.year || 0,
+        month: tempRow.month || 0,
+        original_amount: tempRow.original_amount || 0,
+        vnd_revenue: tempRow.vnd_revenue || 0,
+        project_name: tempRow.project_name || "",
+        id: tempRow.id || "temp-id",
+      } as Revenue;
+      return [displayTempRow, ...rowsToDisplay];
     }
-    return filteredRevenues;
-  }, [tempRow, filteredRevenues]);
+    return rowsToDisplay;
+  }, [tempRow, revenues, filteredRevenues, searchTerm]);
 
   return (
     <div>
@@ -389,7 +439,7 @@ const Revenues = () => {
                 onSearchTermChange={setSearchTerm}
                 onSearch={handleSearch}
               />
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -404,7 +454,7 @@ const Revenues = () => {
                   position="top"
                 />
                 <RevenueActions
-                  onImportCSV={handleImportCSV}
+                  onImportCSV={(data) => handleImportCSV(data, {customers, companies, divisions, projects, projectTypes, resources, currencies})}
                   onExportCSV={handleExportCSV}
                   onCloneData={handleCloneData}
                   onAddNewRow={handleAddNewRowInline}
@@ -418,8 +468,6 @@ const Revenues = () => {
                 />
               </div>
             </div>
-            {/* ĐÃ BỎ PHẦN DƯỚI: KHÔNG render <RevenueInlineRow /> ở đây nữa */}
-
             <RevenueTable
               revenues={tableRows}
               customers={customers}
@@ -432,7 +480,7 @@ const Revenues = () => {
               searchParams={searchParams}
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
-              onCellEdit={(id, field, value) => handleCellEdit(id, field, value, handleCellEditDb)}
+              onCellEdit={handleCombinedCellEdit}
               editingCell={editingCell}
               setEditingCell={setEditingCell}
               onInsertRowBelow={handleInsertRowBelow}

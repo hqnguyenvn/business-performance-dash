@@ -21,7 +21,7 @@ interface RevenueTableRowProps {
   resources: MasterData[];
   currencies: MasterData[];
   getMonthName: (monthNumber: number) => string;
-  calculateVNDRevenue: (revenue: Revenue) => number;
+  calculateVNDRevenue: (revenue: Partial<Revenue>) => number; // Changed to Partial<Revenue>
   onCellEdit: (id: string, field: keyof Revenue, value: any) => void;
   onInsertRowBelow: () => void;
   onCloneRevenue: () => void;
@@ -36,9 +36,9 @@ function getCellConfigs(
   customers: MasterData[], companies: MasterData[], divisions: MasterData[], projects: MasterData[],
   projectTypes: MasterData[], resources: MasterData[], currencies: MasterData[],
   getMonthName: (monthNumber: number) => string,
-  calculateVNDRevenue: (revenue: Revenue) => number,
+  calculateVNDRevenue: (revenue: Partial<Revenue>) => number, // Changed to Partial<Revenue>
   pageSize: number | 'all',
-  isTempRow?: boolean
+  isTempRow?: boolean // isTempRow is still useful for other logic like button display
 ): CellConfig[] {
   return [
     {
@@ -101,15 +101,13 @@ function getCellConfigs(
     },
     {
       field: 'original_amount',
-      type: isTempRow ? 'number' : 'static', // Editable nếu là dòng tạm
-      step: "1",
+      type: 'static', // Always static as it's calculated
       valueGetter: (rev) => (rev.original_amount || 0).toLocaleString(),
       cellClassName: "text-right",
     },
     {
       field: 'vnd_revenue',
-      type: isTempRow ? 'number' : 'static', // Editable nếu là dòng tạm
-      step: "1",
+      type: 'static', // Always static as it's calculated
       valueGetter: (rev, ctx) => ctx.calculateVNDRevenue ? ctx.calculateVNDRevenue(rev).toLocaleString() : 'N/A',
       cellClassName: "text-right",
     },
@@ -147,13 +145,10 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   const rowContext: RowContext = {
     pageSpecificIndex: index,
     pageIndex,
-    pageSize: typeof pageSize === 'number' ? pageSize : 0,
+    pageSize: typeof pageSize === 'number' ? pageSize : 0, // Default to 0 if 'all' for simplicity here
     getMonthName,
     calculateVNDRevenue,
   };
-
-  // Chỉ debug: console.log để test xem options có bị undefined không
-  // console.log('TableRow customers:', customers);
 
   const cellConfigs = getCellConfigs(
     customers ?? [], companies ?? [], divisions ?? [], projects ?? [],
@@ -169,7 +164,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           revenue={revenue}
           config={config}
           rowContext={rowContext}
-          isCurrentlyEditingThisCell={!!config.field && isCurrentlyEditing(config.field)}
+          isCurrentlyEditingThisCell={!!config.field && isCurrentlyEditing(config.field as keyof Revenue)}
           onCellEdit={onCellEdit}
           setEditingCell={setEditingCell}
         />
@@ -186,7 +181,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           ) : (
             <RevenueRowActions
               revenue={revenue}
-              index={index}
+              index={index} // This index is pageSpecificIndex
               onInsertRowBelow={onInsertRowBelow}
               onCloneRevenue={onCloneRevenue}
               onOpenDialog={onOpenDialog}

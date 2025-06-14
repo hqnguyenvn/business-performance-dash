@@ -6,7 +6,8 @@ export const useRevenueCalculations = (currencies: MasterData[], exchangeRates: 
   const getMonthName = (monthNumber: number): string => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return monthNames[monthNumber - 1] || "Jan";
+    if (monthNumber < 1 || monthNumber > 12) return "Jan"; // Default or throw error
+    return monthNames[monthNumber - 1];
   };
 
   const getMonthNumber = (monthName: string): number => {
@@ -18,21 +19,23 @@ export const useRevenueCalculations = (currencies: MasterData[], exchangeRates: 
     return monthMap[monthName] || 1;
   };
 
-  const calculateVNDRevenue = (revenue: Revenue) => {
-    if (!revenue.original_amount || !revenue.currency_id) return 0;
+  const calculateVNDRevenue = (revenue: Partial<Revenue>) => {
+    if (revenue.original_amount == null || !revenue.currency_id || revenue.year == null || revenue.month == null) {
+      return 0;
+    }
     
-    // Find the currency code first
     const currency = currencies.find(c => c.id === revenue.currency_id);
     if (!currency) return 0;
     
-    // Find the exchange rate for the specific year and month
+    const monthName = getMonthName(revenue.month); // Ensure month is valid before calling getMonthName
+    
     const exchangeRate = exchangeRates.find(rate => 
       rate.year === revenue.year && 
-      rate.month === getMonthName(revenue.month) &&
+      rate.month === monthName &&
       rate.currencyID === currency.code
     );
     
-    if (exchangeRate) {
+    if (exchangeRate && typeof exchangeRate.exchangeRate === 'number') {
       return revenue.original_amount * exchangeRate.exchangeRate;
     }
     
@@ -45,3 +48,4 @@ export const useRevenueCalculations = (currencies: MasterData[], exchangeRates: 
     calculateVNDRevenue,
   };
 };
+

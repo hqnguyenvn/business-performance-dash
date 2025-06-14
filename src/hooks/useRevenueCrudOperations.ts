@@ -1,169 +1,168 @@
-
 import { useToast } from "@/hooks/use-toast";
-import {
-  Revenue,
-  createRevenue,
-  updateRevenue,
-  RevenueSearchParams,
-} from "@/services/revenueService";
+import { Revenue, updateRevenue, createRevenue, deleteRevenue } from "@/services/revenueService"; // Assuming createRevenue, deleteRevenue might be used by other functions here
 
-interface RevenueCalculationsHook {
-  getMonthNumber: (monthName: string) => number;
-  calculateVNDRevenue: (revenue: Revenue) => number;
-}
-
-interface RevenueDataHookControls {
+interface RevenueDataState {
   revenues: Revenue[];
   setRevenues: React.Dispatch<React.SetStateAction<Revenue[]>>;
-  fetchData: () => Promise<void>;
-  searchParams: RevenueSearchParams;
+  fetchData: () => void;
+  searchParams: any; // Adjust as per actual type
+}
+
+interface RevenueCalculationHelpers {
+  getMonthNumber: (monthName: string) => number;
+  calculateVNDRevenue: (revenue: Partial<Revenue>) => number;
 }
 
 export const useRevenueCrudOperations = (
-  revenueDataControls: RevenueDataHookControls,
-  revenueCalculations: RevenueCalculationsHook
+  revenueDataState: RevenueDataState,
+  calculationHelpers: RevenueCalculationHelpers
 ) => {
   const { toast } = useToast();
-  const { revenues, setRevenues, fetchData, searchParams } = revenueDataControls;
-  const { getMonthNumber, calculateVNDRevenue } = revenueCalculations;
+  const { revenues, setRevenues, fetchData } = revenueDataState;
+  const { calculateVNDRevenue } = calculationHelpers;
 
   const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
+    const currentRevenue = revenues.find(r => r.id === id);
+    if (!currentRevenue) {
+      toast({ variant: "destructive", title: "Không tìm thấy bản ghi" });
+      return;
+    }
+
+    const updatedFields: Partial<Revenue> = {};
+    updatedFields[field] = value;
+
+    // Create a temporary complete object for calculations
+    let tempCalcRevenue: Revenue = { ...currentRevenue, [field]: value };
+
+    if (field === 'unit_price' || field === 'quantity') {
+      const newOriginalAmount = (tempCalcRevenue.unit_price || 0) * (tempCalcRevenue.quantity || 0);
+      updatedFields.original_amount = newOriginalAmount;
+      tempCalcRevenue.original_amount = newOriginalAmount; // Update for subsequent VND calculation
+    }
+    
+    // Check if any field that affects VND revenue has changed
+    // This includes direct changes to currency, year, month, or indirect changes via unit_price/quantity (affecting original_amount)
+    if (
+      field === 'unit_price' || 
+      field === 'quantity' || 
+      field === 'currency_id' || 
+      field === 'year' || 
+      field === 'month' ||
+      (updatedFields.original_amount !== undefined && updatedFields.original_amount !== currentRevenue.original_amount) // if original_amount changed
+    ) {
+      const newVndRevenue = calculateVNDRevenue(tempCalcRevenue);
+      updatedFields.vnd_revenue = newVndRevenue;
+    }
+
+    if (Object.keys(updatedFields).length === 0) return; // No actual changes to save
+
     try {
-      console.log('Editing cell:', { id, field, value });
-      const revenueToUpdate = revenues.find((revenue) => revenue.id === id);
-      if (!revenueToUpdate) {
-        console.error(`Revenue with id ${id} not found`);
-        toast({ variant: "destructive", title: `Revenue with id ${id} not found.` });
-        return;
-      }
-
-      let processedValue = value;
-      if (field === 'month' && typeof value === 'string') {
-        processedValue = getMonthNumber(value);
-      }
-
-      let updatedRevenueData = { ...revenueToUpdate, [field]: processedValue };
-      
-      if (field === 'unit_price' || field === 'quantity') {
-        const unitPrice = field === 'unit_price' ? Number(processedValue) : Number(updatedRevenueData.unit_price || 0);
-        const quantity = field === 'quantity' ? Number(processedValue) : Number(updatedRevenueData.quantity || 1);
-        updatedRevenueData.original_amount = unitPrice * quantity;
-      } else if (field === 'currency_id' || field === 'year' || field === 'month') {
-        // If currency, year, or month changes, original_amount might not change directly here
-        // but vnd_revenue will, so ensure it's recalculated.
-      }
-
-
-      updatedRevenueData.vnd_revenue = calculateVNDRevenue(updatedRevenueData);
-      
-      const optimisticUpdateEnabled = true; // Control this if needed
-      if (optimisticUpdateEnabled) {
-        const updatedRevenuesOptimistic = revenues.map((r) =>
-          r.id === id ? updatedRevenueData : r
-        );
-        setRevenues(updatedRevenuesOptimistic);
-      }
-      
-      const updatePayload: Partial<Revenue> = { 
-        [field]: processedValue,
-        original_amount: updatedRevenueData.original_amount, // Always send calculated original_amount
-        vnd_revenue: updatedRevenueData.vnd_revenue // Always send calculated vnd_revenue
-      };
-      // If other fields were changed that affect original_amount or vnd_revenue but weren't the primary 'field'
-      // ensure they are part of updatePayload or handled by API.
-      // Example: changing currency_id should trigger vnd_revenue recalc. This is done above.
-
-      await updateRevenue(id, updatePayload);
-      toast({ title: "Revenue record updated successfully!" });
-      // fetchData(); // Refetch if optimistic update is not enough or to ensure full consistency.
-      // For cell edits, optimistic is usually good. If totals or other parts of app depend on this, refetch.
-    } catch (error) {
-      console.error("Error updating revenue:", error);
+      await updateRevenue(id, updatedFields);
+      // Optimistic update or refetch
+      setRevenues(prevRevenues =>
+        prevRevenues.map(r =>
+          r.id === id ? { ...r, ...updatedFields } : r
+        )
+      );
+      toast({ title: "Cập nhật thành công!" });
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem updating the revenue record.",
+        title: "Lỗi cập nhật",
+        description: error?.message || "Không thể cập nhật dữ liệu.",
       });
-      fetchData(); // Revert/refetch on error
-    }
-  };
-
-  const handleAddNewRow = async () => {
-    try {
-      console.log('Adding new row...');
-      const newRevenueData: Omit<Revenue, 'id'> = {
-        year: searchParams.year || new Date().getFullYear(),
-        month: (searchParams.months && searchParams.months.length > 0 ? searchParams.months[0] : new Date().getMonth() + 1),
-        customer_id: null,
-        company_id: null,
-        division_id: null,
-        project_id: null,
-        project_type_id: null,
-        resource_id: null,
-        currency_id: null,
-        unit_price: 0,
-        quantity: 1,
-        original_amount: 0,
-        vnd_revenue: 0, // Will be calculated by API or pre-calculated if possible
-        notes: null,
-        project_name: '',
-      };
-      
-      // Pre-calculate VND revenue if possible (e.g., if default currency is VND or rate is known)
-      // For simplicity, assuming API handles initial VND calculation or it defaults to 0.
-      
-      await createRevenue(newRevenueData);
-      toast({ title: "New revenue record added successfully!" });
-      fetchData(); 
-    } catch (error) {
-      console.error("Error adding new revenue:", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem adding the new revenue record.",
-      });
-    }
-  };
-
-  const handleInsertRowBelow = async (afterIndex: number) => {
-    console.log('Inserting row (behaves like Add New):', afterIndex);
-    await handleAddNewRow();
-  };
-
-  const handleCloneRevenue = async (sourceRevenue: Revenue, afterIndex: number) => {
-    try {
-      console.log('Cloning revenue (will refetch):', sourceRevenue, 'after visual index:', afterIndex);
-      const clonedData: Omit<Revenue, 'id'> = {
-        year: sourceRevenue.year,
-        month: sourceRevenue.month,
-        customer_id: sourceRevenue.customer_id || null,
-        company_id: sourceRevenue.company_id || null,
-        division_id: sourceRevenue.division_id || null,
-        project_id: sourceRevenue.project_id || null,
-        project_type_id: sourceRevenue.project_type_id || null,
-        resource_id: sourceRevenue.resource_id || null,
-        currency_id: sourceRevenue.currency_id || null,
-        unit_price: sourceRevenue.unit_price,
-        quantity: sourceRevenue.quantity,
-        original_amount: sourceRevenue.original_amount,
-        vnd_revenue: sourceRevenue.vnd_revenue, // This should be recalculated based on current rates
-        notes: sourceRevenue.notes || null,
-        project_name: sourceRevenue.project_name || '',
-      };
-      
-      // Recalculate VND revenue for the clone
-      clonedData.vnd_revenue = calculateVNDRevenue({...clonedData, id: ''} as Revenue); // Cast as Revenue for calculation
-
-      await createRevenue(clonedData);
-      toast({ title: "Revenue record cloned successfully!" });
+      // Optionally, revert optimistic update or call fetchData() to get consistent state
       fetchData();
+    }
+  };
+
+  const handleAddNewRow = async (baseRevenue?: Partial<Revenue>) => {
+    const now = new Date();
+    const newRevenueEntry: Omit<Revenue, "id"> = {
+      year: baseRevenue?.year || now.getFullYear(),
+      month: baseRevenue?.month || now.getMonth() + 1,
+      original_amount: baseRevenue?.original_amount || 0,
+      vnd_revenue: baseRevenue?.vnd_revenue || 0, // Will be recalculated if currency changes
+      project_name: baseRevenue?.project_name || "",
+      // ... other fields from baseRevenue or defaults
+      customer_id: baseRevenue?.customer_id,
+      company_id: baseRevenue?.company_id,
+      division_id: baseRevenue?.division_id,
+      project_id: baseRevenue?.project_id,
+      project_type_id: baseRevenue?.project_type_id,
+      resource_id: baseRevenue?.resource_id,
+      currency_id: baseRevenue?.currency_id,
+      unit_price: baseRevenue?.unit_price,
+      quantity: baseRevenue?.quantity,
+      notes: baseRevenue?.notes,
+    };
+    // Recalculate VND revenue based on the new/cloned entry if currency is set
+    if (newRevenueEntry.currency_id && newRevenueEntry.original_amount !== undefined) {
+       newRevenueEntry.vnd_revenue = calculateVNDRevenue(newRevenueEntry);
+    }
+
+    try {
+      await createRevenue(newRevenueEntry);
+      fetchData(); // Refresh data
+      toast({ title: "Đã thêm bản ghi mới!" });
     } catch (error) {
-      console.error("Error cloning revenue:", error);
+      console.error("Error creating new revenue:", error);
       toast({
         variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem cloning the revenue record.",
+        title: "Lỗi khi thêm mới",
+        description: "Không thể tạo bản ghi doanh thu mới.",
       });
+    }
+  };
+
+  const handleInsertRowBelow = async (globalIndex: number) => {
+    const baseRevenue = revenues[globalIndex]; // Assuming globalIndex maps correctly
+    const now = new Date();
+    const newRevenueEntry: Omit<Revenue, "id"> = {
+      year: baseRevenue?.year || now.getFullYear(),
+      month: baseRevenue?.month || now.getMonth() + 1,
+      original_amount: 0, // Default for new row
+      vnd_revenue: 0,     // Default for new row
+      project_name: "",
+      // All other fields null or undefined to represent an empty new row
+    };
+    try {
+      const created = await createRevenue(newRevenueEntry);
+      // Insert into local state correctly
+      const newRevenues = [...revenues];
+      newRevenues.splice(globalIndex + 1, 0, created);
+      setRevenues(newRevenues);
+      // fetchData(); // Or update locally for faster UI response
+      toast({ title: "Đã chèn dòng mới bên dưới!" });
+    } catch (error) {
+      // ... error handling
+      toast({ variant: "destructive", title: "Lỗi khi chèn dòng" });
+
+    }
+  };
+
+  const handleCloneRevenue = async (revenueToClone: Revenue, globalIndex: number) => {
+    const { id, created_at, updated_at, ...cloneData } = revenueToClone;
+    const now = new Date();
+    cloneData.year = now.getFullYear(); // Default to current year/month or let user edit
+    cloneData.month = now.getMonth() + 1;
+
+    // Recalculate VND revenue for the cloned entry if its currency/original_amount exists
+    if (cloneData.currency_id && cloneData.original_amount !== undefined) {
+       cloneData.vnd_revenue = calculateVNDRevenue(cloneData);
+    }
+
+    try {
+      const created = await createRevenue(cloneData);
+      // Insert into local state correctly
+      const newRevenues = [...revenues];
+      newRevenues.splice(globalIndex + 1, 0, created);
+      setRevenues(newRevenues);
+      // fetchData(); // Or update locally
+      toast({ title: "Đã nhân bản dòng!" });
+    } catch (error) {
+      // ... error handling
+      toast({ variant: "destructive", title: "Lỗi khi nhân bản dòng" });
     }
   };
 

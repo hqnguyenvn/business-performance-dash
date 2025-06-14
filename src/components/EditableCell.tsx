@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Revenue } from "@/services/revenueService"; // For keyof Revenue
@@ -31,6 +31,19 @@ const EditableCell: React.FC<EditableCellProps> = ({
   maxLength,
   step,
 }) => {
+  const [currentNumericValue, setCurrentNumericValue] = useState<string | number>('');
+  const [currentTextValue, setCurrentTextValue] = useState<string>('');
+
+  useEffect(() => {
+    if (isCurrentlyEditingThisCell) {
+      if (type === 'number') {
+        setCurrentNumericValue(initialValue || 0);
+      } else if (type === 'text') {
+        setCurrentTextValue(initialValue || '');
+      }
+    }
+  }, [initialValue, isCurrentlyEditingThisCell, type]);
+
   // Edit mode rendering
   if (isCurrentlyEditingThisCell) {
     if (type === 'select' && options) {
@@ -92,14 +105,14 @@ const EditableCell: React.FC<EditableCellProps> = ({
         <Input
           type="number"
           step={step} // Use step passed from parent
-          value={initialValue || 0}
+          value={currentNumericValue}
           onChange={(e) => {
-            const newValue = parseFloat(e.target.value) || 0;
-            onCellEdit(revenueId, field, newValue);
+            setCurrentNumericValue(e.target.value);
           }}
           onBlur={(e) => { 
             const newValue = parseFloat(e.target.value) || 0;
             onCellEdit(revenueId, field, newValue);
+            setEditingCell(null); 
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -107,6 +120,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
               onCellEdit(revenueId, field, newValue);
               setEditingCell(null); 
             } else if (e.key === 'Escape') {
+              setCurrentNumericValue(initialValue || 0); // Revert
               setEditingCell(null); 
             }
           }}
@@ -119,16 +133,18 @@ const EditableCell: React.FC<EditableCellProps> = ({
     if (type === 'text') {
       return (
         <Input
-          value={initialValue || ''}
-          onChange={(e) => onCellEdit(revenueId, field, e.target.value)}
+          value={currentTextValue}
+          onChange={(e) => setCurrentTextValue(e.target.value)}
           onBlur={(e) => { 
             onCellEdit(revenueId, field, e.target.value);
+            setEditingCell(null);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               onCellEdit(revenueId, field, (e.target as HTMLInputElement).value);
               setEditingCell(null); 
             } else if (e.key === 'Escape') {
+              setCurrentTextValue(initialValue || ''); // Revert
               setEditingCell(null); 
             }
           }}
@@ -171,7 +187,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
     <div
       className={`w-full h-full px-2 py-1 cursor-pointer hover:bg-gray-100 flex items-center ${alignmentClass} text-sm`}
       onClick={() => {
-        setEditingCell({ id: revenueId, field });
+        if (type === 'text' || type === 'number' || type === 'select' || type === 'month') { // Ensure only editable types trigger edit mode
+           setEditingCell({ id: revenueId, field });
+        }
       }}
     >
       {displayValue() || (type === 'select' ? <span className="text-muted-foreground italic">Select...</span> : '')}
