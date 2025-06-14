@@ -25,7 +25,7 @@ const Revenues = () => {
   const { toast } = useToast();
   const {
     revenues,
-    setRevenues,
+    setRevenues, // Keep if used for optimistic updates not covered by refetch
     customers,
     companies,
     divisions,
@@ -38,13 +38,12 @@ const Revenues = () => {
     setSearchParams,
     total,
     fetchData,
-    handleSaveRevenue,
-    handleDeleteRevenue,
+    handleSaveRevenue, // This now refetches
+    handleDeleteRevenue, // This now refetches or handles local state + refetch
   } = useRevenueData();
 
   const { getMonthName, getMonthNumber, calculateVNDRevenue } = useRevenueCalculations(currencies, exchangeRates);
 
-  // Add pagination for revenues
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
   const itemsPerPage = useMemo(() => searchParams.pageSize || 5, [searchParams.pageSize]);
   const totalPages = useMemo(() => Math.ceil(total / itemsPerPage), [total, itemsPerPage]);
@@ -66,18 +65,21 @@ const Revenues = () => {
   };
 
   const handlePageChange = (page: number) => {
-    // Ensure page is within valid bounds before setting
-    const effectivePageSize = searchParams.pageSize || 5;
+    const effectivePageSize = searchParams.pageSize || 5; // Use current or default
     const calculatedTotalPages = Math.ceil(total / effectivePageSize);
-    if (page >= 1 && page <= calculatedTotalPages) {
-      setSearchParams((prev) => ({ ...prev, page }));
-    } else if (page < 1) {
-      setSearchParams((prev) => ({ ...prev, page: 1 }));
+    
+    let newPage = page;
+    if (page < 1) {
+      newPage = 1;
     } else if (page > calculatedTotalPages && calculatedTotalPages > 0) {
-       setSearchParams((prev) => ({ ...prev, page: calculatedTotalPages }));
+      newPage = calculatedTotalPages;
+    }
+    // Only update if the page actually changes or needs to be clamped
+    if (searchParams.page !== newPage) {
+       setSearchParams((prev) => ({ ...prev, page: newPage }));
     }
   };
-
+  
   const handlePageSizeChange = (pageSize: number) => {
     setSearchParams((prev) => ({ ...prev, page: 1, pageSize }));
   };
@@ -152,16 +154,27 @@ const Revenues = () => {
         // Given the current structure, it's better to let `useTableFilter` in `RevenueTable` handle this.
         // So, this function might just call `fetchData()` if search is meant to be server-side.
         // Or, if it's client-side, `RevenueSearch` should provide the term to `RevenueTable`.
-        // Let's assume `RevenueSearch` works with `RevenueTable`'s internal filter.
-        // So, `onSearch` in `RevenueSearch` should trigger the filter in `RevenueTable`.
-        // This current `handleSearch` would be if `Revenues.tsx` managed the filtered list.
-        // For now, we will keep it as is, acknowledging it might conflict with `useTableFilter`
-        // if not coordinated. The `setRevenues(filtered)` line is problematic.
-        // A simple approach: fetch if search is empty, otherwise rely on internal table filter.
-        console.log("Search term:", searchTerm, "Current table filtering will apply.");
-      } else {
-        fetchData(); // Reload original data for the current page if search is cleared.
-      }
+        console.log("Search term:", searchTerm, "Current table filtering will apply if client-side, or API search if server-side.");
+      // If search is server-side and `searchTerm` is a param for `getRevenues`:
+      // setSearchParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
+      // Then `fetchData` (called by useEffect on `searchParams` change) would use it.
+      // If it's purely client-side via `useTableFilter` in `RevenueTable`,
+      // then `RevenueSearch` should communicate with `RevenueTable`.
+      // The current setup passes `revenues` (from API) to `RevenueTable`.
+      // If `RevenueTable` has `useTableFilter` that uses a search term,
+      // `searchTerm` state here needs to be passed to `RevenueTable`.
+      // Let's assume for now `useTableFilter` inside `RevenueTable` will use a passed `searchTerm`.
+    } else {
+      // If search is server-side and `q` was a param:
+      // setSearchParams(prev => {
+      //   const { q, ...rest } = prev;
+      //   return { ...rest, page: 1 };
+      // });
+      // If clearing a client-side filter, that's handled in RevenueTable.
+      // If search term was part of API call, clearing it means refetching without it.
+      // The current `fetchData()` here is fine if search term is not an API param.
+      fetchData();
+    }
   };
 
   const handleOpenDialog = (revenue: Revenue, mode: 'view' | 'edit') => {
@@ -183,44 +196,46 @@ const Revenues = () => {
         return;
       }
 
-      // Convert month name to number if editing month field
       let processedValue = value;
       if (field === 'month' && typeof value === 'string') {
         processedValue = getMonthNumber(value);
       }
 
-      // Calculate new values based on the field being updated
-      let updatedRevenue = { ...revenueToUpdate, [field]: processedValue };
+      let updatedRevenueData = { ...revenueToUpdate, [field]: processedValue };
       
-      // Recalculate original_amount if unit_price or quantity changes
       if (field === 'unit_price' || field === 'quantity') {
-        const unitPrice = field === 'unit_price' ? processedValue : updatedRevenue.unit_price || 0;
-        const quantity = field === 'quantity' ? processedValue : updatedRevenue.quantity || 1;
-        updatedRevenue.original_amount = unitPrice * quantity;
+        const unitPrice = field === 'unit_price' ? Number(processedValue) : Number(updatedRevenueData.unit_price || 0);
+        const quantity = field === 'quantity' ? Number(processedValue) : Number(updatedRevenueData.quantity || 1);
+        updatedRevenueData.original_amount = unitPrice * quantity;
       }
 
-      // Recalculate VND revenue
-      updatedRevenue.vnd_revenue = calculateVNDRevenue(updatedRevenue);
-
-      // Optimistically update the local state
-      const updatedRevenues = revenues.map((revenue) =>
-        revenue.id === id ? updatedRevenue : revenue
+      updatedRevenueData.vnd_revenue = calculateVNDRevenue(updatedRevenueData);
+      
+      // Optimistic update (optional, can be removed if fetchData after API call is preferred)
+      const updatedRevenuesOptimistic = revenues.map((r) =>
+        r.id === id ? updatedRevenueData : r
       );
-      setRevenues(updatedRevenues); // This is fine for optimistic update of current page data
+      setRevenues(updatedRevenuesOptimistic); // Update local state for current page
 
-      // Prepare the update object
-      const updateData: Partial<Revenue> = { 
+      const updatePayload: Partial<Revenue> = { 
         [field]: processedValue,
-        original_amount: updatedRevenue.original_amount,
-        vnd_revenue: updatedRevenue.vnd_revenue
+        original_amount: updatedRevenueData.original_amount,
+        vnd_revenue: updatedRevenueData.vnd_revenue
       };
+      // Ensure all relevant fields for the specific update are included.
+      // For example, if changing currency_id, year, or month, vnd_revenue might need explicit update.
+      // The current payload only sends the directly changed field and calculated amounts.
+      // If other fields influence calculations (e.g. currency_id for vnd_revenue), ensure API handles it or send them.
 
-      // Call the API to update the revenue
-      await updateRevenue(id, updateData);
-
-      toast({
-        title: "Revenue record updated successfully!",
-      });
+      await updateRevenue(id, updatePayload);
+      toast({ title: "Revenue record updated successfully!" });
+      // fetchData(); // Refetch to ensure data consistency, especially if other pages/totals affected.
+      // Or, if optimistic update is sufficient for current view and no totals change on this action.
+      // Given calculations, refetching is safer.
+      // My previous change made handleSaveRevenue refetch, so direct updateRevenue here should also consider it.
+      // For cell edit, optimistic update is good for responsiveness, but a final refetch might be needed
+      // if edits affect global things like total revenue sums not displayed on this page.
+      // For now, relying on optimistic update of current page for speed.
     } catch (error) {
       console.error("Error updating revenue:", error);
       toast({
@@ -228,24 +243,23 @@ const Revenues = () => {
         title: "Uh oh! Something went wrong.",
         description: "There was a problem updating the revenue record.",
       });
-      // Revert the local state in case of an error
-      fetchData();
+      fetchData(); // Revert on error
     }
   };
 
   const handleAddNewRow = async () => {
     try {
       console.log('Adding new row...');
-      const newRevenue: Omit<Revenue, 'id'> = {
-        year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
+      const newRevenueData: Omit<Revenue, 'id'> = {
+        year: searchParams.year || new Date().getFullYear(),
+        month: (searchParams.months && searchParams.months.length > 0 ? searchParams.months[0] : new Date().getMonth() + 1),
         customer_id: null,
         company_id: null,
         division_id: null,
         project_id: null,
         project_type_id: null,
         resource_id: null,
-        currency_id: null,
+        currency_id: null, // TODO: Default to a common currency?
         unit_price: 0,
         quantity: 1,
         original_amount: 0,
@@ -254,13 +268,9 @@ const Revenues = () => {
         project_name: '',
       };
       
-      // Create revenue and then refetch data to ensure pagination and totals are correct
-      await createRevenue(newRevenue);
-      fetchData(); // Refetch to get the latest data including the new row correctly paginated
-      
-      toast({
-        title: "New revenue record added successfully!",
-      });
+      await createRevenue(newRevenueData);
+      toast({ title: "New revenue record added successfully!" });
+      fetchData(); // Refetch to get the new row, ensure correct pagination and totals.
     } catch (error) {
       console.error("Error adding new revenue:", error);
       toast({
@@ -272,53 +282,17 @@ const Revenues = () => {
   };
 
   const handleInsertRowBelow = async (afterIndex: number) => {
-    // 'afterIndex' here is global index based on previous implementation.
-    // With server-side pagination, inserting at a specific global index is complex.
-    // Simplest is to add and refetch, new item will appear based on sorting (likely last).
-    // If specific positioning is critical, API needs to support it or client-side logic becomes very complex.
-    // For now, treat 'Insert Row Below' similar to 'Add New Row' in effect.
-    try {
-      console.log('Inserting row (treated as Add New Row due to server pagination):', afterIndex);
-      const newRevenue: Omit<Revenue, 'id'> = {
-        year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
-        // ... (same as handleAddNewRow)
-        customer_id: null,
-        company_id: null,
-        division_id: null,
-        project_id: null,
-        project_type_id: null,
-        resource_id: null,
-        currency_id: null,
-        unit_price: 0,
-        quantity: 1,
-        original_amount: 0,
-        vnd_revenue: 0,
-        notes: null,
-        project_name: '',
-      };
-      
-      await createRevenue(newRevenue);
-      fetchData(); // Refetch
-      
-      toast({
-        title: "New revenue record (inserted/added) successfully!",
-      });
-    } catch (error) {
-      console.error("Error inserting new revenue:", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem inserting the new revenue record.",
-      });
-    }
+    // Due to server-side pagination, "inserting below" a specific visual row
+    // is complex. It's treated like "add new" and will appear based on sorting/API logic.
+    console.log('Inserting row (behaves like Add New):', afterIndex);
+    await handleAddNewRow(); // Simplification: just call add new row logic
   };
 
   const handleCloneRevenue = async (sourceRevenue: Revenue, afterIndex: number) => {
     // Similar to insert, cloning and placing at specific 'afterIndex' is complex with server pagination.
-    // Clone and refetch.
+    // Clones data, new record appears based on sorting/API logic.
     try {
-      console.log('Cloning revenue (will refetch):', sourceRevenue);
+      console.log('Cloning revenue (will refetch):', sourceRevenue, 'after visual index:', afterIndex);
       const clonedData: Omit<Revenue, 'id'> = {
         year: sourceRevenue.year,
         month: sourceRevenue.month,
@@ -332,17 +306,15 @@ const Revenues = () => {
         unit_price: sourceRevenue.unit_price,
         quantity: sourceRevenue.quantity,
         original_amount: sourceRevenue.original_amount,
-        vnd_revenue: sourceRevenue.vnd_revenue,
+        // vnd_revenue will be recalculated by API or needs to be done here if currency/rate changes
+        vnd_revenue: sourceRevenue.vnd_revenue, // Or recalculate: calculateVNDRevenue({...sourceRevenue, id: ''})
         notes: sourceRevenue.notes || null,
         project_name: sourceRevenue.project_name || '',
       };
       
       await createRevenue(clonedData);
+      toast({ title: "Revenue record cloned successfully!" });
       fetchData(); // Refetch
-      
-      toast({
-        title: "Revenue record cloned successfully!",
-      });
     } catch (error) {
       console.error("Error cloning revenue:", error);
       toast({
@@ -352,18 +324,12 @@ const Revenues = () => {
       });
     }
   };
+  
+  // Placeholder functions for CSV and Clone Data
+  const handleImportCSV = () => { console.log("Import CSV clicked"); /* TODO */ };
+  const handleExportCSV = () => { console.log("Export CSV clicked"); /* TODO */ };
+  const handleCloneData = () => { console.log("Clone Data clicked"); /* TODO */ };
 
-  const handleImportCSV = () => {
-    // TODO: Implement import CSV
-  };
-
-  const handleExportCSV = () => {
-    // TODO: Implement export CSV
-  };
-
-  const handleCloneData = () => {
-    // TODO: Implement clone data
-  };
 
   return (
     <div>
@@ -389,7 +355,7 @@ const Revenues = () => {
               <RevenueSearch
                 searchTerm={searchTerm}
                 onSearchTermChange={setSearchTerm}
-                onSearch={handleSearch} // This might need to interact with RevenueTable's filter
+                onSearch={handleSearch}
               />
               <RevenueActions
                 onImportCSV={handleImportCSV}
@@ -400,7 +366,7 @@ const Revenues = () => {
             </div>
 
             <RevenueTable
-              revenues={revenues} // Pass server-paginated revenues
+              revenues={revenues}
               customers={customers}
               companies={companies}
               divisions={divisions}
@@ -408,25 +374,31 @@ const Revenues = () => {
               projectTypes={projectTypes}
               resources={resources}
               currencies={currencies}
-              searchParams={searchParams} // Pass searchParams for page number, page size for "No." column
+              searchParams={searchParams} 
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
               onCellEdit={handleCellEdit}
-              onInsertRowBelow={handleInsertRowBelow} // Note: Behavior changed due to server pagination
-              onCloneRevenue={handleCloneRevenue}     // Note: Behavior changed
+              onInsertRowBelow={handleInsertRowBelow}
+              onCloneRevenue={handleCloneRevenue}
               onOpenDialog={handleOpenDialog}
-              onDeleteRevenue={handleDeleteRevenue} // This already re-fetches or filters locally
+              onDeleteRevenue={handleDeleteRevenue} // This is from useRevenueData, already handles refetch/state
+              // Pass searchTerm for client-side filtering in RevenueTable if that's the design
+              // Or RevenueTable's useTableFilter needs its own search input or prop.
+              // currentSearchTerm={searchTerm} // Example if RevenueTable uses it
             />
-
+            
+            {/* PaginationControls expects totalPages from server data */}
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={handlePageChange} // This function now directly updates API searchParams
+              onPageChange={handlePageChange}
               onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
               onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
-              totalItems={total} // Total items from API
+              totalItems={total}
               startIndex={startIndex}
               endIndex={endIndex}
+              // pageSize={itemsPerPage} // Already part of searchParams
+              // onPageSizeChange={handlePageSizeChange} // If page size selector is in PaginationControls
             />
           </CardContent>
         </Card>
@@ -444,10 +416,10 @@ const Revenues = () => {
         projectTypes={projectTypes}
         resources={resources}
         currencies={currencies}
-        onSave={handleSaveRevenue}
+        onSave={handleSaveRevenue} // This is from useRevenueData, already handles refetch
       />
     </div>
   );
-};
+}; // This closing brace for the Revenues component was likely missing or misplaced.
 
 export default Revenues;
