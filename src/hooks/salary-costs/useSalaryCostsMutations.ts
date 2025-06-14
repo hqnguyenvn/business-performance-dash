@@ -43,5 +43,10 @@ export const useSalaryCostsMutations = () => {
     onError: (error) => toast({ variant: "destructive", title: "Error", description: `Failed to import costs: ${error.message}` }),
   });
 
-  return { createSalaryCostMutation, updateSalaryCostMutation, deleteSalaryCostMutation, bulkCreateSalaryCostMutation };
+  const insertSalaryCostMutation = useMutation({
+    mutationFn: (cost: SalaryCostInsert) => upsertSalaryCosts([cost]),
+    onError: (error) => toast({ variant: "destructive", title: "Error", description: `Failed to insert cost: ${error.message}` }),
+  });
+
+  return { createSalaryCostMutation, updateSalaryCostMutation, deleteSalaryCostMutation, bulkCreateSalaryCostMutation, insertSalaryCostMutation };
 };

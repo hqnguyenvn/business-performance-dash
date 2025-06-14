@@ -45,6 +45,7 @@ export const SalaryCostsTable = ({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>No.</TableHead>
             <TableHead>Year</TableHead>
             <TableHead>Month</TableHead>
             <TableHead>Company</TableHead>
@@ -58,11 +59,12 @@ export const SalaryCostsTable = ({
         <TableBody>
           {costs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8">No data available.</TableCell>
+              <TableCell colSpan={9} className="text-center py-8">No data available.</TableCell>
             </TableRow>
           ) : (
-            costs.map((cost) => (
+            costs.map((cost, index) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
+                <TableCell>{index + 1}</TableCell>
                 <TableCell className="p-1">
                    <Input
                     value={cost.year.toString()}

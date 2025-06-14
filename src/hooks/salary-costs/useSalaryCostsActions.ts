@@ -1,8 +1,9 @@
 
-import { v4 as uuidv4 } from 'uuid';
 import { SalaryCost, SalaryCostInsert } from '@/services/salaryCostService';
 import { MasterData } from '@/services/masterDataService';
 import { useSalaryCostsMutations } from './useSalaryCostsMutations';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 
 interface UseSalaryCostsActionsProps {
   salaryCosts: SalaryCost[];
@@ -23,7 +24,9 @@ export const useSalaryCostsActions = ({
   selectedYear,
   selectedMonths
 }: UseSalaryCostsActionsProps) => {
-  const { createSalaryCostMutation, updateSalaryCostMutation } = useSalaryCostsMutations();
+  const { createSalaryCostMutation, updateSalaryCostMutation, insertSalaryCostMutation } = useSalaryCostsMutations();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const addNewRow = () => {
     const newCost: SalaryCostInsert = {
@@ -41,22 +44,51 @@ export const useSalaryCostsActions = ({
   const insertRowBelow = (id: string) => {
     const baseRow = salaryCosts.find(c => c.id === id);
     const newCost: SalaryCostInsert = {
-      year: baseRow?.year || parseInt(selectedYear),
-      month: baseRow?.month || (selectedMonths.length > 0 ? selectedMonths[0] : new Date().getMonth() + 1),
+      year: new Date().getFullYear(),
+      month: new Date().getMonth() + 1,
       company_id: baseRow?.company_id || null,
       division_id: baseRow?.division_id || null,
       customer_id: baseRow?.customer_id || null,
       amount: 0,
       notes: ''
     };
-    createSalaryCostMutation.mutate(newCost);
+    
+    insertSalaryCostMutation.mutate(newCost, {
+      onSuccess: (data) => {
+        const newRecord = data?.[0];
+        if (newRecord) {
+            const index = salaryCosts.findIndex(c => c.id === id);
+            if (index !== -1) {
+                const newCosts = [...salaryCosts];
+                newCosts.splice(index + 1, 0, newRecord);
+                setSalaryCosts(newCosts);
+                queryClient.setQueryData(['salaryCosts'], newCosts);
+                toast({ title: "Success", description: "Row inserted." });
+            }
+        }
+      }
+    });
   };
 
   const cloneRow = (id: string) => {
     const baseRow = salaryCosts.find(c => c.id === id);
     if (baseRow) {
       const { id: _, created_at, updated_at, ...newCost } = baseRow;
-      createSalaryCostMutation.mutate(newCost);
+      insertSalaryCostMutation.mutate(newCost, {
+        onSuccess: (data) => {
+          const newRecord = data?.[0];
+          if (newRecord) {
+              const index = salaryCosts.findIndex(c => c.id === id);
+              if (index !== -1) {
+                  const newCosts = [...salaryCosts];
+                  newCosts.splice(index + 1, 0, newRecord);
+                  setSalaryCosts(newCosts);
+                  queryClient.setQueryData(['salaryCosts'], newCosts);
+                  toast({ title: "Success", description: "Row cloned." });
+              }
+          }
+        }
+      });
     }
   };
 
