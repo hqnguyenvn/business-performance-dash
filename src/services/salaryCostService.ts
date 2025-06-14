@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
@@ -15,7 +14,7 @@ export const getSalaryCosts = async (): Promise<SalaryCost[]> => {
   return data || [];
 };
 
-export const upsertSalaryCosts = async (costs: (SalaryCostInsert | SalaryCostUpdate)[]) => {
+export const upsertSalaryCosts = async (costs: SalaryCostInsert[]) => {
     const { data, error } = await supabase.from('salary_costs').upsert(costs).select();
     if (error) {
       console.error("Error upserting salary costs:", error);

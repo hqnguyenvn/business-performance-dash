@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
-import { getSalaryCosts, upsertSalaryCosts, deleteSalaryCosts, SalaryCost } from '@/services/salaryCostService';
-import { getMasterData, MasterData } from '@/services/masterDataService';
+import { getSalaryCosts, upsertSalaryCosts, deleteSalaryCosts, SalaryCost, SalaryCostInsert } from '@/services/salaryCostService';
+import { getMasterDatas, MasterData } from '@/services/masterDataService';
 
 export type SalaryCostWithStatus = SalaryCost & {
   is_new?: boolean;
@@ -36,9 +35,9 @@ export const useSalaryCosts = () => {
     enabled: !!selectedYear,
   });
 
-  const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({ queryKey: ['companies'], queryFn: () => getMasterData('companies') });
-  const { data: divisions = [], isLoading: isLoadingDivisions } = useQuery({ queryKey: ['divisions'], queryFn: () => getMasterData('divisions') });
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({ queryKey: ['customers'], queryFn: () => getMasterData('customers') });
+  const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({ queryKey: ['companies'], queryFn: () => getMasterDatas('companies') });
+  const { data: divisions = [], isLoading: isLoadingDivisions } = useQuery({ queryKey: ['divisions'], queryFn: () => getMasterDatas('divisions') });
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({ queryKey: ['customers'], queryFn: () => getMasterDatas('customers') });
 
   const isLoading = isLoadingCosts || isLoadingCompanies || isLoadingDivisions || isLoadingCustomers;
 
@@ -70,7 +69,14 @@ export const useSalaryCosts = () => {
   const saveAllData = () => {
     const costsToUpsert = salaryCosts
       .filter(c => c.is_new || c.is_updated)
-      .map(({ is_new, is_updated, ...rest }) => rest);
+      .map(cost => {
+        const { is_new, is_updated, created_at, updated_at, ...rest } = cost;
+        if (cost.is_new) {
+          const { id, ...newCost } = rest;
+          return newCost as SalaryCostInsert;
+        }
+        return rest as SalaryCostInsert;
+      });
 
     if (costsToUpsert.length > 0) {
       upsertMutation.mutate(costsToUpsert);
