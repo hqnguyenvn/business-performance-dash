@@ -5,6 +5,9 @@ import { CostsHeader } from "@/components/costs/CostsHeader";
 import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
+import { Button } from "@/components/ui/button";
+import { Plus, Download, Save, Import } from "lucide-react";
+import CloneCostDialog from "@/components/costs/CloneCostDialog";
 
 const Costs = () => {
   const {
@@ -60,22 +63,41 @@ const Costs = () => {
           availableYears={availableYears}
           selectedMonths={selectedMonths}
           handleMonthToggle={handleMonthToggle}
-          importFromCSV={importFromCSV}
-          exportToCSV={exportToCSV}
-          saveAllData={saveAllData}
-          addNewRow={addNewRow}
-          onClone={cloneCosts}
         />
 
-        <CostsTable
-          costs={costs}
-          filteredCosts={filteredCosts}
-          costTypes={costTypes}
-          updateCost={updateCost}
-          openDialog={openDialog}
-          deleteCost={deleteCost}
-          addNewRow={addNewRow}
-        />
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Cost Data</h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={importFromCSV}>
+                <Import className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+              <Button variant="outline" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" onClick={saveAllData}>
+                <Save className="h-4 w-4 mr-2" />
+                Save All
+              </Button>
+              <CloneCostDialog onClone={cloneCosts} />
+              <Button onClick={addNewRow}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row
+              </Button>
+            </div>
+          </div>
+          <CostsTable
+            costs={costs}
+            filteredCosts={filteredCosts}
+            costTypes={costTypes}
+            updateCost={updateCost}
+            openDialog={openDialog}
+            deleteCost={deleteCost}
+            addNewRow={addNewRow}
+          />
+        </div>
       </div>
 
       <CostDialogs
