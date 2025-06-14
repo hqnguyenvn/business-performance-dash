@@ -19,7 +19,7 @@ export const useRevenueCrudOperations = (
 ) => {
   const { toast } = useToast();
   const { revenues, setRevenues, fetchData } = revenueDataState;
-  const { calculateVNDRevenue } = calculationHelpers;
+  const { getMonthNumber, calculateVNDRevenue } = calculationHelpers;
 
   const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
     const currentRevenue = revenues.find(r => r.id === id);
@@ -29,59 +29,90 @@ export const useRevenueCrudOperations = (
     }
 
     const updatedFields: Partial<Revenue> = {};
-    let processedValue = value;
 
-    // Coerce to number for numeric fields, handling potential NaN or empty strings
+    // Coerce and assign value based on field type
     if (field === 'year' || field === 'month' || field === 'original_amount' || field === 'vnd_revenue') {
-        processedValue = parseFloat(String(value));
-        if (isNaN(processedValue)) processedValue = 0; // Default to 0 for required numbers if NaN
+        const numValue = parseFloat(String(value));
+        updatedFields[field] = isNaN(numValue) ? 0 : numValue;
     } else if (field === 'unit_price' || field === 'quantity') {
         if (value === null || String(value).trim() === '') {
-            processedValue = undefined; // Optional numeric fields can be undefined
+            updatedFields[field] = undefined;
         } else {
-            processedValue = parseFloat(String(value));
-            if (isNaN(processedValue)) processedValue = undefined; // Or some other default like 0
+            const numValue = parseFloat(String(value));
+            updatedFields[field] = isNaN(numValue) ? undefined : numValue;
+        }
+    } else if (field === 'id') { // Required string fields
+        updatedFields[field] = String(value ?? ''); // Should not be undefined
+    } else { // Optional string fields (customer_id, company_id, ..., notes, project_name, currency_id)
+        if (value === null || value === undefined) {
+            updatedFields[field] = undefined;
+        } else {
+            updatedFields[field] = String(value);
         }
     }
     
-    updatedFields[field] = processedValue;
-
-
     // Create a temporary complete object for calculations
-    let tempCalcRevenue: Revenue = { ...currentRevenue, ...updatedFields }; // Spread updatedFields to include all changes
+    // Important: Use a fresh copy of currentRevenue and merge changes from updatedFields
+    // This ensures that if a field was not directly edited but is part of updatedFields (e.g. due to earlier logic if any), it's used.
+    // However, the above assignments directly to updatedFields[field] should be sufficient for the direct edit.
+    let tempCalcRevenue: Revenue = { ...currentRevenue, ...updatedFields };
 
+    // Recalculate original_amount if unit_price or quantity changed
     if (field === 'unit_price' || field === 'quantity') {
       const newOriginalAmount = (numericOrZero(tempCalcRevenue.unit_price)) * (numericOrZero(tempCalcRevenue.quantity));
       updatedFields.original_amount = newOriginalAmount;
       tempCalcRevenue.original_amount = newOriginalAmount; // Update for subsequent VND calculation
     }
     
-    if (
-      field === 'unit_price' || 
-      field === 'quantity' || 
-      field === 'currency_id' || 
-      field === 'year' || 
-      field === 'month' ||
-      (updatedFields.original_amount !== undefined && updatedFields.original_amount !== currentRevenue.original_amount)
-    ) {
+    // Recalculate VND revenue if relevant fields changed
+    const fieldsImpactingVnd = ['unit_price', 'quantity', 'currency_id', 'year', 'month', 'original_amount'];
+    if (fieldsImpactingVnd.includes(field) || (updatedFields.original_amount !== undefined && updatedFields.original_amount !== currentRevenue.original_amount)) {
+      // Ensure original_amount is current in tempCalcRevenue before calculating VND revenue
+      // This is important if original_amount was just calculated and set in updatedFields
+      if (updatedFields.original_amount !== undefined) {
+        tempCalcRevenue.original_amount = updatedFields.original_amount;
+      }
       const newVndRevenue = calculateVNDRevenue(tempCalcRevenue);
       updatedFields.vnd_revenue = newVndRevenue;
-      tempCalcRevenue.vnd_revenue = newVndRevenue; // ensure tempCalcRevenue has the latest
+      tempCalcRevenue.vnd_revenue = newVndRevenue; 
     }
     
-    // Ensure all calculated fields are part of updatedFields if they changed
-    if (tempCalcRevenue.original_amount !== currentRevenue.original_amount) {
+    // Ensure all calculated fields are part of updatedFields if they changed from currentRevenue
+    // (original_amount might have been set above, this is more of a safeguard or for other calculated fields if any)
+    if (tempCalcRevenue.original_amount !== currentRevenue.original_amount && updatedFields.original_amount === undefined) {
         updatedFields.original_amount = tempCalcRevenue.original_amount;
     }
-    if (tempCalcRevenue.vnd_revenue !== currentRevenue.vnd_revenue) {
+    if (tempCalcRevenue.vnd_revenue !== currentRevenue.vnd_revenue && updatedFields.vnd_revenue === undefined) {
         updatedFields.vnd_revenue = tempCalcRevenue.vnd_revenue;
     }
 
+    // If no actual changes were made (e.g. user entered same value, or calculations resulted in same values)
+    // This check needs to compare updatedFields against currentRevenue for relevant keys in updatedFields
+    let hasChanges = false;
+    for (const key in updatedFields) {
+        if (updatedFields.hasOwnProperty(key)) {
+            const typedKey = key as keyof Revenue;
+            if (updatedFields[typedKey] !== currentRevenue[typedKey]) {
+                hasChanges = true;
+                break;
+            }
+        }
+    }
+    if (!hasChanges && Object.keys(updatedFields).length > 0) { // if updatedFields has keys but values are same as currentRevenue
+        // This can happen if user "edits" a cell but puts the same value back.
+        // We might still want to proceed if some other logic depends on it, or toast "No changes made".
+        // For now, let's proceed if there are any keys in updatedFields, as some calculation might have occurred.
+        // A more refined check would be if the final updatedFields object is actually different.
+    }
 
-    if (Object.keys(updatedFields).length === 0) return; 
+
+    if (Object.keys(updatedFields).length === 0 && !hasChanges) { // Stricter check: if no keys or no effective changes
+      // toast({ title: "No changes detected." }); // Optional: inform user
+      return; 
+    }
 
     try {
-      await updateRevenue(id, updatedFields);
+      await updateRevenue(id, updatedFields); // Pass only the changed fields
       setRevenues(prevRevenues =>
         prevRevenues.map(r =>
           r.id === id ? { ...r, ...updatedFields } : r
@@ -94,7 +125,7 @@ export const useRevenueCrudOperations = (
         title: "Lỗi cập nhật",
         description: error?.message || "Không thể cập nhật dữ liệu.",
       });
-      fetchData();
+      fetchData(); // Re-fetch to revert optimistic update on error
     }
   };
 
@@ -169,7 +200,6 @@ export const useRevenueCrudOperations = (
   };
 
   const handleCloneRevenue = async (revenueToClone: Revenue, globalIndex: number) => {
-    // Remove id, created_at, and updated_at for cloning
     // The Revenue type doesn't have created_at/updated_at, so we only destructure id.
     const { id, ...cloneDataWithoutId } = revenueToClone; 
     const cloneData = cloneDataWithoutId; // Alias for clarity
