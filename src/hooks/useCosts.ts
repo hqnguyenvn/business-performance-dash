@@ -419,6 +419,12 @@ export const useCosts = () => {
     return month ? month.label : monthNumber.toString();
   };
 
+  const getCostTypeName = (costTypeId: string): string => {
+    if (!costTypeId) return "";
+    const costType = costTypes.find(c => c.id === costTypeId);
+    return costType ? costType.code : "";
+  };
+
   const getMonthNumber = (monthName: string): number => {
     if (!monthName) return 0;
     const month = MONTHS.find(m => m.label.toLowerCase() === monthName.toLowerCase().trim());
@@ -462,6 +468,7 @@ export const useCosts = () => {
     handleYearChange,
     handleMonthToggle,
     getMonthName,
+    getCostTypeName,
     getCostTypeId,
   };
 };
