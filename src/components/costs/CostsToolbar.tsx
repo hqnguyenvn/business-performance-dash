@@ -1,5 +1,5 @@
 
-import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CostsToolbarProps {
@@ -27,7 +27,7 @@ export const CostsToolbar = ({
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-8 w-full">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">Year</label>
             <Select value={selectedYear} onValueChange={handleYearChange}>
@@ -43,19 +43,23 @@ export const CostsToolbar = ({
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="flex-1">
             <label className="text-sm font-medium text-gray-700 block mb-1">Months</label>
-            <div className="flex items-center gap-1">
+            <div className="grid grid-cols-6 md:grid-cols-12 gap-x-6 gap-y-2">
               {MONTHS.map(({ value, label }) => (
-                <Button
-                  key={value}
-                  variant={selectedMonths.includes(value) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleMonthToggle(value)}
-                  className="px-3"
-                >
-                  {label}
-                </Button>
+                <div key={value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`month-toolbar-${value}`}
+                    checked={selectedMonths.includes(value)}
+                    onCheckedChange={() => handleMonthToggle(value)}
+                  />
+                  <label
+                    htmlFor={`month-toolbar-${value}`}
+                    className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {label}
+                  </label>
+                </div>
               ))}
             </div>
           </div>
