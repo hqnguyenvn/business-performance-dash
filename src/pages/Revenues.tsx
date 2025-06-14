@@ -53,11 +53,13 @@ const Revenues = () => {
     setIsDialogOpen,
   } = useRevenueDialog();
 
+  // Fix: only destructure handleAddNewRow, handleInsertRowBelow, handleCloneRevenue from the CRUD operations hook.
+  // Alias the hook's handleCellEdit as handleCellEditDb to avoid conflicts.
   const {
-    handleCellEdit,
     handleAddNewRow,
     handleInsertRowBelow,
     handleCloneRevenue,
+    handleCellEdit: handleCellEditDb
   } = useRevenueCrudOperations(
     { revenues, setRevenues, fetchData, searchParams },
     { getMonthNumber, calculateVNDRevenue }
@@ -451,11 +453,11 @@ const Revenues = () => {
   // Khi nhấn Enter trên cell cuối hoặc blur ngoài dòng tạm thì lưu
   const handleCellEdit = (id: string, field: keyof Revenue, value: any) => {
     if (tempRow && id === tempRow.id) {
-      // Đang edit dòng tạm
+      // Editing temp row
       handleEditTempRow(id, field as keyof typeof tempRow, value);
     } else {
-      // Sửa cell của dòng thực trên DB:
-      crudCellEdit(id, field, value);
+      // Editing regular persisted row — delegate to hook
+      handleCellEditDb(id, field, value);
     }
   };
 
