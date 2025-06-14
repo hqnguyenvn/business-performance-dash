@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 
 interface Params {

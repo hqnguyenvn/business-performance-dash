@@ -1,3 +1,4 @@
+
 import React from "react";
 import RevenueTableRow from "./RevenueTableRow";
 import { Revenue } from "@/types/revenue";
@@ -15,7 +16,7 @@ interface Props {
   getMonthName: (monthNumber: number) => string;
   calculateVNDRevenue: (revenue: Revenue) => number;
   editingCell: { id: string; field: string } | null;
-  setEditingCell: (cell: { id: string; field: string } | null) => void;
+  setEditingCell: (cell: { id:string; field: string } | null) => void;
   onCellEdit: (id: string, field: keyof Revenue, value: any) => void;
   onCommitTempRow: () => void;
 }
@@ -36,9 +37,18 @@ const RevenueInlineRow: React.FC<Props> = ({
   onCellEdit,
   onCommitTempRow,
 }) => {
+  const completeTempRow: Revenue = {
+    id: 'temp-id',
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+    original_amount: 0,
+    vnd_revenue: 0,
+    ...tempRow,
+  };
+
   return (
     <RevenueTableRow
-      revenue={tempRow}
+      revenue={completeTempRow}
       index={0}
       pageIndex={1}
       pageSize={1}
@@ -52,7 +62,7 @@ const RevenueInlineRow: React.FC<Props> = ({
       resources={resources}
       currencies={currencies}
       getMonthName={getMonthName}
-      calculateVNDRevenue={calculateVNDRevenue}
+      calculateVNDRevenue={calculateVNDRevenue as (revenue: Partial<Revenue>) => number}
       onCellEdit={onCellEdit}
       onInsertRowBelow={() => {}}
       onCloneRevenue={() => {}}

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from "react";
 import {
   Card,
@@ -344,9 +345,10 @@ const Revenues = () => {
     targetMonth: number
   ) => {
     try {
-      const sourceRevenues = await (await import("@/services/revenueApi")).revenueService.getByFilters({
+      const { data: sourceRevenues } = await (await import("@/services/revenueApi")).getRevenues({
         year: sourceYear,
-        month: sourceMonth,
+        months: [sourceMonth],
+        pageSize: 'all',
       });
 
       if (sourceRevenues.length === 0) {
