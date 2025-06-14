@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -104,9 +103,6 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
   return (
     <div className="border rounded-lg overflow-x-auto">
       <Table>
-        <TableCaption>
-          A list of your recent revenue records.
-        </TableCaption>
         <TableHeader className="sticky top-0 bg-white z-10">
           <TableRow>
             <TableHead className="w-[50px] border-r">No.</TableHead>
