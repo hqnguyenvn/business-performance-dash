@@ -13,7 +13,6 @@ interface TableFilterProps {
   onFilter: (field: string, values: string[]) => void;
   activeFilters: string[];
   className?: string;
-  displayOptions?: { id: any; code: string }[];
 }
 
 export const TableFilter: React.FC<TableFilterProps> = ({
@@ -21,47 +20,46 @@ export const TableFilter: React.FC<TableFilterProps> = ({
   field,
   onFilter,
   activeFilters,
-  className,
-  displayOptions
+  className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedValues, setSelectedValues] = useState<string[]>(activeFilters);
   const [selectAll, setSelectAll] = useState(true);
 
-  // Get unique values for this field
-  const uniqueValues = React.useMemo(() => {
-    const values = data.map(item => {
+  // Get unique values for this field from the data
+  const uniqueOptions = React.useMemo(() => {
+    const options = data.map(item => {
       const value = item[field];
-      if (value === null || value === undefined) return "";
-      return typeof value === 'object' ? JSON.stringify(value) : String(value);
+      const displayValue = item.displayValue || value;
+      return {
+        value: String(value || ''),
+        display: String(displayValue || '(Empty)')
+      };
     });
-    return [...new Set(values)].sort();
+    
+    // Remove duplicates based on value
+    const seen = new Set();
+    return options.filter(option => {
+      if (seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    }).sort((a, b) => a.display.localeCompare(b.display));
   }, [data, field]);
 
-  // Get display values if display options are provided
-  const getDisplayValue = (value: string) => {
-    if (displayOptions) {
-      const option = displayOptions.find(opt => String(opt.id) === value);
-      return option ? option.code : value;
-    }
-    return value;
-  };
-
-  // Filter values based on search term
-  const filteredValues = uniqueValues.filter(value => {
-    const displayValue = getDisplayValue(value);
-    return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // Filter options based on search term
+  const filteredOptions = uniqueOptions.filter(option => 
+    option.display.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     setSelectedValues(activeFilters);
-    setSelectAll(activeFilters.length === uniqueValues.length || activeFilters.length === 0);
-  }, [activeFilters, uniqueValues.length]);
+    setSelectAll(activeFilters.length === uniqueOptions.length || activeFilters.length === 0);
+  }, [activeFilters, uniqueOptions.length]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedValues(filteredValues);
+      setSelectedValues(filteredOptions.map(option => option.value));
       setSelectAll(true);
     } else {
       setSelectedValues([]);
@@ -83,12 +81,12 @@ export const TableFilter: React.FC<TableFilterProps> = ({
   };
 
   const clearFilter = () => {
-    setSelectedValues(uniqueValues);
+    setSelectedValues(uniqueOptions.map(option => option.value));
     onFilter(field, []);
     setIsOpen(false);
   };
 
-  const hasActiveFilter = activeFilters.length > 0 && activeFilters.length < uniqueValues.length;
+  const hasActiveFilter = activeFilters.length > 0 && activeFilters.length < uniqueOptions.length;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -140,19 +138,19 @@ export const TableFilter: React.FC<TableFilterProps> = ({
         </div>
 
         <div className="max-h-48 overflow-y-auto p-2 space-y-1">
-          {filteredValues.map((value) => (
-            <div key={value} className="flex items-center space-x-2">
+          {filteredOptions.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
               <Checkbox
-                id={`filter-${value}`}
-                checked={selectedValues.includes(value)}
-                onCheckedChange={(checked) => handleValueToggle(value, Boolean(checked))}
+                id={`filter-${option.value}`}
+                checked={selectedValues.includes(option.value)}
+                onCheckedChange={(checked) => handleValueToggle(option.value, Boolean(checked))}
               />
               <label 
-                htmlFor={`filter-${value}`} 
+                htmlFor={`filter-${option.value}`} 
                 className="text-sm cursor-pointer flex-1 truncate"
-                title={getDisplayValue(value)}
+                title={option.display}
               >
-                {getDisplayValue(value) || "(Empty)"}
+                {option.display}
               </label>
             </div>
           ))}
