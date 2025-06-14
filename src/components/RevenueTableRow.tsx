@@ -1,3 +1,4 @@
+
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/services/revenueService";
@@ -30,6 +31,7 @@ interface RevenueTableRowProps {
   onCommitTempRow?: () => void;
 }
 
+// Fix: always provide options for select fields.
 function getCellConfigs(
   customers: MasterData[], companies: MasterData[], divisions: MasterData[], projects: MasterData[],
   projectTypes: MasterData[], resources: MasterData[], currencies: MasterData[],
@@ -38,8 +40,6 @@ function getCellConfigs(
   pageSize: number | 'all',
   isTempRow?: boolean
 ): CellConfig[] {
-  // Khi là dòng tạm (isTempRow) thì TẤT CẢ các ô (trừ index) đều là editable
-  // Ngược lại thì chỉ một số ô được cho phép sửa (theo logic cũ)
   return [
     {
       type: 'index',
@@ -51,15 +51,42 @@ function getCellConfigs(
     },
     { field: 'year', type: 'number', step: "1" },
     { field: 'month', type: 'month' },
-    // SỬA: cho phép tất cả các select là editable nếu là dòng tạm
-    { field: 'customer_id', type: isTempRow ? 'select' : 'select', options: customers },
-    { field: 'company_id', type: isTempRow ? 'select' : 'select', options: companies },
-    { field: 'division_id', type: isTempRow ? 'select' : 'select', options: divisions },
-    { field: 'project_id', type: isTempRow ? 'select' : 'select', options: projects },
+    {
+      field: 'customer_id',
+      type: 'select',
+      options: customers ?? [],
+    },
+    {
+      field: 'company_id',
+      type: 'select',
+      options: companies ?? [],
+    },
+    {
+      field: 'division_id',
+      type: 'select',
+      options: divisions ?? [],
+    },
+    {
+      field: 'project_id',
+      type: 'select',
+      options: projects ?? [],
+    },
     { field: 'project_name', type: 'text', maxLength: 50 },
-    { field: 'project_type_id', type: isTempRow ? 'select' : 'select', options: projectTypes },
-    { field: 'resource_id', type: isTempRow ? 'select' : 'select', options: resources },
-    { field: 'currency_id', type: isTempRow ? 'select' : 'select', options: currencies },
+    {
+      field: 'project_type_id',
+      type: 'select',
+      options: projectTypes ?? [],
+    },
+    {
+      field: 'resource_id',
+      type: 'select',
+      options: resources ?? [],
+    },
+    {
+      field: 'currency_id',
+      type: 'select',
+      options: currencies ?? [],
+    },
     {
       field: 'unit_price',
       type: 'number',
@@ -125,9 +152,12 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
     calculateVNDRevenue,
   };
 
-  // Truyền thêm isTempRow vào getCellConfigs
+  // Chỉ debug: console.log để test xem options có bị undefined không
+  // console.log('TableRow customers:', customers);
+
   const cellConfigs = getCellConfigs(
-    customers, companies, divisions, projects, projectTypes, resources, currencies,
+    customers ?? [], companies ?? [], divisions ?? [], projects ?? [],
+    projectTypes ?? [], resources ?? [], currencies ?? [],
     getMonthName, calculateVNDRevenue, pageSize, isTempRow
   );
 
@@ -170,3 +200,4 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
 };
 
 export default RevenueTableRow;
+
