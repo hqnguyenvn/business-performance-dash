@@ -457,7 +457,7 @@ const Revenues = () => {
                   totalItems={total}
                   startIndex={startIndex}
                   endIndex={endIndex}
-                  pageSize={itemsPerPage}
+                  pageSize={searchParams.pageSize}
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />

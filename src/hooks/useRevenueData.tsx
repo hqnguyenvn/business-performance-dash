@@ -34,7 +34,7 @@ export const useRevenueData = () => {
     year: new Date().getFullYear(),
     months: defaultMonths,
     page: 1,
-    pageSize: 5,
+    pageSize: 25,
   });
   const [total, setTotal] = useState(0);
 
