@@ -13,18 +13,18 @@ import RevenueSearch from "@/components/RevenueSearch";
 import RevenueActions from "@/components/RevenueActions";
 import RevenueDialog from "@/components/RevenueDialog";
 import PaginationControls from "@/components/PaginationControls";
-import { useToast } from "@/hooks/use-toast"; // Kept for any direct toast usage if needed, though most are in hooks now
+import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from "@/hooks/useRevenueData";
 import { useRevenueCalculations } from "@/hooks/useRevenueCalculations";
-import { useRevenueDialog } from "@/hooks/useRevenueDialog";
-import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
+import { useRevenueDialog } from "@/hooks/useRevenueDialog"; // Correctly import new hook
+import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations"; // Correctly import new hook
 import { Revenue } from "@/services/revenueService"; // Keep if used for type annotations
 
 const Revenues = () => {
-  const { toast } = useToast(); // Retain if any direct toasts are used here, otherwise can be removed.
+  const { toast } = useToast();
   const {
     revenues,
-    setRevenues,
+    setRevenues, // Passed to useRevenueCrudOperations
     customers,
     companies,
     divisions,
@@ -36,23 +36,25 @@ const Revenues = () => {
     searchParams,
     setSearchParams,
     total,
-    fetchData,
+    fetchData, // Passed to useRevenueCrudOperations
     handleSaveRevenue, // This is for the dialog save, comes from useRevenueData
     handleDeleteRevenue, // This is for row delete, comes from useRevenueData
   } = useRevenueData();
 
   const revenueCalculations = useRevenueCalculations(currencies, exchangeRates);
-  const { getMonthName, calculateVNDRevenue } = revenueCalculations;
+  const { getMonthName, getMonthNumber, calculateVNDRevenue } = revenueCalculations;
 
+  // Use the new useRevenueDialog hook
   const {
     revenueInDialog,
     isDialogOpen,
     dialogMode,
     handleOpenDialog,
-    // handleCloseDialog, // Not directly called from here, RevenueDialog uses setIsDialogOpen
+    // handleCloseDialog, // RevenueDialog uses setIsDialogOpen directly from the hook
     setIsDialogOpen,
   } = useRevenueDialog();
 
+  // Use the new useRevenueCrudOperations hook
   const {
     handleCellEdit,
     handleAddNewRow,
@@ -60,7 +62,7 @@ const Revenues = () => {
     handleCloneRevenue,
   } = useRevenueCrudOperations(
     { revenues, setRevenues, fetchData, searchParams },
-    revenueCalculations
+    { getMonthNumber, calculateVNDRevenue } // Pass calculation functions needed by the hook
   );
 
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
@@ -95,34 +97,23 @@ const Revenues = () => {
     }
   };
   
-  // const handlePageSizeChange = (pageSize: number) => { // This was not used by PaginationControls currently
-  //   setSearchParams((prev) => ({ ...prev, page: 1, pageSize }));
-  // };
-
   const handleSearch = () => {
-    // This search logic remains as it was, potentially for server-side search integration
-    // or to influence filtering if RevenueTable uses `searchTerm` prop.
-    // Current client-side filtering is primarily handled by `useTableFilter` within `RevenueTable`.
+    // This search function's behavior depends on whether search is client-side or server-side.
+    // If client-side via useTableFilter in RevenueTable, searchTerm should be passed as a prop.
+    // If server-side, setSearchParams should include the search term and fetchData will use it.
     console.log("Search triggered with term:", searchTerm);
-    if (searchTerm.trim()) {
-      // If search is server-side:
-      // setSearchParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
-      // If client-side and RevenueTable uses a `currentSearchTerm` prop, just ensure state is updated.
-      // The actual filtering happens in RevenueTable via useTableFilter.
-      // For now, this function might be a placeholder or trigger an API call if searchParams includes searchTerm.
-      // The useTableFilter in RevenueTable should ideally get the searchTerm.
-      // Let's assume the intention is that filtering happens in RevenueTable based on a passed prop.
-      // If `searchTerm` is meant for server-side, `useRevenueData`'s `fetchData` would need to use it.
-      // The current `fetchData` in `useRevenueData` doesn't use a generic query `q`.
-      // This `handleSearch` currently doesn't directly filter data for `RevenueTable` if `useTableFilter` is active there.
-      // It's kept for structural integrity during refactor.
+    // For now, assume RevenueTable will use `searchTerm` prop for its internal filtering,
+    // or if search is server-side, `useRevenueData` would need to handle `searchParams.q`.
+    // If search term is empty, refetch to clear any server-side search query.
+    if (!searchTerm.trim()) {
+      // Example: if server-side and searchParams had a query field 'q'
+      // const { q, ...rest } = searchParams;
+      // setSearchParams(rest);
+      fetchData(); // Refetch if clearing a server-side search or to reset client state
     } else {
-      // If clearing a server-side search:
-      // setSearchParams(prev => {
-      //   const { q, ...rest } = prev;
-      //   return { ...rest, page: 1 };
-      // });
-      fetchData(); // Refetch if search term was cleared and was part of API query
+      // If server-side search is active:
+      // setSearchParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
+      // If client-side, ensure RevenueTable receives `searchTerm`
     }
   };
   
@@ -156,7 +147,7 @@ const Revenues = () => {
               <RevenueSearch
                 searchTerm={searchTerm}
                 onSearchTermChange={setSearchTerm}
-                onSearch={handleSearch} // This onSearch might need to pass searchTerm to RevenueTable's filter
+                onSearch={handleSearch}
               />
               <RevenueActions
                 onImportCSV={handleImportCSV}
@@ -183,7 +174,8 @@ const Revenues = () => {
               onCloneRevenue={handleCloneRevenue} // From useRevenueCrudOperations
               onOpenDialog={handleOpenDialog} // From useRevenueDialog
               onDeleteRevenue={handleDeleteRevenue} // From useRevenueData
-              // currentSearchTerm={searchTerm} // Pass this if RevenueTable's useTableFilter needs it
+              // Pass searchTerm to RevenueTable if it handles client-side filtering with it
+              // currentSearchTerm={searchTerm} 
             />
             
             <PaginationControls
@@ -216,6 +208,7 @@ const Revenues = () => {
       />
     </div>
   );
-};
+}; // Ensure this closing brace for the Revenues component is correctly placed.
 
 export default Revenues;
+
