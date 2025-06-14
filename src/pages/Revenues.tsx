@@ -321,9 +321,6 @@ const Revenues = () => {
     targetMonth: number
   ) => {
     try {
-      // Lấy toàn bộ revenues hiện có ở local (nếu data ít)
-      // Nếu muốn lấy toàn bộ từ server (nếu đang phân trang), nên gọi API getByFilters
-      // => Để chính xác sẽ dùng API từ revenueService
       const sourceRevenues = await (await import("@/services/revenueService")).revenueService.getByFilters({
         year: sourceYear,
         month: sourceMonth,
@@ -344,15 +341,17 @@ const Revenues = () => {
 
       for (const rev of sourceRevenues) {
         try {
-          // Tạo dữ liệu mới với year/month mới, các trường còn lại giữ nguyên, notes/project_name giữ nguyên
+          // Remove id, created_at, updated_at before spreading
+          // Prevent id from being included at all
+          const { id, created_at, updated_at, ...cloneBase } = rev;
+
           await (await import("@/services/revenueService")).createRevenue({
-            ...rev,
-            id: undefined, // Không được truyền id
+            ...cloneBase,
             year: targetYear,
-            month: targetMonth,
-            created_at: undefined,
-            updated_at: undefined,
+            month: targetMonth
+            // leave out id/created_at/updated_at: keys not present at all
           });
+
           cloneSuccess++;
         } catch (err: any) {
           cloneFail++;
@@ -416,11 +415,11 @@ const Revenues = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
-                {/* Truyền đúng handleCloneData cho CloneDataDialog */}
+                {/* Make sure to pass correct signature to RevenueActions */}
                 <RevenueActions
                   onImportCSV={handleImportCSV}
                   onExportCSV={handleExportCSV}
-                  onCloneData={handleCloneData}
+                  onCloneData={handleCloneData} // passes function expecting 4 args, matches CloneDataDialog
                   onAddNewRow={handleAddNewRow}
                   customers={customers}
                   companies={companies}
