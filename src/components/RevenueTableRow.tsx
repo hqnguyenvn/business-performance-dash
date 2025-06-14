@@ -38,6 +38,8 @@ function getCellConfigs(
   pageSize: number | 'all',
   isTempRow?: boolean
 ): CellConfig[] {
+  // Khi là dòng tạm (isTempRow) thì TẤT CẢ các ô (trừ index) đều là editable
+  // Ngược lại thì chỉ một số ô được cho phép sửa (theo logic cũ)
   return [
     {
       type: 'index',
@@ -49,14 +51,15 @@ function getCellConfigs(
     },
     { field: 'year', type: 'number', step: "1" },
     { field: 'month', type: 'month' },
-    { field: 'customer_id', type: 'select', options: customers },
-    { field: 'company_id', type: 'select', options: companies },
-    { field: 'division_id', type: 'select', options: divisions },
-    { field: 'project_id', type: 'select', options: projects },
+    // SỬA: cho phép tất cả các select là editable nếu là dòng tạm
+    { field: 'customer_id', type: isTempRow ? 'select' : 'select', options: customers },
+    { field: 'company_id', type: isTempRow ? 'select' : 'select', options: companies },
+    { field: 'division_id', type: isTempRow ? 'select' : 'select', options: divisions },
+    { field: 'project_id', type: isTempRow ? 'select' : 'select', options: projects },
     { field: 'project_name', type: 'text', maxLength: 50 },
-    { field: 'project_type_id', type: 'select', options: projectTypes },
-    { field: 'resource_id', type: 'select', options: resources },
-    { field: 'currency_id', type: 'select', options: currencies },
+    { field: 'project_type_id', type: isTempRow ? 'select' : 'select', options: projectTypes },
+    { field: 'resource_id', type: isTempRow ? 'select' : 'select', options: resources },
+    { field: 'currency_id', type: isTempRow ? 'select' : 'select', options: currencies },
     {
       field: 'unit_price',
       type: 'number',
@@ -71,14 +74,14 @@ function getCellConfigs(
     },
     {
       field: 'original_amount',
-      type: isTempRow ? 'number' : 'static', // <--- Editable nếu là dòng tạm
+      type: isTempRow ? 'number' : 'static', // Editable nếu là dòng tạm
       step: "1",
       valueGetter: (rev) => (rev.original_amount || 0).toLocaleString(),
       cellClassName: "text-right",
     },
     {
       field: 'vnd_revenue',
-      type: isTempRow ? 'number' : 'static', // <--- Editable nếu là dòng tạm
+      type: isTempRow ? 'number' : 'static', // Editable nếu là dòng tạm
       step: "1",
       valueGetter: (rev, ctx) => ctx.calculateVNDRevenue ? ctx.calculateVNDRevenue(rev).toLocaleString() : 'N/A',
       cellClassName: "text-right",

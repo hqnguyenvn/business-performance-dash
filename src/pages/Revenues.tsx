@@ -418,25 +418,8 @@ const Revenues = () => {
                 />
               </div>
             </div>
-            {/* Inline entry row */}
-            {tempRow && (
-              <RevenueInlineRow
-                tempRow={tempRow}
-                customers={customers}
-                companies={companies}
-                divisions={divisions}
-                projects={projects}
-                projectTypes={projectTypes}
-                resources={resources}
-                currencies={currencies}
-                getMonthName={getMonthName}
-                calculateVNDRevenue={calculateVNDRevenue}
-                editingCell={editingCell}
-                setEditingCell={setEditingCell}
-                onCellEdit={(id, field, value) => handleCellEdit(id, field, value, handleCellEditDb)}
-                onCommitTempRow={handleCommitTempRow}
-              />
-            )}
+            {/* ĐÃ BỎ PHẦN DƯỚI: KHÔNG render <RevenueInlineRow /> ở đây nữa */}
+
             <RevenueTable
               revenues={tableRows}
               customers={customers}
