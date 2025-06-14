@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/services/revenueService";
@@ -67,11 +66,9 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
     {
       type: 'index',
       valueGetter: (_rev, ctx) => {
-        // When pageSize is 'all', just use index + 1
         if (pageSize === 'all') {
           return ctx.pageSpecificIndex + 1;
         }
-        // For normal pagination
         return (ctx.pageIndex - 1) * (typeof pageSize === 'number' ? pageSize : 5) + ctx.pageSpecificIndex + 1;
       },
       cellClassName: "font-medium",
