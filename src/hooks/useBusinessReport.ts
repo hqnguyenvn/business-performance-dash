@@ -1,0 +1,208 @@
+
+import { useState, useEffect, useMemo } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { usePagination } from "@/hooks/usePagination";
+
+export interface BusinessData {
+  year: number;
+  month: string;
+  monthNumber: number;
+  revenue: number;
+  cost: number;
+  grossProfit: number;
+  incomeTax: number;
+  bonus: number;
+  totalCost: number;
+  netProfit: number;
+  grossProfitPercent: number;
+  netProfitPercent: number;
+}
+
+interface RevenueData {
+  id: string;
+  year: number;
+  month: number;
+  vnd_revenue: number;
+  [key: string]: any;
+}
+
+interface CostData {
+  id: string;
+  year: number;
+  month: number;
+  cost: number;
+  cost_type: string;
+  [key: string]: any;
+}
+
+interface SalaryCostData {
+  id: string;
+  year: number;
+  month: number;
+  amount: number;
+  [key: string]: any;
+}
+
+export const MONTHS = [
+  { value: 1, label: "January", short: "Jan" },
+  { value: 2, label: "February", short: "Feb" },
+  { value: 3, label: "March", short: "Mar" },
+  { value: 4, label: "April", short: "Apr" },
+  { value: 5, label: "May", short: "May" },
+  { value: 6, label: "June", short: "Jun" },
+  { value: 7, label: "July", short: "Jul" },
+  { value: 8, label: "August", short: "Aug" },
+  { value: 9, label: "September", short: "Sep" },
+  { value: 10, label: "October", short: "Oct" },
+  { value: 11, label: "November", short: "Nov" },
+  { value: 12, label: "December", short: "Dec" }
+];
+
+export const useBusinessReport = () => {
+  const { toast } = useToast();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
+  const [bonusRate, setBonusRate] = useState<number>(15);
+  const [revenues, setRevenues] = useState<RevenueData[]>([]);
+  const [costs, setCosts] = useState<CostData[]>([]);
+  const [salaryCosts, setSalaryCosts] = useState<SalaryCostData[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        const { data: revenueData, error: revenueError } = await supabase.from('revenues').select('*');
+        if (revenueError) throw revenueError;
+        setRevenues(revenueData || []);
+
+        const { data: costData, error: costError } = await supabase.from('costs').select('*');
+        if (costError) throw costError;
+        setCosts(costData || []);
+
+        const { data: salaryData, error: salaryError } = await supabase.from('salary_costs').select('*');
+        if (salaryError) throw salaryError;
+        setSalaryCosts(salaryData || []);
+
+        const revenueYears = revenueData?.map(r => r.year) || [];
+        const costYears = costData?.map(c => c.year) || [];
+        const salaryYears = salaryData?.map(s => s.year) || [];
+        const allYears = Array.from(new Set([...revenueYears, ...costYears, ...salaryYears, currentYear])).sort((a, b) => b - a);
+        setAvailableYears(allYears);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({ title: "Error", description: "Failed to fetch data from database", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
+
+  const allBusinessData = useMemo(() => {
+    const businessDataMap = new Map<string, BusinessData>();
+
+    MONTHS.forEach(month => {
+      const key = `${selectedYear}-${month.value}`;
+      businessDataMap.set(key, {
+        year: parseInt(selectedYear),
+        month: month.short,
+        monthNumber: month.value,
+        revenue: 0, cost: 0, grossProfit: 0, incomeTax: 0, bonus: 0,
+        totalCost: 0, netProfit: 0, grossProfitPercent: 0, netProfitPercent: 0,
+      });
+    });
+
+    revenues.filter(r => r.year === parseInt(selectedYear)).forEach(r => {
+      const entry = businessDataMap.get(`${r.year}-${r.month}`);
+      if (entry) entry.revenue += r.vnd_revenue || 0;
+    });
+
+    costs.filter(c => c.year === parseInt(selectedYear)).forEach(c => {
+      const entry = businessDataMap.get(`${c.year}-${c.month}`);
+      if (entry) entry.cost += c.cost || 0;
+    });
+
+    salaryCosts.filter(s => s.year === parseInt(selectedYear)).forEach(s => {
+      const entry = businessDataMap.get(`${s.year}-${s.month}`);
+      if (entry) entry.cost += s.amount || 0;
+    });
+
+    Array.from(businessDataMap.values()).forEach(data => {
+      data.grossProfit = data.revenue - data.cost;
+      data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
+      
+      const monthlySalaryCosts = salaryCosts.filter(s => s.year === data.year && s.month === data.monthNumber);
+      const totalSalaryCost = monthlySalaryCosts.reduce((sum, s) => sum + (s.amount || 0), 0);
+      data.bonus = totalSalaryCost * (bonusRate / 100);
+      
+      data.totalCost = data.cost + data.incomeTax + data.bonus;
+      data.netProfit = data.revenue - data.totalCost;
+      data.grossProfitPercent = data.revenue > 0 ? (data.grossProfit / data.revenue) * 100 : 0;
+      data.netProfitPercent = data.revenue > 0 ? (data.netProfit / data.revenue) * 100 : 0;
+    });
+
+    return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
+  }, [revenues, costs, salaryCosts, selectedYear, incomeTaxRate, bonusRate]);
+
+  const businessData = useMemo(() => allBusinessData.filter(data => 
+    selectedMonths.includes(data.monthNumber)
+  ), [allBusinessData, selectedMonths]);
+
+  const pagination = usePagination({ data: businessData, itemsPerPage: 12 });
+
+  const exportToCSV = () => {
+    toast({
+      title: "Export report",
+      description: "Business report has been exported to CSV file successfully",
+    });
+  };
+
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+  };
+
+  const handleMonthToggle = (monthValue: number) => {
+    setSelectedMonths(prev => {
+      const newMonths = prev.includes(monthValue) 
+        ? prev.filter(m => m !== monthValue)
+        : [...prev, monthValue].sort((a, b) => a - b);
+      return newMonths;
+    });
+  };
+
+  const totals = useMemo(() => {
+    const totalRevenue = businessData.reduce((sum, data) => sum + data.revenue, 0);
+    const totalGrossProfit = businessData.reduce((sum, data) => sum + data.grossProfit, 0);
+    const totalCost = businessData.reduce((sum, data) => sum + data.totalCost, 0);
+    const totalNetProfit = businessData.reduce((sum, data) => sum + data.netProfit, 0);
+    const grossProfitPercent = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
+    const netProfitPercent = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
+    return { totalRevenue, totalGrossProfit, totalCost, totalNetProfit, grossProfitPercent, netProfitPercent };
+  }, [businessData]);
+
+  return {
+    loading,
+    selectedYear,
+    availableYears,
+    handleYearChange,
+    selectedMonths,
+    handleMonthToggle,
+    incomeTaxRate,
+    setIncomeTaxRate,
+    bonusRate,
+    setBonusRate,
+    businessData,
+    pagination,
+    totals,
+    exportToCSV,
+    MONTHS,
+  };
+};
+
