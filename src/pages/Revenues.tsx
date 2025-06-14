@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,7 +19,9 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
 import { exportRevenueCSV } from "@/utils/csvExport";
 import { Revenue } from "@/services/revenueService";
-import { createRevenue } from "@/services/revenueService";
+import RevenueInlineRow from "@/components/RevenueInlineRow";
+import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
+import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -53,8 +55,6 @@ const Revenues = () => {
     setIsDialogOpen,
   } = useRevenueDialog();
 
-  // Fix: only destructure handleAddNewRow, handleInsertRowBelow, handleCloneRevenue from the CRUD operations hook.
-  // Alias the hook's handleCellEdit as handleCellEditDb to avoid conflicts.
   const {
     handleAddNewRow,
     handleInsertRowBelow,
@@ -65,66 +65,111 @@ const Revenues = () => {
     { getMonthNumber, calculateVNDRevenue }
   );
 
+  // Hook for inline entry
+  const {
+    editingCell,
+    setEditingCell,
+    tempRow,
+    handleAddNewRowInline,
+    handleEditTempRow,
+    handleCommitTempRow,
+    handleCellEdit,
+  } = useRevenueInlineEntry(fetchData);
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filtering with custom hook
+  const filteredRevenues = useClientRevenueFilter({
+    revenues,
+    searchTerm,
+    customers,
+    companies,
+    divisions,
+    projects,
+    projectTypes,
+    resources,
+    currencies
+  });
+
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
   const itemsPerPage = useMemo(() => {
-    // If pageSize is 'all', show all items
     if (searchParams.pageSize === 'all') {
       return total || 1;
     }
-    // Otherwise use the selected pageSize or default to 5
     return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 5);
   }, [searchParams.pageSize, total]);
-  
   const totalPages = useMemo(() => {
     if (searchParams.pageSize === 'all') return 1;
     return Math.ceil(total / itemsPerPage);
   }, [total, itemsPerPage, searchParams.pageSize]);
-  
   const startIndex = useMemo(() => {
     if (searchParams.pageSize === 'all') return 1;
     return (currentPage - 1) * itemsPerPage + 1;
   }, [currentPage, itemsPerPage, searchParams.pageSize]);
-  
   const endIndex = useMemo(() => {
     if (searchParams.pageSize === 'all') return total;
     return Math.min(currentPage * itemsPerPage, total);
   }, [currentPage, itemsPerPage, total, searchParams.pageSize]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
-  const [tempRow, setTempRow] = useState<any | null>(null);
+  const handleYearChange = (year: number) => {
+    setSearchParams((prev) => ({ ...prev, year, page: 1 }));
+  };
+  const handleMonthChange = (months: number[]) => {
+    setSearchParams((prev) => ({ ...prev, months, page: 1 }));
+  };
+  const handlePageChange = (page: number) => {
+    const effectivePageSize = itemsPerPage;
+    const calculatedTotalPages = Math.ceil(total / effectivePageSize);
+    let newPage = page;
+    if (page < 1) {
+      newPage = 1;
+    } else if (page > calculatedTotalPages && calculatedTotalPages > 0) {
+      newPage = calculatedTotalPages;
+    }
+    if (searchParams.page !== newPage) {
+      setSearchParams((prev) => ({ ...prev, page: newPage }));
+    }
+  };
+  const handlePageSizeChange = (newPageSize: number | 'all') => {
+    setSearchParams((prev) => ({
+      ...prev,
+      pageSize: newPageSize,
+      page: 1
+    }));
+  };
 
-  // Lọc dữ liệu revenues theo searchTerm
-  const filteredRevenues = useMemo(() => {
-    if (!searchTerm.trim()) return revenues;
-    const lower = searchTerm.trim().toLowerCase();
-    return revenues.filter((rev) => {
-      // Bạn có thể tuỳ chọn các trường để tìm kiếm. Ở đây sẽ tìm trên project_name, notes, và code các master data liên quan
-      const customer = customers.find(c => c.id === rev.customer_id)?.code || "";
-      const company = companies.find(c => c.id === rev.company_id)?.code || "";
-      const division = divisions.find(c => c.id === rev.division_id)?.code || "";
-      const project = projects.find(c => c.id === rev.project_id)?.code || "";
-      const projectType = projectTypes.find(c => c.id === rev.project_type_id)?.code || "";
-      const resource = resources.find(c => c.id === rev.resource_id)?.code || "";
-      const currency = currencies.find(c => c.id === rev.currency_id)?.code || "";
+  const handleSearch = () => {};
 
-      return (
-        (rev.project_name && rev.project_name.toLowerCase().includes(lower)) ||
-        (rev.notes && rev.notes.toLowerCase().includes(lower)) ||
-        customer.toLowerCase().includes(lower) ||
-        company.toLowerCase().includes(lower) ||
-        division.toLowerCase().includes(lower) ||
-        project.toLowerCase().includes(lower) ||
-        projectType.toLowerCase().includes(lower) ||
-        resource.toLowerCase().includes(lower) ||
-        currency.toLowerCase().includes(lower) ||
-        (rev.year && String(rev.year).includes(lower)) ||
-        (rev.month && String(rev.month).includes(lower))
-      );
-    });
-  }, [revenues, searchTerm, customers, companies, divisions, projects, projectTypes, resources, currencies]);
+  // Export CSV handler unchanged
+  const handleExportCSV = () => {
+    try {
+      exportRevenueCSV({
+        revenues,
+        customers,
+        companies,
+        divisions,
+        projects,
+        projectTypes,
+        resources,
+        currencies,
+        getMonthName,
+        calculateVNDRevenue,
+      });
+      toast({
+        title: "CSV exported successfully!",
+        description: "Revenue data has been downloaded as CSV file.",
+      });
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast({
+        variant: "destructive",
+        title: "Export failed",
+        description: "There was an error exporting the CSV file.",
+      });
+    }
+  };
 
-  // Hàm chuyển tên tháng sang số
+  // Clone and Import handlers remain the same as before
   const monthNameToNumber = (name: string | undefined | null) => {
     if (!name) return null;
     const map: Record<string, number> = {
@@ -135,43 +180,6 @@ const Revenues = () => {
     return map[(name + "").substring(0,3).toLowerCase()] || null;
   };
 
-  const handleYearChange = (year: number) => {
-    setSearchParams((prev) => ({ ...prev, year, page: 1 }));
-  };
-
-  const handleMonthChange = (months: number[]) => {
-    setSearchParams((prev) => ({ ...prev, months, page: 1 }));
-  };
-
-  const handlePageChange = (page: number) => {
-    const effectivePageSize = itemsPerPage;
-    const calculatedTotalPages = Math.ceil(total / effectivePageSize);
-    
-    let newPage = page;
-    if (page < 1) {
-      newPage = 1;
-    } else if (page > calculatedTotalPages && calculatedTotalPages > 0) {
-      newPage = calculatedTotalPages;
-    }
-    if (searchParams.page !== newPage) {
-       setSearchParams((prev) => ({ ...prev, page: newPage }));
-    }
-  };
-
-  const handlePageSizeChange = (newPageSize: number | 'all') => {
-    setSearchParams((prev) => ({ 
-      ...prev, 
-      pageSize: newPageSize,
-      page: 1 // Reset to first page when changing page size
-    }));
-  };
-  
-  const handleSearch = () => {
-    // Đã implement filter client-side, không cần fetch lại
-    // Nếu có searchTerm thì filteredRevenues sẽ áp dụng
-    // Nếu muốn xóa kết quả lọc, gọi setSearchTerm("")
-  };
-  
   // Hàm tìm id từ code
   function findIdByCode(arr: any[], code: string | undefined | null) {
     if (!code) return null;
@@ -270,7 +278,7 @@ const Revenues = () => {
           continue;
         }
         // Tạo mới record trong Supabase
-        await createRevenue(newRevenue as any);
+        await (await import("@/services/revenueService")).createRevenue(newRevenue as any);
         successCount++;
       } catch (err: any) {
         errorRows.push({ row: i + 2, reason: `Lỗi khi insert: ${err.message}` });
@@ -287,35 +295,6 @@ const Revenues = () => {
       description: msg,
       variant: errorRows.length > 0 ? "destructive" : undefined,
     });
-  };
-
-  const handleExportCSV = () => {
-    try {
-      exportRevenueCSV({
-        revenues,
-        customers,
-        companies,
-        divisions,
-        projects,
-        projectTypes,
-        resources,
-        currencies,
-        getMonthName,
-        calculateVNDRevenue,
-      });
-      
-      toast({
-        title: "CSV exported successfully!",
-        description: "Revenue data has been downloaded as CSV file.",
-      });
-    } catch (error) {
-      console.error("Error exporting CSV:", error);
-      toast({
-        variant: "destructive",
-        title: "Export failed",
-        description: "There was an error exporting the CSV file.",
-      });
-    }
   };
 
   const handleCloneData = async (
@@ -377,91 +356,7 @@ const Revenues = () => {
     }
   };
 
-  // Hàm thêm dòng mới: Thêm "dòng tạm" vào đầu revenues, chuyển cell "year" sang edit
-  const handleAddNewRowInline = () => {
-    // Nếu đã có dòng tạm thời => không thêm nữa
-    if (tempRow) return;
-    const now = new Date();
-    const emptyRow = {
-      id: "temp-" + Math.random().toString(36).substring(2, 12),
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      customer_id: "",
-      company_id: "",
-      division_id: "",
-      project_id: "",
-      project_type_id: "",
-      resource_id: "",
-      currency_id: "",
-      unit_price: 0,
-      quantity: 0,
-      original_amount: 0,
-      vnd_revenue: 0,
-      notes: "",
-      project_name: ""
-    };
-    setTempRow(emptyRow);
-    setEditingCell({ id: emptyRow.id, field: "year" }); // focus luôn vào trường năm
-  };
-
-  // Khi edit tempRow, thay đổi giá trị
-  const handleEditTempRow = (id: string, field: keyof typeof tempRow, value: any) => {
-    if (!tempRow || tempRow.id !== id) return;
-    const updatedTempRow = { ...tempRow, [field]: value };
-    setTempRow(updatedTempRow);
-  };
-
-  // Khi người dùng kết thúc edit cell/dòng
-  const handleCommitTempRow = async () => {
-    // Validate: year, month và original_amount, vnd_revenue cần phải có giá trị
-    if (
-      !tempRow.year ||
-      !tempRow.month ||
-      typeof tempRow.original_amount !== "number" ||
-      typeof tempRow.vnd_revenue !== "number"
-    ) {
-      // Không đủ điều kiện, không gọi API
-      setTempRow(null);
-      setEditingCell(null);
-      toast({
-        variant: "destructive",
-        title: "Không thể thêm dòng mới",
-        description: "Bạn cần điền đủ các trường chính (năm, tháng, số tiền gốc, số tiền VND)."
-      });
-      return;
-    }
-    try {
-      // Nếu truyền id thì API sẽ báo lỗi, nên loại bỏ id khi gọi API
-      const { id, ...toCreate } = tempRow;
-      const created = await createRevenue(toCreate);
-      setTempRow(null);
-      setEditingCell(null);
-      // Cập nhật lại dữ liệu
-      fetchData();
-      toast({ title: "Đã thêm mới bản ghi!" });
-    } catch (error) {
-      setTempRow(null);
-      setEditingCell(null);
-      toast({
-        variant: "destructive",
-        title: "Có lỗi khi thêm mới.",
-        description: "Không thể lưu dữ liệu mới lên hệ thống"
-      });
-    }
-  };
-
-  // Khi nhấn Enter trên cell cuối hoặc blur ngoài dòng tạm thì lưu
-  const handleCellEdit = (id: string, field: keyof Revenue, value: any) => {
-    if (tempRow && id === tempRow.id) {
-      // Editing temp row
-      handleEditTempRow(id, field as keyof typeof tempRow, value);
-    } else {
-      // Editing regular persisted row — delegate to hook
-      handleCellEditDb(id, field, value);
-    }
-  };
-
-  // Danh sách dòng hiển thị: Nếu có dòng tạm thì nối vào đầu
+  // Compose rows
   const tableRows = useMemo(() => {
     if (tempRow) {
       return [tempRow, ...filteredRevenues];
@@ -475,7 +370,6 @@ const Revenues = () => {
         title="Revenue Management"
         description="Manage revenue information"
       />
-
       <div className="p-6">
         <RevenueFilters
           selectedYear={searchParams.year || new Date().getFullYear()}
@@ -524,6 +418,25 @@ const Revenues = () => {
                 />
               </div>
             </div>
+            {/* Inline entry row */}
+            {tempRow && (
+              <RevenueInlineRow
+                tempRow={tempRow}
+                customers={customers}
+                companies={companies}
+                divisions={divisions}
+                projects={projects}
+                projectTypes={projectTypes}
+                resources={resources}
+                currencies={currencies}
+                getMonthName={getMonthName}
+                calculateVNDRevenue={calculateVNDRevenue}
+                editingCell={editingCell}
+                setEditingCell={setEditingCell}
+                onCellEdit={(id, field, value) => handleCellEdit(id, field, value, handleCellEditDb)}
+                onCommitTempRow={handleCommitTempRow}
+              />
+            )}
             <RevenueTable
               revenues={tableRows}
               customers={customers}
@@ -533,10 +446,10 @@ const Revenues = () => {
               projectTypes={projectTypes}
               resources={resources}
               currencies={currencies}
-              searchParams={searchParams} 
+              searchParams={searchParams}
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
-              onCellEdit={handleCellEdit}
+              onCellEdit={(id, field, value) => handleCellEdit(id, field, value, handleCellEditDb)}
               editingCell={editingCell}
               setEditingCell={setEditingCell}
               onInsertRowBelow={handleInsertRowBelow}
