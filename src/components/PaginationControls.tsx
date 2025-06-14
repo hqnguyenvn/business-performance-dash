@@ -112,6 +112,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             // Luôn render nút All duy nhất khi pageSize === 'all'
             <PaginationItem>
               <PaginationLink isActive className="cursor-default">
+                {/* Đảm bảo children là "All" */}
                 All
               </PaginationLink>
             </PaginationItem>
@@ -145,4 +146,3 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 };
 
 export default PaginationControls;
-
