@@ -131,9 +131,15 @@ const Revenues = () => {
     }
   };
   
-  const handleImportCSV = () => { 
-    console.log("Import CSV clicked"); 
-    toast({title: "Import CSV: Not yet implemented."}); 
+  const handleImportCSV = (data: any[]) => {
+    console.log("Imported CSV data:", data);
+    toast({
+      title: "Import CSV thành công!",
+      description:
+        "Dữ liệu CSV đã được nhập (chưa lưu vào database, hãy kiểm tra console log).",
+    });
+    // TODO: Mapping & Thêm vào database nếu muốn
+    // Ví dụ: setRevenues([...revenues, ...data]);
   };
 
   const handleExportCSV = () => {
