@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ interface CostData {
 interface SalaryCostData {
   id: string;
   year: number;
-  month: string;
+  month: number;
   amount: number;
   [key: string]: any;
 }
@@ -224,7 +223,7 @@ const BusinessReport = () => {
       // Calculate bonus based on salary costs
       const monthlySalaryCosts = salaryCosts.filter(salary => 
         salary.year === data.year && 
-        salary.month === data.month
+        salary.month === data.monthNumber
       );
       const totalSalaryCost = monthlySalaryCosts.reduce((sum, salary) => sum + (salary.amount || 0), 0);
       data.bonus = totalSalaryCost * (bonusRate / 100);
