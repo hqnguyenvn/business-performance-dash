@@ -5,7 +5,7 @@ import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Save, Import } from "lucide-react";
+import { Plus, Download, Import } from "lucide-react";
 import CloneCostDialog from "@/components/costs/CloneCostDialog";
 
 const Costs = () => {
@@ -32,7 +32,6 @@ const Costs = () => {
     deleteCost,
     confirmDelete,
     saveChanges,
-    saveAllData,
     cloneCosts,
     exportToCSV,
     importFromCSV,
