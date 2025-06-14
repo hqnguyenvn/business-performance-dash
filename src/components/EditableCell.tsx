@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,7 +43,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
           }}
           open={true} // Keep select open while editing
         >
-          <SelectTrigger className="w-full h-full text-sm">
+          <SelectTrigger className="w-full h-full text-sm" autoFocus>
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
@@ -74,7 +73,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
           }}
           open={true}
         >
-          <SelectTrigger className="w-full h-full text-sm">
+          <SelectTrigger className="w-full h-full text-sm" autoFocus>
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
@@ -181,4 +180,3 @@ const EditableCell: React.FC<EditableCellProps> = ({
 };
 
 export default EditableCell;
-
