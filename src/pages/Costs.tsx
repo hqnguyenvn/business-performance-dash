@@ -1,4 +1,3 @@
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCosts } from "@/hooks/useCosts";
 import { CostsHeader } from "@/components/costs/CostsHeader";
@@ -68,7 +67,7 @@ const Costs = () => {
 
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
+            <h2 className="text-2xl font-semibold text-gray-800">
               Cost Data ({filteredCosts.length} records)
             </h2>
             <div className="flex items-center gap-2">
