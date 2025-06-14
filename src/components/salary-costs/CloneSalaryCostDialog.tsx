@@ -17,14 +17,19 @@ interface CloneSalaryCostDialogProps {
   onClone: (fromYear: number, fromMonth: number, toYear: number, toMonth: number) => void;
 }
 
-const years = [new Date().getFullYear() -1, new Date().getFullYear(), new Date().getFullYear() + 1];
+const years = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1];
 
 const CloneSalaryCostDialog = ({ onClone }: CloneSalaryCostDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const [fromYear, setFromYear] = useState(currentYear);
-  const [fromMonth, setFromMonth] = useState(currentMonth);
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1;
+
+  const fromYearInitial = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const fromMonthInitial = currentMonth === 1 ? 12 : currentMonth - 1;
+
+  const [fromYear, setFromYear] = useState(fromYearInitial);
+  const [fromMonth, setFromMonth] = useState(fromMonthInitial);
   const [toYear, setToYear] = useState(currentYear);
   const [toMonth, setToMonth] = useState(currentMonth);
 
