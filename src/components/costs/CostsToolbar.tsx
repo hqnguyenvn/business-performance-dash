@@ -8,6 +8,7 @@ interface CostsToolbarProps {
   availableYears: number[];
   selectedMonths: number[];
   handleMonthToggle: (monthValue: number) => void;
+  actions?: React.ReactNode;
 }
 
 export const CostsToolbar = ({
@@ -16,6 +17,7 @@ export const CostsToolbar = ({
   availableYears,
   selectedMonths,
   handleMonthToggle,
+  actions,
 }: CostsToolbarProps) => {
   const MONTHS = [
     { value: 1, label: "Jan" }, { value: 2, label: "Feb" }, { value: 3, label: "Mar" },
@@ -26,8 +28,8 @@ export const CostsToolbar = ({
 
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-start gap-8 w-full">
+      <div className="flex justify-between items-start gap-4">
+        <div className="flex items-start gap-8 flex-grow">
           <div>
             <label className="text-sm font-medium text-gray-700 block mb-1">Year</label>
             <Select value={selectedYear} onValueChange={handleYearChange}>
@@ -64,6 +66,7 @@ export const CostsToolbar = ({
             </div>
           </div>
         </div>
+        {actions && <div className="flex-shrink-0">{actions}</div>}
       </div>
     </div>
   );
