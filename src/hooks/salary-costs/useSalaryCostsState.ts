@@ -10,7 +10,11 @@ export const MONTHS = Array.from({ length: 12 }, (_, i) => ({ id: i + 1, name: n
 export const useSalaryCostsState = () => {
   const [salaryCosts, setSalaryCosts] = useState<SalaryCost[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonths, setSelectedMonths] = useState<number[]>(MONTHS.map(m => m.id));
+
+  // Mặc định chọn các tháng từ tháng 1 đến tháng hiện tại
+  const currentMonth = new Date().getMonth() + 1;
+  const defaultSelectedMonths = Array.from({ length: currentMonth }, (_, i) => i + 1);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(defaultSelectedMonths);
 
   const { data: initialSalaryCosts, isLoading: isLoadingCosts } = useQuery({
     queryKey: ['salaryCosts'],
@@ -30,10 +34,10 @@ export const useSalaryCostsState = () => {
   }, [initialSalaryCosts]);
 
   const availableYears = useMemo(() => {
-    const years = new Set(initialSalaryCosts?.map(c => c.year) || []);
-    years.add(new Date().getFullYear());
-    return Array.from(years).sort((a, b) => b - a);
-  }, [initialSalaryCosts]);
+    const startYear = 2020;
+    const endYear = 2035;
+    return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
+  }, []);
 
   const filteredSalaryCosts = useMemo(() => {
     if (isLoading) return [];
