@@ -110,7 +110,11 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           {pageSize === 'all' ? (
             // Luôn render nút All duy nhất khi pageSize === 'all'
             <PaginationItem>
-              <PaginationLink isActive className="cursor-default font-semibold">
+              <PaginationLink 
+                isActive 
+                className="cursor-default font-semibold"
+                size="default"
+              >
                 All
               </PaginationLink>
             </PaginationItem>
