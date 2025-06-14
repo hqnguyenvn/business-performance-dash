@@ -341,15 +341,13 @@ const Revenues = () => {
 
       for (const rev of sourceRevenues) {
         try {
-          // Remove id, created_at, updated_at before spreading
-          // Prevent id from being included at all
-          const { id, created_at, updated_at, ...cloneBase } = rev;
+          // Only destructure id to remove it, do NOT try to destructure created_at/updated_at
+          const { id, ...cloneBase } = rev;
 
           await (await import("@/services/revenueService")).createRevenue({
             ...cloneBase,
             year: targetYear,
-            month: targetMonth
-            // leave out id/created_at/updated_at: keys not present at all
+            month: targetMonth,
           });
 
           cloneSuccess++;
@@ -419,7 +417,7 @@ const Revenues = () => {
                 <RevenueActions
                   onImportCSV={handleImportCSV}
                   onExportCSV={handleExportCSV}
-                  onCloneData={handleCloneData} // passes function expecting 4 args, matches CloneDataDialog
+                  onCloneData={handleCloneData} // This function now matches the required 4-argument signature
                   onAddNewRow={handleAddNewRow}
                   customers={customers}
                   companies={companies}
