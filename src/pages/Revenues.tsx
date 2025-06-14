@@ -314,9 +314,66 @@ const Revenues = () => {
     }
   };
 
-  const handleCloneData = () => { 
-    console.log("Clone Data clicked"); 
-    toast({title: "Clone Data: Not yet implemented."});
+  const handleCloneData = async (
+    sourceYear: number,
+    sourceMonth: number,
+    targetYear: number,
+    targetMonth: number
+  ) => {
+    try {
+      // Lấy toàn bộ revenues hiện có ở local (nếu data ít)
+      // Nếu muốn lấy toàn bộ từ server (nếu đang phân trang), nên gọi API getByFilters
+      // => Để chính xác sẽ dùng API từ revenueService
+      const sourceRevenues = await (await import("@/services/revenueService")).revenueService.getByFilters({
+        year: sourceYear,
+        month: sourceMonth,
+      });
+
+      if (sourceRevenues.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Không có dữ liệu nguồn.",
+          description: `Không tìm thấy dữ liệu nguồn cho ${sourceMonth}/${sourceYear}.`
+        });
+        return;
+      }
+
+      let cloneSuccess = 0;
+      let cloneFail = 0;
+      let failReasons: string[] = [];
+
+      for (const rev of sourceRevenues) {
+        try {
+          // Tạo dữ liệu mới với year/month mới, các trường còn lại giữ nguyên, notes/project_name giữ nguyên
+          await (await import("@/services/revenueService")).createRevenue({
+            ...rev,
+            id: undefined, // Không được truyền id
+            year: targetYear,
+            month: targetMonth,
+            created_at: undefined,
+            updated_at: undefined,
+          });
+          cloneSuccess++;
+        } catch (err: any) {
+          cloneFail++;
+          failReasons.push(`- Project "${rev.project_name || ""}": ${err?.message || err}`);
+        }
+      }
+      fetchData();
+      toast({
+        title: "Đã clone dữ liệu thành công!",
+        description:
+          `Tạo mới ${cloneSuccess} dòng dữ liệu từ ${sourceMonth}/${sourceYear} sang ${targetMonth}/${targetYear}.` +
+          (cloneFail > 0 ? `\n${cloneFail} dòng bị lỗi:\n${failReasons.join("\n")}` : ""),
+        variant: cloneFail > 0 ? "destructive" : undefined,
+      });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi khi clone dữ liệu.",
+        description: err?.message || "Có lỗi xảy ra khi clone dữ liệu.",
+      });
+    }
   };
 
   return (
@@ -359,6 +416,7 @@ const Revenues = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
+                {/* Truyền đúng handleCloneData cho CloneDataDialog */}
                 <RevenueActions
                   onImportCSV={handleImportCSV}
                   onExportCSV={handleExportCSV}
