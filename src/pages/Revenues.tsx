@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -232,14 +231,33 @@ const Revenues = () => {
     // TODO: Implement clone data
   };
 
+  const getMonthName = (monthNumber: number): string => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return monthNames[monthNumber - 1] || "Jan";
+  };
+
+  const getMonthNumber = (monthName: string): number => {
+    const monthMap: { [key: string]: number } = {
+      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
+      'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
+      'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+    };
+    return monthMap[monthName] || 1;
+  };
+
   const calculateVNDRevenue = (revenue: Revenue) => {
     if (!revenue.original_amount || !revenue.currency_id) return 0;
+    
+    // Find the currency code first
+    const currency = currencies.find(c => c.id === revenue.currency_id);
+    if (!currency) return revenue.original_amount;
     
     // Find the exchange rate for the specific year and month
     const exchangeRate = exchangeRates.find(rate => 
       rate.year === revenue.year && 
       rate.month === getMonthName(revenue.month) &&
-      rate.currencyID === (currencies.find(c => c.id === revenue.currency_id)?.code || '')
+      rate.currencyID === currency.code
     );
     
     if (exchangeRate) {
@@ -247,12 +265,6 @@ const Revenues = () => {
     }
     
     return revenue.original_amount; // Default to original amount if no exchange rate found
-  };
-
-  const getMonthName = (monthNumber: number): string => {
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return monthNames[monthNumber - 1] || "Jan";
   };
 
   const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
@@ -265,13 +277,19 @@ const Revenues = () => {
         return;
       }
 
+      // Convert month name to number if editing month field
+      let processedValue = value;
+      if (field === 'month' && typeof value === 'string') {
+        processedValue = getMonthNumber(value);
+      }
+
       // Calculate new values based on the field being updated
-      let updatedRevenue = { ...revenueToUpdate, [field]: value };
+      let updatedRevenue = { ...revenueToUpdate, [field]: processedValue };
       
       // Recalculate original_amount if unit_price or quantity changes
       if (field === 'unit_price' || field === 'quantity') {
-        const unitPrice = field === 'unit_price' ? value : updatedRevenue.unit_price || 0;
-        const quantity = field === 'quantity' ? value : updatedRevenue.quantity || 1;
+        const unitPrice = field === 'unit_price' ? processedValue : updatedRevenue.unit_price || 0;
+        const quantity = field === 'quantity' ? processedValue : updatedRevenue.quantity || 1;
         updatedRevenue.original_amount = unitPrice * quantity;
       }
 
@@ -286,7 +304,7 @@ const Revenues = () => {
 
       // Prepare the update object
       const updateData: Partial<Revenue> = { 
-        [field]: value,
+        [field]: processedValue,
         original_amount: updatedRevenue.original_amount,
         vnd_revenue: updatedRevenue.vnd_revenue
       };
@@ -436,7 +454,7 @@ const Revenues = () => {
     }
   };
 
-  const renderEditableCell = (revenue: Revenue, field: keyof Revenue, value: any, type: 'text' | 'number' | 'select', options?: any[]) => {
+  const renderEditableCell = (revenue: Revenue, field: keyof Revenue, value: any, type: 'text' | 'number' | 'select' | 'month', options?: any[]) => {
     const isEditing = editingCell?.id === revenue.id && editingCell?.field === field;
     
     if (isEditing && type === 'select' && options) {
@@ -447,6 +465,7 @@ const Revenues = () => {
           onOpenChange={(open) => {
             if (!open) setEditingCell(null);
           }}
+          open={true}
         >
           <SelectTrigger className="w-full h-8">
             <SelectValue placeholder="Select" />
@@ -461,18 +480,52 @@ const Revenues = () => {
         </Select>
       );
     }
+
+    if (isEditing && type === 'month') {
+      const monthOptions = [
+        { value: 1, label: 'Jan' }, { value: 2, label: 'Feb' }, { value: 3, label: 'Mar' },
+        { value: 4, label: 'Apr' }, { value: 5, label: 'May' }, { value: 6, label: 'Jun' },
+        { value: 7, label: 'Jul' }, { value: 8, label: 'Aug' }, { value: 9, label: 'Sep' },
+        { value: 10, label: 'Oct' }, { value: 11, label: 'Nov' }, { value: 12, label: 'Dec' }
+      ];
+      
+      return (
+        <Select 
+          value={value?.toString() || ''} 
+          onValueChange={(newValue) => handleCellEdit(revenue.id, field, parseInt(newValue))}
+          onOpenChange={(open) => {
+            if (!open) setEditingCell(null);
+          }}
+          open={true}
+        >
+          <SelectTrigger className="w-full h-8">
+            <SelectValue placeholder="Select" />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value.toString()}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
     
     if (isEditing && type === 'number') {
       return (
         <Input
           type="number"
           value={value || 0}
-          onChange={(e) => handleCellEdit(revenue.id, field, parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const newValue = parseFloat(e.target.value) || 0;
+            handleCellEdit(revenue.id, field, newValue);
+          }}
           onBlur={() => setEditingCell(null)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') setEditingCell(null);
           }}
-          className="w-full h-8"
+          className="w-full h-8 text-right"
           autoFocus
         />
       );
@@ -503,15 +556,20 @@ const Revenues = () => {
       if (field === 'year') {
         return value?.toString() || '';
       }
+      if (field === 'month') {
+        return getMonthName(value);
+      }
       if (type === 'number') {
         return (value || 0).toLocaleString();
       }
       return value || '';
     };
     
+    const alignmentClass = (type === 'number' || field === 'unit_price' || field === 'quantity') ? 'text-right' : '';
+    
     return (
       <div 
-        className="w-full h-8 px-2 py-1 cursor-pointer hover:bg-gray-50 flex items-center"
+        className={`w-full h-8 px-2 py-1 cursor-pointer hover:bg-gray-50 flex items-center ${alignmentClass}`}
         onClick={() => setEditingCell({ id: revenue.id, field })}
       >
         {displayValue()}
@@ -584,7 +642,7 @@ const Revenues = () => {
                     <TableHead className="w-[100px]">Resource</TableHead>
                     <TableHead className="w-[80px]">Currency</TableHead>
                     <TableHead className="w-[100px] text-right">Unit Price</TableHead>
-                    <TableHead className="w-[80px] text-right">Quantity</TableHead>
+                    <TableHead className="w-[80px] text-right">BMM</TableHead>
                     <TableHead className="w-[120px] text-right">Original Revenue</TableHead>
                     <TableHead className="w-[120px] text-right">VND Revenue</TableHead>
                     <TableHead className="w-[140px] text-center">Actions</TableHead>
@@ -598,7 +656,7 @@ const Revenues = () => {
                         {renderEditableCell(revenue, 'year', revenue.year, 'number')}
                       </TableCell>
                       <TableCell>
-                        {renderEditableCell(revenue, 'month', revenue.month, 'number')}
+                        {renderEditableCell(revenue, 'month', revenue.month, 'month')}
                       </TableCell>
                       <TableCell>
                         {renderEditableCell(revenue, 'customer_id', revenue.customer_id, 'select', customers)}
