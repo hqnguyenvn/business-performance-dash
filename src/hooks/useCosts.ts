@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -198,6 +197,54 @@ export const useCosts = () => {
     }
   };
 
+  const cloneCosts = async (sourceYear: number, sourceMonth: number, targetYear: number, targetMonth: number) => {
+    try {
+        const costsToClone = await costService.getByFilters({ year: sourceYear, month: sourceMonth });
+
+        if (costsToClone.length === 0) {
+            toast({ title: "No Data", description: "No cost data found for the source period to clone." });
+            return;
+        }
+
+        const costsForTargetPeriod = await costService.getByFilters({ year: targetYear, month: targetMonth });
+        if (costsForTargetPeriod.length > 0) {
+            toast({ 
+                title: "Data Exists", 
+                description: `Cost data already exists for ${getMonthName(targetMonth)} ${targetYear}. Please clear it first.`,
+                variant: "destructive"
+            });
+            return;
+        }
+
+        const newCosts: NewCost[] = costsToClone.map(cost => {
+            const { id, created_at, updated_at, ...rest } = cost;
+            return {
+                ...rest,
+                year: targetYear,
+                month: targetMonth,
+                is_checked: false,
+            };
+        });
+
+        const creationPromises = newCosts.map(c => createCostMutation.mutateAsync(c));
+        await Promise.all(creationPromises);
+        
+        toast({
+            title: "Success",
+            description: `Successfully cloned ${newCosts.length} cost items to ${getMonthName(targetMonth)} ${targetYear}.`,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['costs'] });
+
+    } catch (error) {
+        toast({
+            title: "Error Cloning Data",
+            description: "An error occurred while cloning cost data.",
+            variant: "destructive"
+        });
+    }
+  };
+
   const exportToCSV = () => {
     toast({
       title: "Export Data",
@@ -258,6 +305,7 @@ export const useCosts = () => {
     confirmDelete,
     saveChanges,
     saveAllData,
+    cloneCosts,
     exportToCSV,
     importFromCSV,
     handleYearChange,

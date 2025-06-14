@@ -2,7 +2,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCosts } from "@/hooks/useCosts";
 import { CostsHeader } from "@/components/costs/CostsHeader";
-import { CostsFilter } from "@/components/costs/CostsFilter";
+import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
 
@@ -31,6 +31,7 @@ const Costs = () => {
     confirmDelete,
     saveChanges,
     saveAllData,
+    cloneCosts,
     exportToCSV,
     importFromCSV,
     handleYearChange,
@@ -50,20 +51,20 @@ const Costs = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CostsHeader 
-        importFromCSV={importFromCSV}
-        exportToCSV={exportToCSV}
-        saveAllData={saveAllData}
-        addNewRow={addNewRow}
-      />
+      <CostsHeader />
 
       <div className="p-6">
-        <CostsFilter
+        <CostsToolbar
           selectedYear={selectedYear}
           handleYearChange={handleYearChange}
           availableYears={availableYears}
           selectedMonths={selectedMonths}
           handleMonthToggle={handleMonthToggle}
+          importFromCSV={importFromCSV}
+          exportToCSV={exportToCSV}
+          saveAllData={saveAllData}
+          addNewRow={addNewRow}
+          onClone={cloneCosts}
         />
 
         <CostsTable
