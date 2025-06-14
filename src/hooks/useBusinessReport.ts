@@ -35,6 +35,11 @@ interface CostData {
   [key: string]: any;
 }
 
+interface CostTypeData {
+  id: string;
+  code: string;
+}
+
 export const MONTHS = [
   { value: 1, label: "January", short: "Jan" },
   { value: 2, label: "February", short: "Feb" },
@@ -59,6 +64,7 @@ export const useBusinessReport = () => {
   const [bonusRate, setBonusRate] = useState<number>(15);
   const [revenues, setRevenues] = useState<RevenueData[]>([]);
   const [costs, setCosts] = useState<CostData[]>([]);
+  const [costTypes, setCostTypes] = useState<CostTypeData[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -74,6 +80,10 @@ export const useBusinessReport = () => {
         const { data: costData, error: costError } = await supabase.from('costs').select('*');
         if (costError) throw costError;
         setCosts(costData || []);
+
+        const { data: costTypesData, error: costTypesError } = await supabase.from('cost_types').select('id, code');
+        if (costTypesError) throw costTypesError;
+        setCostTypes(costTypesData || []);
 
         const revenueYears = revenueData?.map(r => r.year) || [];
         const costYears = costData?.map(c => c.year) || [];
@@ -92,6 +102,9 @@ export const useBusinessReport = () => {
 
   const allBusinessData = useMemo(() => {
     const businessDataMap = new Map<string, BusinessData>();
+    
+    const salaryCostType = costTypes.find(ct => ct.code.toLowerCase() === 'salary');
+    const salaryCostTypeId = salaryCostType ? salaryCostType.id : null;
 
     MONTHS.forEach(month => {
       const key = `${selectedYear}-${month.value}`;
@@ -118,7 +131,17 @@ export const useBusinessReport = () => {
       data.grossProfit = data.revenue - data.cost;
       data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
       
-      data.bonus = 0;
+      let monthlySalaryCost = 0;
+      if (salaryCostTypeId) {
+        monthlySalaryCost = costs
+          .filter(c => 
+            c.year === data.year && 
+            c.month === data.monthNumber && 
+            c.cost_type === salaryCostTypeId
+          )
+          .reduce((sum, c) => sum + (c.cost || 0), 0);
+      }
+      data.bonus = monthlySalaryCost * (bonusRate / 100);
       
       data.totalCost = data.cost + data.incomeTax + data.bonus;
       data.netProfit = data.revenue - data.totalCost;
@@ -127,7 +150,7 @@ export const useBusinessReport = () => {
     });
 
     return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
-  }, [revenues, costs, selectedYear, incomeTaxRate]);
+  }, [revenues, costs, selectedYear, incomeTaxRate, bonusRate, costTypes]);
 
   const businessData = useMemo(() => allBusinessData.filter(data => 
     selectedMonths.includes(data.monthNumber)
