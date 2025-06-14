@@ -1,5 +1,7 @@
+
 import { useState } from "react";
-import { Revenue, createRevenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
+import { createRevenue } from "@/services/revenueApi";
 import { useToast } from "@/hooks/use-toast";
 
 export function useRevenueInlineEntry(

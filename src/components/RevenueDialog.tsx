@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 
 interface RevenueDialogProps {

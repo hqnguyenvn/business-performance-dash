@@ -1,5 +1,7 @@
+
 import { useToast } from "@/hooks/use-toast";
-import { Revenue, createRevenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
+import { createRevenue } from "@/services/revenueApi";
 
 interface RevenueDataState {
   revenues: Revenue[];

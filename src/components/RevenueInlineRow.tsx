@@ -1,11 +1,10 @@
-
 import React from "react";
 import RevenueTableRow from "./RevenueTableRow";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 
 interface Props {
-  tempRow: Revenue;
+  tempRow: Partial<Revenue>; // Changed to Partial<Revenue> to reflect temp nature
   customers: MasterData[];
   companies: MasterData[];
   divisions: MasterData[];

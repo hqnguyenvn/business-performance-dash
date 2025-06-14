@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import {
   Card,
@@ -20,7 +19,7 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueUpdate } from "@/hooks/useRevenueUpdate";
 import { useRevenueCreation } from "@/hooks/useRevenueCreation";
 import { exportRevenueCSV } from "@/utils/csvExport";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService"; // Added MasterData import
 import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
 import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
@@ -190,7 +189,7 @@ const Revenues = () => {
     const key = (name + "").substring(0,3).toLowerCase();
     return map[key] || null;
   };
-
+  
   function findIdByCode(arr: MasterData[], code: string | undefined | null): string | null {
     if (!code) return null;
     const obj = arr.find((item) => (item.code || "").toString().trim().toLowerCase() === (code || "").toString().trim().toLowerCase());
@@ -257,7 +256,7 @@ const Revenues = () => {
         errorRows.push({ row: i + 2, reason: `Không tìm thấy mã tương ứng cho: ${mappingErrors.join(", ")}` });
         continue;
       }
-
+      
       try {
         const fileMonthRaw = row["Month"] || row["month"];
         let monthValue: number | null = null;
@@ -313,7 +312,7 @@ const Revenues = () => {
           continue;
         }
 
-        await (await import("@/services/revenueService")).createRevenue(finalNewRevenue);
+        await (await import("@/services/revenueApi")).createRevenue(finalNewRevenue);
         successCount++;
       } catch (err: any) {
         errorRows.push({ row: i + 2, reason: `Lỗi khi insert: ${err.message}` });
@@ -345,7 +344,7 @@ const Revenues = () => {
     targetMonth: number
   ) => {
     try {
-      const sourceRevenues = await (await import("@/services/revenueService")).revenueService.getByFilters({
+      const sourceRevenues = await (await import("@/services/revenueApi")).revenueService.getByFilters({
         year: sourceYear,
         month: sourceMonth,
       });
@@ -375,7 +374,7 @@ const Revenues = () => {
           };
           clonedEntry.vnd_revenue = calculateVNDRevenue(clonedEntry);
 
-          await (await import("@/services/revenueService")).createRevenue(clonedEntry);
+          await (await import("@/services/revenueApi")).createRevenue(clonedEntry);
           cloneSuccess++;
         } catch (err: any) {
           cloneFail++;

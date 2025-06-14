@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Revenue } from '@/services/revenueService';
+import { Revenue } from '@/types/revenue';
 
 export const useRevenueDialog = () => {
   const [revenueInDialog, setRevenueInDialog] = useState<Revenue | null>(null);

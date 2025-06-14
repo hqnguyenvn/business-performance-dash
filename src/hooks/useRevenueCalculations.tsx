@@ -1,5 +1,5 @@
 
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 
 export const useRevenueCalculations = (currencies: MasterData[], exchangeRates: any[]) => {

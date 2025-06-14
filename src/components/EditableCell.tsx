@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Revenue } from "@/services/revenueService"; // For keyof Revenue
+import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService"; // For options
 
 interface EditableCellProps {

@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Revenue } from "@/services/revenueService";
+import { Revenue } from "@/types/revenue";
 
 interface RevenueRowActionsProps {
   revenue: Revenue;
