@@ -1,9 +1,10 @@
 
 import React from "react";
-import { TableRow } from "@/components/ui/table";
+import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/services/revenueService";
 import { MasterData } from "@/services/masterDataService";
-import RevenueTableCell, { CellConfig, RowContext } from './RevenueTableCell'; // Import new component and types
+import RevenueTableCell, { CellConfig, RowContext } from './RevenueTableCell';
+import RevenueRowActions from "./RevenueRowActions";
 
 interface RevenueTableRowProps {
   revenue: Revenue;
@@ -22,6 +23,10 @@ interface RevenueTableRowProps {
   calculateVNDRevenue: (revenue: Revenue) => number;
   onCellEdit: (id: string, field: keyof Revenue, value: any) => void;
   setEditingCell: (cell: { id: string; field: string } | null) => void;
+  onInsertRowBelow: () => void;
+  onCloneRevenue: () => void;
+  onOpenDialog: (revenue: Revenue, mode: 'view' | 'edit') => void;
+  onDeleteRevenue: (id: string) => void;
 }
 
 const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
@@ -41,6 +46,10 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   calculateVNDRevenue,
   onCellEdit,
   setEditingCell,
+  onInsertRowBelow,
+  onCloneRevenue,
+  onOpenDialog,
+  onDeleteRevenue,
 }) => {
 
   const isCurrentlyEditing = (field: keyof Revenue) => 
@@ -73,7 +82,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
     {
       field: 'unit_price',
       type: 'number',
-      step: "1", // Or appropriate step for currency
+      step: "1",
       cellClassName: "text-right",
     },
     {
@@ -110,6 +119,20 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           setEditingCell={setEditingCell}
         />
       ))}
+      
+      {/* Actions column as part of the main table */}
+      <TableCell className="border-r p-0">
+        <div className="h-full flex items-center justify-center">
+          <RevenueRowActions
+            revenue={revenue}
+            index={index}
+            onInsertRowBelow={onInsertRowBelow}
+            onCloneRevenue={onCloneRevenue}
+            onOpenDialog={onOpenDialog}
+            onDeleteRevenue={onDeleteRevenue}
+          />
+        </div>
+      </TableCell>
     </TableRow>
   );
 };

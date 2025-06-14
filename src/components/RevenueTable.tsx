@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import RevenueTableRow from "./RevenueTableRow";
-import RevenueRowActions from "./RevenueRowActions"; // Updated import path
 import { Revenue } from "@/services/revenueService";
 import { MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -109,199 +108,163 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
   };
 
   return (
-    <div className="border rounded-lg">
-      <div className="flex">
-        {/* Scrollable table content */}
-        <div className="flex-1 overflow-x-auto">
-          <Table>
-            <TableCaption>
-              A list of your recent revenue records.
-            </TableCaption>
-            <TableHeader className="sticky top-0 bg-white z-10">
-              <TableRow>
-                <TableHead className="w-[50px] border-r">No.</TableHead>
-                <TableHead 
-                  className="w-[60px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('year')}
-                  filterField="year"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('year')}
-                >
-                  Year
-                </TableHead>
-                <TableHead 
-                  className="w-[60px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('month')}
-                  filterField="month"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('month')}
-                >
-                  Month
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('customer_id')}
-                  filterField="customer_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('customer_id')}
-                >
-                  Customer
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('company_id')}
-                  filterField="company_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('company_id')}
-                >
-                  Company
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('division_id')}
-                  filterField="division_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('division_id')}
-                >
-                  Division
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('project_id')}
-                  filterField="project_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('project_id')}
-                >
-                  Project
-                </TableHead>
-                <TableHead 
-                  className="w-[120px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('project_name')}
-                  filterField="project_name"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('project_name')}
-                >
-                  Project Name
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('project_type_id')}
-                  filterField="project_type_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('project_type_id')}
-                >
-                  Project Type
-                </TableHead>
-                <TableHead 
-                  className="w-[100px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('resource_id')}
-                  filterField="resource_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('resource_id')}
-                >
-                  Resource
-                </TableHead>
-                <TableHead 
-                  className="w-[80px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('currency_id')}
-                  filterField="currency_id"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('currency_id')}
-                >
-                  Currency
-                </TableHead>
-                <TableHead className="w-[100px] text-right border-r">Unit Price</TableHead>
-                <TableHead className="w-[80px] text-right border-r">BMM</TableHead>
-                <TableHead className="w-[120px] text-right border-r">Original Revenue</TableHead>
-                <TableHead className="w-[120px] text-right border-r">VND Revenue</TableHead>
-                <TableHead 
-                  className="w-[120px] border-r"
-                  showFilter={true}
-                  filterData={getFilterDisplayData('notes')}
-                  filterField="notes"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters('notes')}
-                >
-                  Notes
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((revenue, pageSpecificIndex) => (
-                <RevenueTableRow
-                  key={revenue.id}
-                  revenue={revenue}
-                  index={pageSpecificIndex} // This is the 0-based index on the current page
-                  pageIndex={searchParams.page!} // This is the 1-based current page number
-                  pageSize={searchParams.pageSize!}
-                  editingCell={editingCell}
-                  customers={customers}
-                  companies={companies}
-                  divisions={divisions}
-                  projects={projects}
-                  projectTypes={projectTypes}
-                  resources={resources}
-                  currencies={currencies}
-                  getMonthName={getMonthName}
-                  calculateVNDRevenue={calculateVNDRevenue}
-                  onCellEdit={onCellEdit}
-                  setEditingCell={setEditingCell}
-                  // onInsertRowBelow, onCloneRevenue, onOpenDialog, onDeleteRevenue are not directly used by RevenueTableRow anymore
-                  // They are used by RevenueRowActions, which is rendered in the fixed actions column below
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        
-        {/* Fixed Actions column */}
-        <div className="w-[200px] border-l-2 border-gray-200 bg-white"> {/* Increased width for all buttons */}
-          <div className="h-12 px-4 text-left align-middle font-medium text-muted-foreground flex items-center justify-center border-b sticky top-0 bg-white z-10">
-            Actions
-          </div>
+    <div className="border rounded-lg overflow-x-auto">
+      <Table>
+        <TableCaption>
+          A list of your recent revenue records.
+        </TableCaption>
+        <TableHeader className="sticky top-0 bg-white z-10">
+          <TableRow>
+            <TableHead className="w-[50px] border-r">No.</TableHead>
+            <TableHead 
+              className="w-[60px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('year')}
+              filterField="year"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('year')}
+            >
+              Year
+            </TableHead>
+            <TableHead 
+              className="w-[60px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('month')}
+              filterField="month"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('month')}
+            >
+              Month
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('customer_id')}
+              filterField="customer_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('customer_id')}
+            >
+              Customer
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('company_id')}
+              filterField="company_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('company_id')}
+            >
+              Company
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('division_id')}
+              filterField="division_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('division_id')}
+            >
+              Division
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('project_id')}
+              filterField="project_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('project_id')}
+            >
+              Project
+            </TableHead>
+            <TableHead 
+              className="w-[120px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('project_name')}
+              filterField="project_name"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('project_name')}
+            >
+              Project Name
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('project_type_id')}
+              filterField="project_type_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('project_type_id')}
+            >
+              Project Type
+            </TableHead>
+            <TableHead 
+              className="w-[100px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('resource_id')}
+              filterField="resource_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('resource_id')}
+            >
+              Resource
+            </TableHead>
+            <TableHead 
+              className="w-[80px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('currency_id')}
+              filterField="currency_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('currency_id')}
+            >
+              Currency
+            </TableHead>
+            <TableHead className="w-[100px] text-right border-r">Unit Price</TableHead>
+            <TableHead className="w-[80px] text-right border-r">BMM</TableHead>
+            <TableHead className="w-[120px] text-right border-r">Original Revenue</TableHead>
+            <TableHead className="w-[120px] text-right border-r">VND Revenue</TableHead>
+            <TableHead 
+              className="w-[120px] border-r"
+              showFilter={true}
+              filterData={getFilterDisplayData('notes')}
+              filterField="notes"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('notes')}
+            >
+              Notes
+            </TableHead>
+            <TableHead className="w-[200px] text-center">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {filteredData.map((revenue, pageSpecificIndex) => {
-            // Calculate globalIndex for handlers that expect it (if any were still using it from here)
-            // The handlers onInsertRowBelow and onCloneRevenue are passed to RevenueRowActions
-            // and now expect pageSpecificIndex as their `index` param.
-            // The parent component (Revenues.tsx) will receive this pageSpecificIndex,
-            // and its `handleInsertRowBelow` and `handleCloneRevenue` need to correctly interpret it
-            // or be adjusted if they still expect a global index.
-            // The current setup is:
-            // RevenueTable calls RevenueRowActions with `pageSpecificIndex` for `index` prop.
-            // RevenueRowActions calls its props `onInsertRowBelow(index)` and `onCloneRevenue(revenue, index)` with that `pageSpecificIndex`.
-            // RevenueTable's props `onInsertRowBelow` and `onCloneRevenue` are directly from Revenues.tsx.
-            // So, `handleInsertRowBelow(globalIndex)` and `handleCloneRevenue(revenue, globalIndex)` in Revenues.tsx
-            // need to be called with the correct `globalIndex`.
-            
             const globalIndex = (searchParams.page! - 1) * searchParams.pageSize! + pageSpecificIndex;
-
+            
             return (
-              <div key={`actions-${revenue.id}`} className="h-[53px] flex items-center justify-center border-b">
-                <RevenueRowActions
-                  revenue={revenue}
-                  index={pageSpecificIndex} // Pass pageSpecificIndex to RevenueRowActions
-                  // These callbacks now correctly use the `globalIndex` calculated above,
-                  // matching expectations of handlers in Revenues.tsx (useRevenueCrudOperations).
-                  onInsertRowBelow={() => onInsertRowBelow(globalIndex)}
-                  onCloneRevenue={() => onCloneRevenue(revenue, globalIndex)}
-                  onOpenDialog={onOpenDialog} // onOpenDialog expects (revenue, mode)
-                  onDeleteRevenue={onDeleteRevenue} // onDeleteRevenue expects (id)
-                />
-              </div>
+              <RevenueTableRow
+                key={revenue.id}
+                revenue={revenue}
+                index={pageSpecificIndex}
+                pageIndex={searchParams.page!}
+                pageSize={searchParams.pageSize!}
+                editingCell={editingCell}
+                customers={customers}
+                companies={companies}
+                divisions={divisions}
+                projects={projects}
+                projectTypes={projectTypes}
+                resources={resources}
+                currencies={currencies}
+                getMonthName={getMonthName}
+                calculateVNDRevenue={calculateVNDRevenue}
+                onCellEdit={onCellEdit}
+                setEditingCell={setEditingCell}
+                onInsertRowBelow={() => onInsertRowBelow(globalIndex)}
+                onCloneRevenue={() => onCloneRevenue(revenue, globalIndex)}
+                onOpenDialog={onOpenDialog}
+                onDeleteRevenue={onDeleteRevenue}
+              />
             );
           })}
-        </div>
-      </div>
+        </TableBody>
+      </Table>
     </div>
   );
 };
