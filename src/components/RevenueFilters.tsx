@@ -25,7 +25,6 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
   onMonthChange,
 }) => {
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
   const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
   
   const months = [
@@ -66,7 +65,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Year:</label>
               <Select
@@ -86,7 +85,7 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
               </Select>
             </div>
             
-            <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Months:</label>
               <div className="flex gap-2">
                 <Button
@@ -105,26 +104,26 @@ const RevenueFilters: React.FC<RevenueFiltersProps> = ({
                 </Button>
               </div>
             </div>
-          </div>
-          
-          <div className="flex flex-wrap items-center justify-start gap-3">
-            {months.map((month) => (
-              <div key={month.value} className="flex items-center space-x-1">
-                <Checkbox
-                  id={`month-${month.value}`}
-                  checked={selectedMonths.includes(month.value)}
-                  onCheckedChange={(checked) => 
-                    handleMonthToggle(month.value, Boolean(checked))
-                  }
-                />
-                <label 
-                  htmlFor={`month-${month.value}`} 
-                  className="text-sm cursor-pointer whitespace-nowrap"
-                >
-                  {month.label}
-                </label>
-              </div>
-            ))}
+
+            <div className="flex flex-wrap items-center justify-start gap-3 flex-1">
+              {months.map((month) => (
+                <div key={month.value} className="flex items-center space-x-1">
+                  <Checkbox
+                    id={`month-${month.value}`}
+                    checked={selectedMonths.includes(month.value)}
+                    onCheckedChange={(checked) => 
+                      handleMonthToggle(month.value, Boolean(checked))
+                    }
+                  />
+                  <label 
+                    htmlFor={`month-${month.value}`} 
+                    className="text-sm cursor-pointer whitespace-nowrap"
+                  >
+                    {month.label}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </CardContent>
