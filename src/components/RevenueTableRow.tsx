@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/services/revenueService";
@@ -12,6 +11,7 @@ interface RevenueTableRowProps {
   pageIndex: number; // 1-based current page number from searchParams
   pageSize: number | 'all'; // Items per page from searchParams
   editingCell: { id: string; field: string } | null;
+  setEditingCell: (cell: { id: string; field: string } | null) => void;
   customers: MasterData[];
   companies: MasterData[];
   divisions: MasterData[];
@@ -22,11 +22,12 @@ interface RevenueTableRowProps {
   getMonthName: (monthNumber: number) => string;
   calculateVNDRevenue: (revenue: Revenue) => number;
   onCellEdit: (id: string, field: keyof Revenue, value: any) => void;
-  setEditingCell: (cell: { id: string; field: string } | null) => void;
   onInsertRowBelow: () => void;
   onCloneRevenue: () => void;
   onOpenDialog: (revenue: Revenue, mode: 'view' | 'edit') => void;
   onDeleteRevenue: (id: string) => void;
+  isTempRow?: boolean;
+  onCommitTempRow?: () => void;
 }
 
 function getCellConfigs(
@@ -89,6 +90,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   pageIndex,
   pageSize,
   editingCell,
+  setEditingCell,
   customers,
   companies,
   divisions,
@@ -99,11 +101,12 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   getMonthName,
   calculateVNDRevenue,
   onCellEdit,
-  setEditingCell,
   onInsertRowBelow,
   onCloneRevenue,
   onOpenDialog,
   onDeleteRevenue,
+  isTempRow,
+  onCommitTempRow,
 }) => {
   const isCurrentlyEditing = (field: keyof Revenue) =>
     editingCell?.id === revenue.id && editingCell?.field === field;
@@ -122,7 +125,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   );
 
   return (
-    <TableRow key={revenue.id} className="h-[53px]">
+    <TableRow key={revenue.id} className={"h-[53px] " + (isTempRow ? "bg-yellow-50" : "")}>
       {cellConfigs.map((config, idx) => (
         <RevenueTableCell
           key={config.field ? `${revenue.id}-${config.field}` : `${revenue.id}-col-${idx}`}
@@ -136,14 +139,23 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
       ))}
       <TableCell className="border-r p-0">
         <div className="h-full flex items-center justify-center">
-          <RevenueRowActions
-            revenue={revenue}
-            index={index}
-            onInsertRowBelow={onInsertRowBelow}
-            onCloneRevenue={onCloneRevenue}
-            onOpenDialog={onOpenDialog}
-            onDeleteRevenue={onDeleteRevenue}
-          />
+          {isTempRow ? (
+            <button
+              className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-xs"
+              onClick={onCommitTempRow}
+            >
+              Lưu
+            </button>
+          ) : (
+            <RevenueRowActions
+              revenue={revenue}
+              index={index}
+              onInsertRowBelow={onInsertRowBelow}
+              onCloneRevenue={onCloneRevenue}
+              onOpenDialog={onOpenDialog}
+              onDeleteRevenue={onDeleteRevenue}
+            />
+          )}
         </div>
       </TableCell>
     </TableRow>

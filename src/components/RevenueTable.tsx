@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Table,
   TableBody,
@@ -29,6 +29,10 @@ interface RevenueTableProps {
   onCloneRevenue: (revenue: Revenue, globalIndex: number) => void;
   onOpenDialog: (revenue: Revenue, mode: 'view' | 'edit') => void;
   onDeleteRevenue: (id: string) => void;
+  editingCell: { id: string; field: string } | null;
+  setEditingCell: (cell: { id: string; field: string } | null) => void;
+  tempRow?: any | null;
+  onCommitTempRow?: () => void;
 }
 
 const RevenueTable: React.FC<RevenueTableProps> = ({
@@ -48,9 +52,11 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
   onCloneRevenue,
   onOpenDialog,
   onDeleteRevenue,
+  editingCell,
+  setEditingCell,
+  tempRow,
+  onCommitTempRow,
 }) => {
-  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
-  
   const { filteredData, setFilter, clearAllFilters, getActiveFilters } = useTableFilter(revenues);
 
   // Get unique values for filtering - return original data with both display and filter values
@@ -237,6 +243,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 pageIndex={searchParams.page!}
                 pageSize={searchParams.pageSize!}
                 editingCell={editingCell}
+                setEditingCell={setEditingCell}
                 customers={customers}
                 companies={companies}
                 divisions={divisions}
@@ -247,11 +254,12 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 getMonthName={getMonthName}
                 calculateVNDRevenue={calculateVNDRevenue}
                 onCellEdit={onCellEdit}
-                setEditingCell={setEditingCell}
                 onInsertRowBelow={() => onInsertRowBelow(globalIndex)}
                 onCloneRevenue={() => onCloneRevenue(revenue, globalIndex)}
                 onOpenDialog={onOpenDialog}
                 onDeleteRevenue={onDeleteRevenue}
+                isTempRow={tempRow?.id === revenue.id}
+                onCommitTempRow={onCommitTempRow}
               />
             );
           })}

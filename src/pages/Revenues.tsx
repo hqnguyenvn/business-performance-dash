@@ -89,6 +89,8 @@ const Revenues = () => {
   }, [currentPage, itemsPerPage, total, searchParams.pageSize]);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [tempRow, setTempRow] = useState<any | null>(null);
 
   // Lọc dữ liệu revenues theo searchTerm
   const filteredRevenues = useMemo(() => {
@@ -373,6 +375,98 @@ const Revenues = () => {
     }
   };
 
+  // Hàm thêm dòng mới: Thêm "dòng tạm" vào đầu revenues, chuyển cell "year" sang edit
+  const handleAddNewRowInline = () => {
+    // Nếu đã có dòng tạm thời => không thêm nữa
+    if (tempRow) return;
+    const now = new Date();
+    const emptyRow = {
+      id: "temp-" + Math.random().toString(36).substring(2, 12),
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      customer_id: "",
+      company_id: "",
+      division_id: "",
+      project_id: "",
+      project_type_id: "",
+      resource_id: "",
+      currency_id: "",
+      unit_price: 0,
+      quantity: 0,
+      original_amount: 0,
+      vnd_revenue: 0,
+      notes: "",
+      project_name: ""
+    };
+    setTempRow(emptyRow);
+    setEditingCell({ id: emptyRow.id, field: "year" }); // focus luôn vào trường năm
+  };
+
+  // Khi edit tempRow, thay đổi giá trị
+  const handleEditTempRow = (id: string, field: keyof typeof tempRow, value: any) => {
+    if (!tempRow || tempRow.id !== id) return;
+    const updatedTempRow = { ...tempRow, [field]: value };
+    setTempRow(updatedTempRow);
+  };
+
+  // Khi người dùng kết thúc edit cell/dòng
+  const handleCommitTempRow = async () => {
+    // Validate: year, month và original_amount, vnd_revenue cần phải có giá trị
+    if (
+      !tempRow.year ||
+      !tempRow.month ||
+      typeof tempRow.original_amount !== "number" ||
+      typeof tempRow.vnd_revenue !== "number"
+    ) {
+      // Không đủ điều kiện, không gọi API
+      setTempRow(null);
+      setEditingCell(null);
+      toast({
+        variant: "destructive",
+        title: "Không thể thêm dòng mới",
+        description: "Bạn cần điền đủ các trường chính (năm, tháng, số tiền gốc, số tiền VND)."
+      });
+      return;
+    }
+    try {
+      // Nếu truyền id thì API sẽ báo lỗi, nên loại bỏ id khi gọi API
+      const { id, ...toCreate } = tempRow;
+      const created = await createRevenue(toCreate);
+      setTempRow(null);
+      setEditingCell(null);
+      // Cập nhật lại dữ liệu
+      fetchData();
+      toast({ title: "Đã thêm mới bản ghi!" });
+    } catch (error) {
+      setTempRow(null);
+      setEditingCell(null);
+      toast({
+        variant: "destructive",
+        title: "Có lỗi khi thêm mới.",
+        description: "Không thể lưu dữ liệu mới lên hệ thống"
+      });
+    }
+  };
+
+  // Khi nhấn Enter trên cell cuối hoặc blur ngoài dòng tạm thì lưu
+  const handleCellEdit = (id: string, field: keyof Revenue, value: any) => {
+    if (tempRow && id === tempRow.id) {
+      // Đang edit dòng tạm
+      handleEditTempRow(id, field as keyof typeof tempRow, value);
+    } else {
+      // Sửa cell của dòng thực trên DB:
+      crudCellEdit(id, field, value);
+    }
+  };
+
+  // Danh sách dòng hiển thị: Nếu có dòng tạm thì nối vào đầu
+  const tableRows = useMemo(() => {
+    if (tempRow) {
+      return [tempRow, ...filteredRevenues];
+    }
+    return filteredRevenues;
+  }, [tempRow, filteredRevenues]);
+
   return (
     <div>
       <PageHeader
@@ -413,12 +507,11 @@ const Revenues = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
-                {/* Make sure to pass correct signature to RevenueActions */}
                 <RevenueActions
                   onImportCSV={handleImportCSV}
                   onExportCSV={handleExportCSV}
-                  onCloneData={handleCloneData} // This function now matches the required 4-argument signature
-                  onAddNewRow={handleAddNewRow}
+                  onCloneData={handleCloneData}
+                  onAddNewRow={handleAddNewRowInline}
                   customers={customers}
                   companies={companies}
                   divisions={divisions}
@@ -429,9 +522,8 @@ const Revenues = () => {
                 />
               </div>
             </div>
-
             <RevenueTable
-              revenues={filteredRevenues}
+              revenues={tableRows}
               customers={customers}
               companies={companies}
               divisions={divisions}
@@ -443,10 +535,14 @@ const Revenues = () => {
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
               onCellEdit={handleCellEdit}
+              editingCell={editingCell}
+              setEditingCell={setEditingCell}
               onInsertRowBelow={handleInsertRowBelow}
               onCloneRevenue={handleCloneRevenue}
               onOpenDialog={handleOpenDialog}
               onDeleteRevenue={handleDeleteRevenue}
+              tempRow={tempRow}
+              onCommitTempRow={handleCommitTempRow}
             />
           </CardContent>
         </Card>
