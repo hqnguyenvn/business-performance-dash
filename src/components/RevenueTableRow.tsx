@@ -1,3 +1,4 @@
+
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/services/revenueService";
@@ -28,47 +29,18 @@ interface RevenueTableRowProps {
   onDeleteRevenue: (id: string) => void;
 }
 
-const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
-  revenue,
-  index, // This is pageSpecificIndex
-  pageIndex,
-  pageSize,
-  editingCell,
-  customers,
-  companies,
-  divisions,
-  projects,
-  projectTypes,
-  resources,
-  currencies,
-  getMonthName,
-  calculateVNDRevenue,
-  onCellEdit,
-  setEditingCell,
-  onInsertRowBelow,
-  onCloneRevenue,
-  onOpenDialog,
-  onDeleteRevenue,
-}) => {
-
-  const isCurrentlyEditing = (field: keyof Revenue) => 
-    editingCell?.id === revenue.id && editingCell?.field === field;
-
-  const rowContext: RowContext = {
-    pageSpecificIndex: index,
-    pageIndex,
-    pageSize: typeof pageSize === 'number' ? pageSize : 0, // For compatibility with RowContext
-    getMonthName,
-    calculateVNDRevenue,
-  };
-
-  const cellConfigs: CellConfig[] = [
+function getCellConfigs(
+  customers: MasterData[], companies: MasterData[], divisions: MasterData[], projects: MasterData[],
+  projectTypes: MasterData[], resources: MasterData[], currencies: MasterData[],
+  getMonthName: (monthNumber: number) => string,
+  calculateVNDRevenue: (revenue: Revenue) => number,
+  pageSize: number | 'all'
+): CellConfig[] {
+  return [
     {
       type: 'index',
       valueGetter: (_rev, ctx) => {
-        if (pageSize === 'all') {
-          return ctx.pageSpecificIndex + 1;
-        }
+        if (pageSize === 'all') return ctx.pageSpecificIndex + 1;
         return (ctx.pageIndex - 1) * (typeof pageSize === 'number' ? pageSize : 5) + ctx.pageSpecificIndex + 1;
       },
       cellClassName: "font-medium",
@@ -109,6 +81,45 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
     },
     { field: 'notes', type: 'text' },
   ];
+}
+
+const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
+  revenue,
+  index,
+  pageIndex,
+  pageSize,
+  editingCell,
+  customers,
+  companies,
+  divisions,
+  projects,
+  projectTypes,
+  resources,
+  currencies,
+  getMonthName,
+  calculateVNDRevenue,
+  onCellEdit,
+  setEditingCell,
+  onInsertRowBelow,
+  onCloneRevenue,
+  onOpenDialog,
+  onDeleteRevenue,
+}) => {
+  const isCurrentlyEditing = (field: keyof Revenue) =>
+    editingCell?.id === revenue.id && editingCell?.field === field;
+
+  const rowContext: RowContext = {
+    pageSpecificIndex: index,
+    pageIndex,
+    pageSize: typeof pageSize === 'number' ? pageSize : 0,
+    getMonthName,
+    calculateVNDRevenue,
+  };
+
+  const cellConfigs = getCellConfigs(
+    customers, companies, divisions, projects, projectTypes, resources, currencies,
+    getMonthName, calculateVNDRevenue, pageSize
+  );
 
   return (
     <TableRow key={revenue.id} className="h-[53px]">
@@ -123,8 +134,6 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           setEditingCell={setEditingCell}
         />
       ))}
-      
-      {/* Actions column as part of the main table */}
       <TableCell className="border-r p-0">
         <div className="h-full flex items-center justify-center">
           <RevenueRowActions
