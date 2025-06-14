@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,12 +44,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
           }}
           open={true} // Keep select open while editing
         >
-          <SelectTrigger className="w-full h-8">
+          <SelectTrigger className="w-full h-full text-sm">
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
             {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
+              <SelectItem key={option.id} value={option.id} className="text-sm">
                 {option.code}
               </SelectItem>
             ))}
@@ -73,12 +74,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
           }}
           open={true}
         >
-          <SelectTrigger className="w-full h-8">
+          <SelectTrigger className="w-full h-full text-sm">
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
             {monthOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value.toString()}>
+              <SelectItem key={option.value} value={option.value.toString()} className="text-sm">
                 {option.label}
               </SelectItem>
             ))}
@@ -94,25 +95,23 @@ const EditableCell: React.FC<EditableCellProps> = ({
           step={step} // Use step passed from parent
           value={initialValue || 0}
           onChange={(e) => {
-            // Allow optimistic updates if onCellEdit handles them quickly
             const newValue = parseFloat(e.target.value) || 0;
             onCellEdit(revenueId, field, newValue);
           }}
-          onBlur={(e) => { // Commit on blur
+          onBlur={(e) => { 
             const newValue = parseFloat(e.target.value) || 0;
             onCellEdit(revenueId, field, newValue);
-            // setEditingCell(null); // Parent may handle this based on broader context
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               const newValue = parseFloat((e.target as HTMLInputElement).value) || 0;
               onCellEdit(revenueId, field, newValue);
-              setEditingCell(null); // Stop editing on Enter
+              setEditingCell(null); 
             } else if (e.key === 'Escape') {
-              setEditingCell(null); // Stop editing on Escape
+              setEditingCell(null); 
             }
           }}
-          className="w-full h-8 text-right"
+          className="w-full h-full text-right text-sm px-2 py-1"
           autoFocus
         />
       );
@@ -122,20 +121,19 @@ const EditableCell: React.FC<EditableCellProps> = ({
       return (
         <Input
           value={initialValue || ''}
-          onChange={(e) => onCellEdit(revenueId, field, e.target.value)} // Update on change
-          onBlur={(e) => { // Commit on blur
+          onChange={(e) => onCellEdit(revenueId, field, e.target.value)}
+          onBlur={(e) => { 
             onCellEdit(revenueId, field, e.target.value);
-            // setEditingCell(null);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               onCellEdit(revenueId, field, (e.target as HTMLInputElement).value);
-              setEditingCell(null); // Stop editing on Enter
+              setEditingCell(null); 
             } else if (e.key === 'Escape') {
-              setEditingCell(null); // Stop editing on Escape
+              setEditingCell(null); 
             }
           }}
-          className="w-full h-8"
+          className="w-full h-full text-sm px-2 py-1"
           maxLength={maxLength}
           autoFocus
         />
@@ -157,24 +155,30 @@ const EditableCell: React.FC<EditableCellProps> = ({
     }
     if (type === 'number') {
       if (field === 'quantity') {
-        return (initialValue || 0).toFixed(1);
+        // Ensure initialValue is treated as number for toFixed
+        const numValue = typeof initialValue === 'number' ? initialValue : parseFloat(initialValue);
+        return (numValue || 0).toFixed(1);
       }
-      return (initialValue || 0).toLocaleString();
+      // Ensure initialValue is treated as number for toLocaleString
+      const numValue = typeof initialValue === 'number' ? initialValue : parseFloat(initialValue);
+      return (numValue || 0).toLocaleString();
     }
     return initialValue || '';
   };
 
   const alignmentClass = (type === 'number' || field === 'unit_price' || field === 'quantity' || field === 'original_amount' || field === 'vnd_revenue') ? 'justify-end' : 'justify-start';
-  // Note: For text-right behavior, `justify-end` is used with flex. If block layout is needed, `text-right` on the div and content.
 
   return (
     <div
-      className={`w-full h-full px-2 cursor-pointer hover:bg-gray-50 flex items-center ${alignmentClass}`}
-      onClick={() => setEditingCell({ id: revenueId, field })}
+      className={`w-full h-full px-2 py-1 cursor-pointer hover:bg-gray-100 flex items-center ${alignmentClass} text-sm`}
+      onClick={() => {
+        setEditingCell({ id: revenueId, field });
+      }}
     >
-      {displayValue()}
+      {displayValue() || (type === 'select' ? <span className="text-muted-foreground italic">Select...</span> : '')}
     </div>
   );
 };
 
 export default EditableCell;
+
