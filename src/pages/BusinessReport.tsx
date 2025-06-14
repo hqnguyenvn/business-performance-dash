@@ -213,6 +213,19 @@ const BusinessReport = () => {
       }
     });
 
+    // Aggregate salary cost data
+    const filteredSalaryCosts = salaryCosts.filter(salary => salary.year === parseInt(selectedYear));
+    console.log('Filtered salary costs for year', selectedYear, ':', filteredSalaryCosts);
+    
+    filteredSalaryCosts.forEach(salary => {
+      const key = `${salary.year}-${salary.month}`;
+      const existing = businessDataMap.get(key);
+      if (existing) {
+        existing.cost += salary.amount || 0;
+        console.log(`Added salary cost ${salary.amount} for ${key}, total: ${existing.cost}`);
+      }
+    });
+
     // Calculate derived values
     Array.from(businessDataMap.values()).forEach(data => {
       data.grossProfit = data.revenue - data.cost;
