@@ -2,16 +2,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatNumber } from "@/lib/format";
 import { BusinessData } from "@/hooks/useBusinessReport";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 
 interface BusinessReportTableProps {
   businessData: BusinessData[];
+  onExport: () => void;
 }
 
-export const BusinessReportTable = ({ businessData }: BusinessReportTableProps) => {
+export const BusinessReportTable = ({ businessData, onExport }: BusinessReportTableProps) => {
   return (
     <Card className="bg-white">
         <CardHeader>
-            <CardTitle>Detailed Report ({businessData.length} records)</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Detailed Report ({businessData.length} records)</CardTitle>
+              <Button variant="outline" onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+              </Button>
+            </div>
         </CardHeader>
         <CardContent>
             <div className="overflow-x-auto">

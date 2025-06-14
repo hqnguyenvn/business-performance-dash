@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { usePagination } from "@/hooks/usePagination";
+import { exportBusinessReportCSV } from "@/utils/csvExport";
 
 export interface BusinessData {
   year: number;
@@ -58,8 +58,11 @@ export const MONTHS = [
 export const useBusinessReport = () => {
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(
+    Array.from({ length: currentMonth }, (_, i) => i + 1)
+  );
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
   const [revenues, setRevenues] = useState<RevenueData[]>([]);
@@ -86,8 +89,7 @@ export const useBusinessReport = () => {
         setCostTypes(costTypesData || []);
 
         const revenueYears = revenueData?.map(r => r.year) || [];
-        const costYears = costData?.map(c => c.year) || [];
-        const allYears = Array.from(new Set([...revenueYears, ...costYears, currentYear])).sort((a, b) => b - a);
+        const allYears = Array.from(new Set([...revenueYears, currentYear])).sort((a, b) => b - a);
         setAvailableYears(allYears);
 
       } catch (error) {
@@ -157,6 +159,7 @@ export const useBusinessReport = () => {
   ), [allBusinessData, selectedMonths]);
 
   const exportToCSV = () => {
+    exportBusinessReportCSV({ data: businessData, year: selectedYear, totals });
     toast({
       title: "Export report",
       description: "Business report has been exported to CSV file successfully",

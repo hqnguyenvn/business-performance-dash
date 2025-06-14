@@ -35,7 +35,7 @@ const BusinessReport = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BusinessReportHeader onExport={exportToCSV} />
+      <BusinessReportHeader />
 
       <div className="p-6">
         <BusinessReportFilters
@@ -63,6 +63,7 @@ const BusinessReport = () => {
 
         <BusinessReportTable
           businessData={businessData}
+          onExport={exportToCSV}
         />
       </div>
     </div>

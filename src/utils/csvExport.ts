@@ -1,6 +1,7 @@
 import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 import { Cost } from "@/services/costService";
+import { BusinessData } from "@/hooks/useBusinessReport";
 
 interface CostsCSVExportOptions {
   costs: Cost[];
@@ -174,6 +175,86 @@ export const exportRevenueCSV = ({
     const currentDate = new Date().toISOString().split('T')[0];
     link.setAttribute('download', `revenue_export_${currentDate}.csv`);
     
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+interface Totals {
+    totalRevenue: number;
+    totalGrossProfit: number;
+    totalCost: number;
+    totalNetProfit: number;
+    grossProfitPercent: number;
+    netProfitPercent: number;
+}
+interface BusinessReportCSVExportOptions {
+  data: BusinessData[];
+  year: string;
+  totals: Totals;
+}
+
+export const exportBusinessReportCSV = ({ data, year, totals }: BusinessReportCSVExportOptions) => {
+  const headers = [
+    'Month', 'Revenue', 'Cost', 'Gross Profit', 'Income Tax', 'Bonus', 'Total Cost', 'Net Profit', 'Gross %', 'Net %'
+  ];
+
+  const rows = data.map(d => [
+    d.month,
+    d.revenue,
+    d.cost,
+    d.grossProfit,
+    d.incomeTax,
+    d.bonus,
+    d.totalCost,
+    d.netProfit,
+    Math.round(d.grossProfitPercent),
+    Math.round(d.netProfitPercent)
+  ]);
+
+  const totalSimpleCost = data.reduce((sum, d) => sum + d.cost, 0);
+  const totalIncomeTax = data.reduce((sum, d) => sum + d.incomeTax, 0);
+  const totalBonus = data.reduce((sum, d) => sum + d.bonus, 0);
+
+  const totalRow = [
+    'Total',
+    totals.totalRevenue,
+    totalSimpleCost,
+    totals.totalGrossProfit,
+    totalIncomeTax,
+    totalBonus,
+    totals.totalCost,
+    totals.totalNetProfit,
+    Math.round(totals.grossProfitPercent),
+    Math.round(totals.netProfitPercent),
+  ];
+  
+  const csvContent = [
+    headers, 
+    ...rows,
+    [], // empty line
+    totalRow
+  ]
+    .map(row => 
+      row.map(field => {
+        const stringField = String(field);
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      }).join(',')
+    )
+    .join('\n');
+  
+  const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `business_report_${year}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
