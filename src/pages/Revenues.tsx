@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   Card,
@@ -64,11 +63,28 @@ const Revenues = () => {
   );
 
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
-  const itemsPerPage = useMemo(() => searchParams.pageSize || 5, [searchParams.pageSize]);
-  const totalPages = useMemo(() => Math.ceil(total / itemsPerPage), [total, itemsPerPage]);
+  const itemsPerPage = useMemo(() => {
+    // If pageSize is 'all' or greater than total, show all items
+    if (searchParams.pageSize === 'all' || (searchParams.pageSize && searchParams.pageSize >= total)) {
+      return total || 1;
+    }
+    return searchParams.pageSize || 5;
+  }, [searchParams.pageSize, total]);
   
-  const startIndex = useMemo(() => (currentPage - 1) * itemsPerPage + 1, [currentPage, itemsPerPage]);
-  const endIndex = useMemo(() => Math.min(currentPage * itemsPerPage, total), [currentPage, itemsPerPage, total]);
+  const totalPages = useMemo(() => {
+    if (itemsPerPage >= total) return 1;
+    return Math.ceil(total / itemsPerPage);
+  }, [total, itemsPerPage]);
+  
+  const startIndex = useMemo(() => {
+    if (itemsPerPage >= total) return 1;
+    return (currentPage - 1) * itemsPerPage + 1;
+  }, [currentPage, itemsPerPage, total]);
+  
+  const endIndex = useMemo(() => {
+    if (itemsPerPage >= total) return total;
+    return Math.min(currentPage * itemsPerPage, total);
+  }, [currentPage, itemsPerPage, total]);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -81,7 +97,7 @@ const Revenues = () => {
   };
 
   const handlePageChange = (page: number) => {
-    const effectivePageSize = searchParams.pageSize || 5;
+    const effectivePageSize = itemsPerPage;
     const calculatedTotalPages = Math.ceil(total / effectivePageSize);
     
     let newPage = page;
@@ -93,6 +109,14 @@ const Revenues = () => {
     if (searchParams.page !== newPage) {
        setSearchParams((prev) => ({ ...prev, page: newPage }));
     }
+  };
+
+  const handlePageSizeChange = (newPageSize: number | 'all') => {
+    setSearchParams((prev) => ({ 
+      ...prev, 
+      pageSize: newPageSize,
+      page: 1 // Reset to first page when changing page size
+    }));
   };
   
   const handleSearch = () => {
@@ -171,12 +195,27 @@ const Revenues = () => {
                 onSearchTermChange={setSearchTerm}
                 onSearch={handleSearch}
               />
-              <RevenueActions
-                onImportCSV={handleImportCSV}
-                onExportCSV={handleExportCSV}
-                onCloneData={handleCloneData}
-                onAddNewRow={handleAddNewRow}
-              />
+              <div className="flex items-center gap-4">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
+                  onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
+                  totalItems={total}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  pageSize={itemsPerPage}
+                  onPageSizeChange={handlePageSizeChange}
+                  position="top"
+                />
+                <RevenueActions
+                  onImportCSV={handleImportCSV}
+                  onExportCSV={handleExportCSV}
+                  onCloneData={handleCloneData}
+                  onAddNewRow={handleAddNewRow}
+                />
+              </div>
             </div>
 
             <RevenueTable
@@ -207,6 +246,8 @@ const Revenues = () => {
               totalItems={total}
               startIndex={startIndex}
               endIndex={endIndex}
+              pageSize={itemsPerPage}
+              position="bottom"
             />
           </CardContent>
         </Card>

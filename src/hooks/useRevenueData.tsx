@@ -34,13 +34,23 @@ export const useRevenueData = () => {
     year: new Date().getFullYear(),
     months: defaultMonths,
     page: 1,
-    pageSize: 5, // Changed default to 5
+    pageSize: 5,
   });
   const [total, setTotal] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
       console.log('Fetching data with params:', searchParams);
+      
+      // Prepare params for API call
+      const apiParams = { ...searchParams };
+      
+      // If pageSize is 'all', don't send pageSize and page to get all records
+      if (searchParams.pageSize === 'all') {
+        delete apiParams.pageSize;
+        delete apiParams.page;
+      }
+      
       const [
         revenuesData,
         customersData,
@@ -52,7 +62,7 @@ export const useRevenueData = () => {
         currenciesData,
         exchangeRatesData,
       ] = await Promise.all([
-        getRevenues(searchParams),
+        getRevenues(apiParams),
         getMasterDatas('customers'),
         getMasterDatas('companies'),
         getMasterDatas('divisions'),
