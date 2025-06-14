@@ -1,4 +1,5 @@
 
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -23,7 +24,7 @@ interface CostDialogsProps {
   setIsDialogOpen: (open: boolean) => void;
   dialogMode: 'view' | 'edit';
   selectedCost: Cost | null;
-  setSelectedCost: (cost: Cost | null) => void;
+  setSelectedCost: React.Dispatch<React.SetStateAction<Cost | null>>;
   saveChanges: () => void;
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
