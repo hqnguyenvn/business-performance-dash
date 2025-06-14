@@ -1,4 +1,3 @@
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCosts } from "@/hooks/useCosts";
 import { CostsHeader } from "@/components/costs/CostsHeader";
@@ -78,10 +77,6 @@ const Costs = () => {
               <Button variant="outline" onClick={exportToCSV}>
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
-              </Button>
-              <Button variant="outline" onClick={saveAllData}>
-                <Save className="h-4 w-4 mr-2" />
-                Save All
               </Button>
               <CloneCostDialog onClone={cloneCosts} />
               <Button onClick={addNewRow}>

@@ -66,14 +66,14 @@ export const useCosts = () => {
   const { filteredData: filteredCosts, setFilter, getActiveFilters } = useTableFilter(baseCosts);
   
   const createCostMutation = useMutation({
-    mutationFn: (cost: NewCost) => costService.create(cost),
+    mutationFn: (cost: NewCost): Promise<Cost> => costService.create(cost),
     onError: (error) => {
       toast({ title: "Error", description: `Could not create cost: ${error.message}`, variant: "destructive" });
     }
   });
 
   const updateCostMutation = useMutation({
-    mutationFn: (cost: DbCost) => costService.update(cost.id, cost),
+    mutationFn: (cost: DbCost): Promise<Cost> => costService.update(cost.id, cost),
     onError: (error) => {
       toast({ title: "Error", description: `Could not update cost: ${error.message}`, variant: "destructive" });
     }
@@ -163,17 +163,43 @@ export const useCosts = () => {
     });
   };
 
-  const updateCost = (id: string, field: keyof Cost, value: any) => {
-    setCosts(costs.map(cost => {
-      if (cost.id === id) {
-        const updated = { ...cost, [field]: value };
-        if (field === 'price' || field === 'volume') {
-          updated.cost = (updated.price || 0) * (updated.volume || 0);
-        }
-        return updated;
+  const updateCost = async (id: string, field: keyof Cost, value: any) => {
+    const costIndex = costs.findIndex(c => c.id === id);
+    if (costIndex === -1) return;
+
+    const originalCosts = [...costs];
+    let updatedCost = { ...costs[costIndex], [field]: value };
+
+    if (field === 'price' || field === 'volume') {
+      updatedCost.cost = (updatedCost.price || 0) * (updatedCost.volume || 0);
+    }
+    
+    const newCosts = [...costs];
+    newCosts[costIndex] = updatedCost;
+    setCosts(newCosts);
+
+    if (id.startsWith('new_')) {
+      const { id: tempId, created_at, updated_at, ...newCostData } = updatedCost;
+      try {
+        const createdCost = await createCostMutation.mutateAsync({
+          ...newCostData,
+          cost: newCostData.cost || 0,
+        });
+        setCosts(prev => prev.map(c => c.id === tempId ? createdCost : c));
+        toast({ title: "Cost Created", description: "New cost row has been saved automatically." });
+      } catch (error) {
+        setCosts(originalCosts);
+        toast({ title: "Error", description: `Could not create cost: ${(error as Error).message}`, variant: "destructive" });
       }
-      return cost;
-    }));
+    } else {
+      try {
+        await updateCostMutation.mutateAsync(updatedCost);
+        toast({ title: "Cost Updated", description: "Your changes have been saved automatically." });
+      } catch (error) {
+        setCosts(originalCosts);
+        toast({ title: "Error", description: `Could not update cost: ${(error as Error).message}`, variant: "destructive" });
+      }
+    }
   };
 
   const openDialog = (cost: Cost, mode: 'view' | 'edit') => {
@@ -187,67 +213,49 @@ export const useCosts = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (costToDelete) {
-      if (!costToDelete.id.startsWith('new_')) {
-        setDeletedCostIds(prev => [...prev, costToDelete.id]);
-      }
-      setCosts(prev => prev.filter(cost => cost.id !== costToDelete.id));
-      toast({
-        title: "Marked for Deletion",
-        description: "Item will be deleted when you click 'Save All'",
-      });
-      setIsDeleteDialogOpen(false);
+  const confirmDelete = async () => {
+    if (!costToDelete) return;
+    const { id } = costToDelete;
+
+    setIsDeleteDialogOpen(false);
+
+    if (id.startsWith('new_')) {
+      setCosts(prev => prev.filter(c => c.id !== id));
       setCostToDelete(null);
+      toast({ title: "Row removed", description: "Unsaved row has been removed." });
+      return;
+    }
+
+    const originalCosts = [...costs];
+    setCosts(prev => prev.filter(c => c.id !== id));
+    setCostToDelete(null);
+    
+    try {
+        await deleteCostMutation.mutateAsync(id);
+        toast({ title: "Cost deleted", description: "Cost has been deleted successfully." });
+        queryClient.invalidateQueries({ queryKey: ['costs'] });
+    } catch(error) {
+        setCosts(originalCosts);
+        toast({ title: "Error", description: `Could not delete cost: ${(error as Error).message}`, variant: "destructive" });
     }
   };
 
-  const saveChanges = () => {
-    if (selectedCost) {
-      setCosts(costs.map(c => c.id === selectedCost.id ? selectedCost : c));
-      setIsDialogOpen(false);
-      toast({
-        title: "Changes Queued",
-        description: "Cost data has been updated locally. Click 'Save All' to persist.",
-      });
-    }
-  };
+  const saveChanges = async () => {
+    if (!selectedCost) return;
 
-  const saveAllData = async () => {
-    const creationPromises = costs
-      .filter(c => c.id.startsWith('new_'))
-      .map(c => {
-        const { id, created_at, updated_at, ...newCostData } = c;
-        const costToCreate: NewCost = {
-          ...newCostData,
-          cost: newCostData.cost || 0,
-        };
-        return createCostMutation.mutateAsync(costToCreate);
-      });
-
-    const updatePromises = costs
-      .filter(c => !c.id.startsWith('new_') && dbCosts?.find(db_c => db_c.id === c.id) && JSON.stringify(c) !== JSON.stringify(dbCosts?.find(db_c => db_c.id === c.id)))
-      .map(c => updateCostMutation.mutateAsync(c));
-
-    const deletionPromises = deletedCostIds.map(id => deleteCostMutation.mutateAsync(id));
+    const originalCosts = [...costs];
+    const updatedCosts = costs.map(c => c.id === selectedCost.id ? selectedCost : c);
+    
+    setCosts(updatedCosts);
+    setIsDialogOpen(false);
 
     try {
-      await Promise.all([...creationPromises, ...updatePromises, ...deletionPromises]);
-      
-      toast({
-        title: "Save All Data",
-        description: "All cost data has been saved successfully",
-      });
-      
-      setDeletedCostIds([]);
-      queryClient.invalidateQueries({ queryKey: ['costs'] });
-
+        await updateCostMutation.mutateAsync(selectedCost);
+        toast({ title: "Cost Updated", description: "Your changes have been saved." });
+        queryClient.invalidateQueries({ queryKey: ['costs'] });
     } catch (error) {
-       toast({
-        title: "Error Saving Data",
-        description: "An error occurred while saving data.",
-        variant: "destructive"
-      });
+        setCosts(originalCosts);
+        toast({ title: "Error", description: `Could not update cost: ${(error as Error).message}`, variant: "destructive" });
     }
   };
 
@@ -360,7 +368,6 @@ export const useCosts = () => {
     deleteCost,
     confirmDelete,
     saveChanges,
-    saveAllData,
     cloneCosts,
     exportToCSV,
     importFromCSV,
