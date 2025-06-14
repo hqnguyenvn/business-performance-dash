@@ -53,27 +53,6 @@ const Costs = () => {
     );
   }
 
-  const actions = (
-    <div>
-      <label className="text-sm font-medium text-gray-700 block mb-1 invisible">Actions</label>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={importFromCSV}>
-          <Import className="h-4 w-4 mr-2" />
-          Import CSV
-        </Button>
-        <Button variant="outline" onClick={exportToCSV}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
-        <CloneCostDialog onClone={cloneCosts} />
-        <Button onClick={addNewRow}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Row
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50">
       <CostsHeader />
@@ -85,10 +64,29 @@ const Costs = () => {
           availableYears={availableYears}
           selectedMonths={selectedMonths}
           handleMonthToggle={handleMonthToggle}
-          actions={actions}
         />
 
         <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">
+              Cost Data ({filteredCosts.length} records)
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={importFromCSV}>
+                <Import className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+              <Button variant="outline" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <CloneCostDialog onClone={cloneCosts} />
+              <Button onClick={addNewRow}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Row
+              </Button>
+            </div>
+          </div>
           <CostsTable
             costs={costs}
             filteredCosts={filteredCosts}
