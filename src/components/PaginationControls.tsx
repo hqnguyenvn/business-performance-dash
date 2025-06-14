@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Pagination,
@@ -69,9 +70,6 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     return rangeWithDots;
   };
 
-  // Đừng bao giờ ẩn pagination (kể cả khi trang chỉ có 1 page) vì có thể đang chọn "All"
-  // -> Không return null nữa ở đây
-
   return (
     <div className={`flex items-center ${position === 'top' ? 'justify-start gap-4' : 'justify-between'} ${position === 'top' ? '' : 'mt-4'}`}>
       {position === 'top' && onPageSizeChange && (
@@ -101,7 +99,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         </div>
       )}
 
-      {/* Kể cả khi pageSize === 'all' thì pagination vẫn hiện nút "All" nổi bật */}
+      {/* Khi chọn All sẽ LUÔN hiển thị nút "All", làm active và không hiện số trang khác */}
       <Pagination>
         <PaginationContent>
           <PaginationItem>
@@ -110,8 +108,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               className={pageSize === 'all' || currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
-          {/* Khi chọn All sẽ chỉ hiển thị duy nhất nút "All" nổi bật */}
           {pageSize === 'all' ? (
+            // Luôn render nút All duy nhất khi pageSize === 'all'
             <PaginationItem>
               <PaginationLink isActive className="cursor-default">
                 All
@@ -135,7 +133,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             ))
           )}
           <PaginationItem>
-            <PaginationNext 
+            <PaginationNext
               onClick={pageSize === 'all' || currentPage >= totalPages ? undefined : onNextPage}
               className={pageSize === 'all' || currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
@@ -147,3 +145,4 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 };
 
 export default PaginationControls;
+
