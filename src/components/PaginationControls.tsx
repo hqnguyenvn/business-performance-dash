@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Pagination,
@@ -40,7 +39,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   totalItems,
   startIndex,
   endIndex,
-  pageSize = 5,
+  pageSize = 25,
   onPageSizeChange,
   position = 'bottom',
 }) => {
@@ -76,7 +75,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-700">Show</span>
           <Select
-            value={pageSize === 'all' ? 'all' : pageSize?.toString() || '5'}
+            value={pageSize === 'all' ? 'all' : pageSize?.toString() || '25'}
             onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
           >
             <SelectTrigger className="w-20">
@@ -84,13 +83,14 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               <SelectValue>
                 {pageSize === 'all'
                   ? 'All'
-                  : pageSize?.toString() || '5'}
+                  : pageSize?.toString() || '25'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="5">5</SelectItem>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="75">75</SelectItem>
+              <SelectItem value="100">100</SelectItem>
               <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
@@ -154,4 +154,3 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 };
 
 export default PaginationControls;
-

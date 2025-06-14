@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import {
   Card,
@@ -100,7 +99,7 @@ const Revenues = () => {
     if (searchParams.pageSize === 'all') {
       return total || 1;
     }
-    return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 5);
+    return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 25);
   }, [searchParams.pageSize, total]);
   const totalPages = useMemo(() => {
     if (searchParams.pageSize === 'all') return 1;
