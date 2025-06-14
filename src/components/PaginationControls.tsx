@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Pagination,
@@ -70,8 +69,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     return rangeWithDots;
   };
 
-  // Không ẩn pagination ngay cả khi pageSize === 'all'
-  if (totalPages <= 1 && position === 'bottom') return null;
+  // Đừng bao giờ ẩn pagination (kể cả khi trang chỉ có 1 page) vì có thể đang chọn "All"
+  // -> Không return null nữa ở đây
 
   return (
     <div className={`flex items-center ${position === 'top' ? 'justify-start gap-4' : 'justify-between'} ${position === 'top' ? '' : 'mt-4'}`}>
@@ -95,25 +94,23 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <span className="text-sm text-gray-700">entries</span>
         </div>
       )}
-      
+
       {position === 'bottom' && (
         <div className="text-sm text-gray-700">
           Showing {startIndex} to {endIndex} of {totalItems} entries
         </div>
       )}
 
-      {/* Pagination controls luôn hiển thị kể cả khi chọn all */}
+      {/* Kể cả khi pageSize === 'all' thì pagination vẫn hiện nút "All" nổi bật */}
       <Pagination>
         <PaginationContent>
-          {/* Previous button - disable nếu là All hoặc ở trang đầu */}
           <PaginationItem>
             <PaginationPrevious 
               onClick={pageSize === 'all' || currentPage <= 1 ? undefined : onPreviousPage}
               className={pageSize === 'all' || currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
-          
-          {/* Nếu chọn All, hiển thị duy nhất nút All nổi bật và disable */}
+          {/* Khi chọn All sẽ chỉ hiển thị duy nhất nút "All" nổi bật */}
           {pageSize === 'all' ? (
             <PaginationItem>
               <PaginationLink isActive className="cursor-default">
@@ -137,8 +134,6 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               </PaginationItem>
             ))
           )}
-          
-          {/* Next button - disable nếu là All hoặc ở trang cuối */}
           <PaginationItem>
             <PaginationNext 
               onClick={pageSize === 'all' || currentPage >= totalPages ? undefined : onNextPage}
@@ -152,4 +147,3 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 };
 
 export default PaginationControls;
-
