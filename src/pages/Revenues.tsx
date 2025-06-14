@@ -19,6 +19,7 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
 import { exportRevenueCSV } from "@/utils/csvExport";
 import { Revenue } from "@/services/revenueService";
+import { createRevenue } from "@/services/revenueService";
 
 const Revenues = () => {
   const { toast } = useToast();
@@ -131,15 +132,111 @@ const Revenues = () => {
     }
   };
   
-  const handleImportCSV = (data: any[]) => {
-    console.log("Imported CSV data:", data);
+  // Hàm tìm id từ code
+  function findIdByCode(arr: any[], code: string | undefined | null) {
+    if (!code) return null;
+    const obj = arr.find((item) => (item.code || "").toString().trim() === (code || "").toString().trim());
+    return obj ? obj.id : null;
+  }
+
+  // MAIN: Handle import csv with mapping
+  const handleImportCSV = async (
+    data: any[],
+    masterData: {
+      customers: any[],
+      companies: any[],
+      divisions: any[],
+      projects: any[],
+      projectTypes: any[],
+      resources: any[],
+      currencies: any[],
+    }
+  ) => {
+    let successCount = 0;
+    let errorRows: { row: number; reason: string }[] = [];
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+
+      // Defensive: Normalize field names (viết hoa/thường, tiếng Anh...)
+      // Kỳ vọng tên trong file csv: year, month, customer, company, division, project, project_type, resource, currency, unit_price, quantity, original_amount, vnd_revenue, notes, project_name
+      // Map code -> id
+      const customer_id = findIdByCode(masterData.customers, row["Customer"] || row["customer"]);
+      const company_id = findIdByCode(masterData.companies, row["Company"] || row["company"]);
+      const division_id = findIdByCode(masterData.divisions, row["Division"] || row["division"]);
+      const project_id = findIdByCode(masterData.projects, row["Project"] || row["project"]);
+      const project_type_id = findIdByCode(masterData.projectTypes, row["Project Type"] || row["project_type"]);
+      const resource_id = findIdByCode(masterData.resources, row["Resource"] || row["resource"]);
+      const currency_id = findIdByCode(masterData.currencies, row["Currency"] || row["currency"]);
+      // Những trường bắt buộc: year, month, original_amount, vnd_revenue (?)
+      // Trả lỗi nếu thiếu thông tin mapping Id (user sẽ kiểm tra)
+      // Có thể cho phép null nếu trường không bắt buộc
+
+      // Nếu file import thiếu code (không khớp) sẽ bỏ qua và báo lỗi
+      let missingFields: string[] = [];
+      if ((row["Customer"] || row["customer"]) && !customer_id) missingFields.push("Customer");
+      if ((row["Company"] || row["company"]) && !company_id) missingFields.push("Company");
+      if ((row["Division"] || row["division"]) && !division_id) missingFields.push("Division");
+      if ((row["Project"] || row["project"]) && !project_id) missingFields.push("Project");
+      if ((row["Project Type"] || row["project_type"]) && !project_type_id) missingFields.push("Project Type");
+      if ((row["Resource"] || row["resource"]) && !resource_id) missingFields.push("Resource");
+      if ((row["Currency"] || row["currency"]) && !currency_id) missingFields.push("Currency");
+
+      if (missingFields.length > 0) {
+        errorRows.push({
+          row: i + 2, // +2 vì có header và index bắt đầu từ 0
+          reason: `Không tìm thấy code cho các cột: ${missingFields.join(", ")}`
+        });
+        continue;
+      }
+
+      // Build object data cho Revenue
+      try {
+        const newRevenue = {
+          // Bắt buộc: year, month, original_amount, vnd_revenue
+          year: Number(row["Year"] || row["year"]),
+          month: Number(row["Month"] || row["month"]),
+          customer_id,
+          company_id,
+          division_id,
+          project_id,
+          project_type_id,
+          resource_id,
+          currency_id,
+          unit_price: row["Unit Price"] !== undefined ? Number(row["Unit Price"]) : (row["unit_price"] !== undefined ? Number(row["unit_price"]) : undefined),
+          quantity: row["Quantity"] !== undefined ? Number(row["Quantity"]) : (row["quantity"] !== undefined ? Number(row["quantity"]) : undefined),
+          original_amount: Number(row["Original Amount"] || row["original_amount"] || 0),
+          vnd_revenue: Number(row["VND Revenue"] || row["vnd_revenue"] || 0),
+          notes: row["Notes"] || row["notes"] || null,
+          project_name: row["Project Name"] || row["project_name"] || "",
+        };
+        // Validate year, month
+        if (!newRevenue.year || !newRevenue.month) {
+          errorRows.push({ row: i + 2, reason: "Thiếu dữ liệu năm hoặc tháng" });
+          continue;
+        }
+        // Validate số tiền
+        if (isNaN(newRevenue.original_amount) || isNaN(newRevenue.vnd_revenue)) {
+          errorRows.push({ row: i + 2, reason: "Dữ liệu số tiền không hợp lệ" });
+          continue;
+        }
+        // Tạo mới record trong Supabase
+        await createRevenue(newRevenue as any);
+        successCount++;
+      } catch (err: any) {
+        errorRows.push({ row: i + 2, reason: `Lỗi khi insert: ${err.message}` });
+      }
+    }
+    // Sau khi import xong thì reload
+    fetchData();
+    let msg = `Đã import thành công ${successCount} dòng dữ liệu.`;
+    if (errorRows.length > 0) {
+      msg += "\nCác dòng lỗi:\n" + errorRows.map(e => `- Dòng ${e.row}: ${e.reason}`).join("\n");
+    }
     toast({
-      title: "Import CSV thành công!",
-      description:
-        "Dữ liệu CSV đã được nhập (chưa lưu vào database, hãy kiểm tra console log).",
+      title: "Kết quả Import CSV",
+      description: msg,
+      variant: errorRows.length > 0 ? "destructive" : undefined,
     });
-    // TODO: Mapping & Thêm vào database nếu muốn
-    // Ví dụ: setRevenues([...revenues, ...data]);
   };
 
   const handleExportCSV = () => {
@@ -221,6 +318,13 @@ const Revenues = () => {
                   onExportCSV={handleExportCSV}
                   onCloneData={handleCloneData}
                   onAddNewRow={handleAddNewRow}
+                  customers={customers}
+                  companies={companies}
+                  divisions={divisions}
+                  projects={projects}
+                  projectTypes={projectTypes}
+                  resources={resources}
+                  currencies={currencies}
                 />
               </div>
             </div>

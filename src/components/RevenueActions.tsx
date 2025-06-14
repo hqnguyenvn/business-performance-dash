@@ -6,10 +6,30 @@ import CloneDataDialog from "@/components/CloneDataDialog";
 import Papa from "papaparse";
 
 interface RevenueActionsProps {
-  onImportCSV: (data: any[]) => void;
+  onImportCSV: (
+    data: any[],
+    masterData: {
+      customers: any[],
+      companies: any[],
+      divisions: any[],
+      projects: any[],
+      projectTypes: any[],
+      resources: any[],
+      currencies: any[],
+    }
+  ) => void;
   onExportCSV: () => void;
   onCloneData: () => void;
   onAddNewRow: () => void;
+
+  // Master data để truyền xuống cho import
+  customers: any[];
+  companies: any[];
+  divisions: any[];
+  projects: any[];
+  projectTypes: any[];
+  resources: any[];
+  currencies: any[];
 }
 
 const RevenueActions: React.FC<RevenueActionsProps> = ({
@@ -17,6 +37,13 @@ const RevenueActions: React.FC<RevenueActionsProps> = ({
   onExportCSV,
   onCloneData,
   onAddNewRow,
+  customers,
+  companies,
+  divisions,
+  projects,
+  projectTypes,
+  resources,
+  currencies,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +60,15 @@ const RevenueActions: React.FC<RevenueActionsProps> = ({
       skipEmptyLines: true,
       complete: function (results) {
         if (Array.isArray(results.data)) {
-          onImportCSV(results.data);
+          onImportCSV(results.data, {
+            customers,
+            companies,
+            divisions,
+            projects,
+            projectTypes,
+            resources,
+            currencies,
+          });
         }
       },
       error: function (error) {
