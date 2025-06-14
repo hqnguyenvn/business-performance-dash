@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -251,73 +250,91 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
       <TableCell className="border-r">
         {renderEditableCell('notes', revenue.notes, 'text')}
       </TableCell>
-      <TableCell className="text-center sticky right-0 bg-white border-l-2 border-gray-200 z-20">
-        <div className="flex justify-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onInsertRowBelow(index)}
-            title="Add"
-            className="h-8 w-8"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onCloneRevenue(revenue, index)}
-            title="Clone"
-            className="h-8 w-8"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onOpenDialog(revenue, 'view')}
-            title="View"
-            className="h-8 w-8"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => onOpenDialog(revenue, 'edit')}
-            title="Edit"
-            className="h-8 w-8"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                size="icon"
-                title="Delete"
-                className="h-8 w-8"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this revenue record? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDeleteRevenue(revenue.id)}>
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </TableCell>
     </TableRow>
+  );
+};
+
+// Create separate component for action buttons
+export const RevenueRowActions: React.FC<{
+  revenue: Revenue;
+  index: number;
+  onInsertRowBelow: (index: number) => void;
+  onCloneRevenue: (revenue: Revenue, index: number) => void;
+  onOpenDialog: (revenue: Revenue, mode: 'view' | 'edit') => void;
+  onDeleteRevenue: (id: string) => void;
+}> = ({
+  revenue,
+  index,
+  onInsertRowBelow,
+  onCloneRevenue,
+  onOpenDialog,
+  onDeleteRevenue,
+}) => {
+  return (
+    <div className="flex justify-center gap-1">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onInsertRowBelow(index)}
+        title="Add"
+        className="h-8 w-8"
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onCloneRevenue(revenue, index)}
+        title="Clone"
+        className="h-8 w-8"
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onOpenDialog(revenue, 'view')}
+        title="View"
+        className="h-8 w-8"
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onOpenDialog(revenue, 'edit')}
+        title="Edit"
+        className="h-8 w-8"
+      >
+        <Edit className="h-4 w-4" />
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="destructive"
+            size="icon"
+            title="Delete"
+            className="h-8 w-8"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this revenue record? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onDeleteRevenue(revenue.id)}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 

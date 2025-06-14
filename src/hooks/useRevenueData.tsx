@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -35,7 +34,7 @@ export const useRevenueData = () => {
     year: new Date().getFullYear(),
     months: defaultMonths,
     page: 1,
-    pageSize: 10,
+    pageSize: 5, // Changed default to 5
   });
   const [total, setTotal] = useState(0);
 

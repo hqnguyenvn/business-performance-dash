@@ -13,6 +13,7 @@ interface TableFilterProps {
   onFilter: (field: string, values: string[]) => void;
   activeFilters: string[];
   className?: string;
+  displayOptions?: { id: any; code: string }[];
 }
 
 export const TableFilter: React.FC<TableFilterProps> = ({
@@ -20,7 +21,8 @@ export const TableFilter: React.FC<TableFilterProps> = ({
   field,
   onFilter,
   activeFilters,
-  className
+  className,
+  displayOptions
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,10 +39,20 @@ export const TableFilter: React.FC<TableFilterProps> = ({
     return [...new Set(values)].sort();
   }, [data, field]);
 
+  // Get display values if display options are provided
+  const getDisplayValue = (value: string) => {
+    if (displayOptions) {
+      const option = displayOptions.find(opt => String(opt.id) === value);
+      return option ? option.code : value;
+    }
+    return value;
+  };
+
   // Filter values based on search term
-  const filteredValues = uniqueValues.filter(value =>
-    value.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredValues = uniqueValues.filter(value => {
+    const displayValue = getDisplayValue(value);
+    return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   useEffect(() => {
     setSelectedValues(activeFilters);
@@ -138,9 +150,9 @@ export const TableFilter: React.FC<TableFilterProps> = ({
               <label 
                 htmlFor={`filter-${value}`} 
                 className="text-sm cursor-pointer flex-1 truncate"
-                title={value}
+                title={getDisplayValue(value)}
               >
-                {value || "(Empty)"}
+                {getDisplayValue(value) || "(Empty)"}
               </label>
             </div>
           ))}

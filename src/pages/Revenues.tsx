@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Card,
@@ -16,6 +15,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from "@/hooks/useRevenueData";
 import { useRevenueCalculations } from "@/hooks/useRevenueCalculations";
+import { usePagination } from "@/hooks/usePagination";
 import {
   Revenue,
   createRevenue,
@@ -44,6 +44,19 @@ const Revenues = () => {
   } = useRevenueData();
 
   const { getMonthName, getMonthNumber, calculateVNDRevenue } = useRevenueCalculations(currencies, exchangeRates);
+
+  // Add pagination for revenues
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedRevenues,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    totalItems,
+    startIndex,
+    endIndex,
+  } = usePagination({ data: revenues, itemsPerPage: 5 });
 
   const [revenueInDialog, setRevenueInDialog] = useState<Revenue | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -353,7 +366,7 @@ const Revenues = () => {
             </div>
 
             <RevenueTable
-              revenues={revenues}
+              revenues={paginatedRevenues}
               customers={customers}
               companies={companies}
               divisions={divisions}
@@ -372,14 +385,14 @@ const Revenues = () => {
             />
 
             <PaginationControls
-              currentPage={searchParams.page!}
-              totalPages={Math.ceil(total / searchParams.pageSize!)}
-              onPageChange={handlePageChange}
-              onNextPage={() => handlePageChange(searchParams.page! + 1)}
-              onPreviousPage={() => handlePageChange(searchParams.page! - 1)}
-              totalItems={total}
-              startIndex={(searchParams.page! - 1) * searchParams.pageSize! + 1}
-              endIndex={Math.min(searchParams.page! * searchParams.pageSize!, total)}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
             />
           </CardContent>
         </Card>
