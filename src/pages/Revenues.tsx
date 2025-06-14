@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from "react";
 import {
   Card,
@@ -16,7 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from "@/hooks/useRevenueData";
 import { useRevenueCalculations } from "@/hooks/useRevenueCalculations";
 import { useRevenueDialog } from "@/hooks/useRevenueDialog";
-import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
+import { useRevenueUpdate } from "@/hooks/useRevenueUpdate";
+import { useRevenueCreation } from "@/hooks/useRevenueCreation";
 import { exportRevenueCSV } from "@/utils/csvExport";
 import { Revenue } from "@/services/revenueService";
 import { MasterData } from "@/services/masterDataService"; // Added MasterData import
@@ -55,15 +57,18 @@ const Revenues = () => {
     setIsDialogOpen,
   } = useRevenueDialog();
 
-  const crudOperations = useRevenueCrudOperations(
-    { revenues, setRevenues, fetchData, searchParams },
-    { getMonthNumber, calculateVNDRevenue }
+  const { handleCellEdit: handleCellEditDb } = useRevenueUpdate(
+    { revenues, setRevenues, fetchData },
+    { calculateVNDRevenue }
   );
-  const {
-    handleInsertRowBelow,
-    handleCloneRevenue: originalHandleCloneRevenue, // Renamed to avoid conflict
-    handleCellEdit: handleCellEditDb
-  } = crudOperations;
+
+  const { 
+    handleInsertRowBelow, 
+    handleCloneRevenue: originalHandleCloneRevenue 
+  } = useRevenueCreation(
+    { revenues, setRevenues, fetchData },
+    { calculateVNDRevenue }
+  );
   
   const inlineEntryUtils = useRevenueInlineEntry(fetchData, calculateVNDRevenue);
   const {
