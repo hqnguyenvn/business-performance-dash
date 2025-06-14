@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, ArrowDown } from "lucide-react";
@@ -19,7 +18,7 @@ interface RevenueActionsProps {
     }
   ) => void;
   onExportCSV: () => void;
-  onCloneData: () => void;
+  onCloneData: (sourceYear: number, sourceMonth: number, targetYear: number, targetMonth: number) => void | Promise<void>;
   onAddNewRow: () => void;
 
   // Master data để truyền xuống cho import
