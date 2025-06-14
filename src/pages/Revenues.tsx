@@ -90,6 +90,17 @@ const Revenues = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Hàm chuyển tên tháng sang số
+  const monthNameToNumber = (name: string | undefined | null) => {
+    if (!name) return null;
+    const map: Record<string, number> = {
+      jan: 1, feb: 2, mar: 3, apr: 4,
+      may: 5, jun: 6, jul: 7, aug: 8,
+      sep: 9, oct: 10, nov: 11, dec: 12,
+    };
+    return map[(name + "").substring(0,3).toLowerCase()] || null;
+  };
+
   const handleYearChange = (year: number) => {
     setSearchParams((prev) => ({ ...prev, year, page: 1 }));
   };
@@ -191,10 +202,20 @@ const Revenues = () => {
 
       // Build object data cho Revenue
       try {
+        // Convert month: 'Jan' -> 1
+        const fileMonthRaw = row["Month"] || row["month"];
+        let monthValue: number | null = null;
+        // If month value is string (Jan ...) convert. Else keep number
+        if (fileMonthRaw && typeof fileMonthRaw === "string" && isNaN(Number(fileMonthRaw))) {
+          monthValue = monthNameToNumber(fileMonthRaw);
+        } else if (fileMonthRaw) {
+          monthValue = Number(fileMonthRaw);
+        }
+
         const newRevenue = {
           // Bắt buộc: year, month, original_amount, vnd_revenue
           year: Number(row["Year"] || row["year"]),
-          month: Number(row["Month"] || row["month"]),
+          month: monthValue,
           customer_id,
           company_id,
           division_id,
