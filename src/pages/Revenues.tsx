@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -251,7 +252,7 @@ const Revenues = () => {
     
     // Find the currency code first
     const currency = currencies.find(c => c.id === revenue.currency_id);
-    if (!currency) return revenue.original_amount;
+    if (!currency) return 0; // Return 0 if currency not found
     
     // Find the exchange rate for the specific year and month
     const exchangeRate = exchangeRates.find(rate => 
@@ -264,7 +265,7 @@ const Revenues = () => {
       return revenue.original_amount * exchangeRate.exchangeRate;
     }
     
-    return revenue.original_amount; // Default to original amount if no exchange rate found
+    return 0; // Return 0 if no exchange rate found
   };
 
   const handleCellEdit = async (id: string, field: keyof Revenue, value: any) => {
@@ -516,6 +517,7 @@ const Revenues = () => {
       return (
         <Input
           type="number"
+          step={field === 'quantity' ? "0.1" : "1"}
           value={value || 0}
           onChange={(e) => {
             const newValue = parseFloat(e.target.value) || 0;
@@ -560,6 +562,9 @@ const Revenues = () => {
         return getMonthName(value);
       }
       if (type === 'number') {
+        if (field === 'quantity') {
+          return (value || 0).toFixed(1);
+        }
         return (value || 0).toLocaleString();
       }
       return value || '';
@@ -624,150 +629,152 @@ const Revenues = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <Table>
-                <TableCaption>
-                  A list of your recent revenue records.
-                </TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">No.</TableHead>
-                    <TableHead className="w-[60px]">Year</TableHead>
-                    <TableHead className="w-[60px]">Month</TableHead>
-                    <TableHead className="w-[100px]">Customer</TableHead>
-                    <TableHead className="w-[100px]">Company</TableHead>
-                    <TableHead className="w-[100px]">Division</TableHead>
-                    <TableHead className="w-[100px]">Project</TableHead>
-                    <TableHead className="w-[120px]">Project Name</TableHead>
-                    <TableHead className="w-[100px]">Project Type</TableHead>
-                    <TableHead className="w-[100px]">Resource</TableHead>
-                    <TableHead className="w-[80px]">Currency</TableHead>
-                    <TableHead className="w-[100px] text-right">Unit Price</TableHead>
-                    <TableHead className="w-[80px] text-right">BMM</TableHead>
-                    <TableHead className="w-[120px] text-right">Original Revenue</TableHead>
-                    <TableHead className="w-[120px] text-right">VND Revenue</TableHead>
-                    <TableHead className="w-[140px] text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {revenues.map((revenue, index) => (
-                    <TableRow key={revenue.id}>
-                      <TableCell className="font-medium">{(searchParams.page! - 1) * searchParams.pageSize! + index + 1}</TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'year', revenue.year, 'number')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'month', revenue.month, 'month')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'customer_id', revenue.customer_id, 'select', customers)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'company_id', revenue.company_id, 'select', companies)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'division_id', revenue.division_id, 'select', divisions)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'project_id', revenue.project_id, 'select', projects)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'project_name', revenue.project_name, 'text')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'project_type_id', revenue.project_type_id, 'select', projectTypes)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'resource_id', revenue.resource_id, 'select', resources)}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(revenue, 'currency_id', revenue.currency_id, 'select', currencies)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {renderEditableCell(revenue, 'unit_price', revenue.unit_price, 'number')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {renderEditableCell(revenue, 'quantity', revenue.quantity, 'number')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="px-2 py-1">
-                          {(revenue.original_amount || 0).toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="px-2 py-1">
-                          {calculateVNDRevenue(revenue).toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleInsertRowBelow(index)}
-                            title="Add"
-                            className="h-8 w-8"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleCloneRevenue(revenue, index)}
-                            title="Clone"
-                            className="h-8 w-8"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleOpenDialog(revenue, 'view')}
-                            title="View"
-                            className="h-8 w-8"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleOpenDialog(revenue, 'edit')}
-                            title="Edit"
-                            className="h-8 w-8"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                title="Delete"
-                                className="h-8 w-8"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this revenue record? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteRevenue(revenue.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
+              <div className="relative">
+                <Table>
+                  <TableCaption>
+                    A list of your recent revenue records.
+                  </TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">No.</TableHead>
+                      <TableHead className="w-[60px]">Year</TableHead>
+                      <TableHead className="w-[60px]">Month</TableHead>
+                      <TableHead className="w-[100px]">Customer</TableHead>
+                      <TableHead className="w-[100px]">Company</TableHead>
+                      <TableHead className="w-[100px]">Division</TableHead>
+                      <TableHead className="w-[100px]">Project</TableHead>
+                      <TableHead className="w-[120px]">Project Name</TableHead>
+                      <TableHead className="w-[100px]">Project Type</TableHead>
+                      <TableHead className="w-[100px]">Resource</TableHead>
+                      <TableHead className="w-[80px]">Currency</TableHead>
+                      <TableHead className="w-[100px] text-right">Unit Price</TableHead>
+                      <TableHead className="w-[80px] text-right">BMM</TableHead>
+                      <TableHead className="w-[120px] text-right">Original Revenue</TableHead>
+                      <TableHead className="w-[120px] text-right">VND Revenue</TableHead>
+                      <TableHead className="w-[140px] text-center sticky right-0 bg-white border-l-2 border-gray-200">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {revenues.map((revenue, index) => (
+                      <TableRow key={revenue.id}>
+                        <TableCell className="font-medium">{(searchParams.page! - 1) * searchParams.pageSize! + index + 1}</TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'year', revenue.year, 'number')}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'month', revenue.month, 'month')}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'customer_id', revenue.customer_id, 'select', customers)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'company_id', revenue.company_id, 'select', companies)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'division_id', revenue.division_id, 'select', divisions)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'project_id', revenue.project_id, 'select', projects)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'project_name', revenue.project_name, 'text')}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'project_type_id', revenue.project_type_id, 'select', projectTypes)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'resource_id', revenue.resource_id, 'select', resources)}
+                        </TableCell>
+                        <TableCell>
+                          {renderEditableCell(revenue, 'currency_id', revenue.currency_id, 'select', currencies)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {renderEditableCell(revenue, 'unit_price', revenue.unit_price, 'number')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {renderEditableCell(revenue, 'quantity', revenue.quantity, 'number')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="px-2 py-1">
+                            {(revenue.original_amount || 0).toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="px-2 py-1">
+                            {calculateVNDRevenue(revenue).toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center sticky right-0 bg-white border-l-2 border-gray-200">
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleInsertRowBelow(index)}
+                              title="Add"
+                              className="h-8 w-8"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleCloneRevenue(revenue, index)}
+                              title="Clone"
+                              className="h-8 w-8"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleOpenDialog(revenue, 'view')}
+                              title="View"
+                              className="h-8 w-8"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handleOpenDialog(revenue, 'edit')}
+                              title="Edit"
+                              className="h-8 w-8"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  title="Delete"
+                                  className="h-8 w-8"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this revenue record? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteRevenue(revenue.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             <PaginationControls
