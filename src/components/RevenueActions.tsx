@@ -95,9 +95,6 @@ const RevenueActions: React.FC<RevenueActionsProps> = ({
         Export CSV
       </Button>
       <CloneDataDialog onClone={onCloneData} />
-      <Button variant="outline">
-        Save
-      </Button>
       <Button onClick={onAddNewRow}>
         Add New
       </Button>
