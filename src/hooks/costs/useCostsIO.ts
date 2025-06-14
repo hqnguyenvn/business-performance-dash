@@ -95,6 +95,17 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv';
+
+        const getMonthNumberFromCsv = (monthStr: string): number => {
+            const monthMap: { [key: string]: number } = {
+                'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+            };
+            if (!monthStr) return 0;
+            const key = monthStr.trim().substring(0, 3).toLowerCase();
+            return monthMap[key] || 0;
+        };
+
         input.onchange = (e) => {
           const target = e.target as HTMLInputElement;
           if (!target.files) return;
@@ -114,7 +125,7 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
                 
                 for (const row of rows) {
                   const year = parseInt(row.Year, 10);
-                  const month = getMonthNumber(row.Month);
+                  const month = getMonthNumberFromCsv(row.Month);
                   const cost_type = getCostTypeId(row.Category);
     
                   if (!year || !month || !cost_type) {
@@ -134,7 +145,7 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
                     cost: price * volume,
                     cost_type,
                     is_cost: (row['Is Cost'] || 'TRUE').toUpperCase() === 'TRUE',
-                    is_checked: (row.Checked || 'FALSE').toUpperCase() === 'FALSE',
+                    is_checked: (row.Checked || 'FALSE').toUpperCase() === 'TRUE',
                     notes: row.Notes || "",
                     company_id: null,
                     division_id: null,
@@ -165,4 +176,3 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
 
     return { cloneCosts, exportToCSV, importFromCSV };
 };
-

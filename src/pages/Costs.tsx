@@ -1,3 +1,4 @@
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCosts } from "@/hooks/useCosts";
 import { CostsHeader } from "@/components/costs/CostsHeader";
@@ -5,7 +6,7 @@ import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Import } from "lucide-react";
+import { Plus, Upload, Import } from "lucide-react";
 import CloneCostDialog from "@/components/costs/CloneCostDialog";
 
 const Costs = () => {
@@ -76,7 +77,7 @@ const Costs = () => {
                 Import CSV
               </Button>
               <Button variant="outline" onClick={exportToCSV}>
-                <Download className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
                 Export CSV
               </Button>
               <CloneCostDialog onClone={cloneCosts} />
