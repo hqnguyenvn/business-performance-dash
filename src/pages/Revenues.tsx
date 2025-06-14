@@ -65,10 +65,10 @@ const Revenues = () => {
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
   const itemsPerPage = useMemo(() => {
     // If pageSize is 'all' or greater than total, show all items
-    if (searchParams.pageSize === 'all' || (searchParams.pageSize && searchParams.pageSize >= total)) {
+    if (searchParams.pageSize === 'all' || (typeof searchParams.pageSize === 'number' && searchParams.pageSize >= total)) {
       return total || 1;
     }
-    return searchParams.pageSize || 5;
+    return (typeof searchParams.pageSize === 'number' ? searchParams.pageSize : 0) || 5;
   }, [searchParams.pageSize, total]);
   
   const totalPages = useMemo(() => {

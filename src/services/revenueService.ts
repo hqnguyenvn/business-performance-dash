@@ -22,8 +22,6 @@ export interface Revenue {
 export interface RevenueSearchParams {
   year?: number;
   months?: number[];
-  page?: number;
-  pageSize?: number;
   customer_id?: string;
   company_id?: string;
   division_id?: string;
@@ -31,6 +29,9 @@ export interface RevenueSearchParams {
   project_type_id?: string;
   resource_id?: string;
   currency_id?: string;
+  page?: number;
+  pageSize?: number | 'all';
+  q?: string;
 }
 
 export interface RevenueResponse {
@@ -75,6 +76,10 @@ export const getRevenues = async (params: RevenueSearchParams): Promise<RevenueR
   
   if (params.currency_id) {
     query = query.eq('currency_id', params.currency_id);
+  }
+  
+  if (params.q) {
+    query = query.ilike('notes', `%${params.q}%`);
   }
   
   const pageSize = params.pageSize || 10;

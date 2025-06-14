@@ -26,7 +26,7 @@ interface PaginationControlsProps {
   totalItems: number;
   startIndex: number;
   endIndex: number;
-  pageSize: number;
+  pageSize?: number;
   onPageSizeChange?: (pageSize: number | 'all') => void;
   position?: 'top' | 'bottom';
 }
@@ -40,7 +40,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   totalItems,
   startIndex,
   endIndex,
-  pageSize,
+  pageSize = 5,
   onPageSizeChange,
   position = 'bottom',
 }) => {
