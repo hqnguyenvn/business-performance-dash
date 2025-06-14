@@ -16,15 +16,16 @@ import PaginationControls from "@/components/PaginationControls";
 import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from "@/hooks/useRevenueData";
 import { useRevenueCalculations } from "@/hooks/useRevenueCalculations";
-import { useRevenueDialog } from "@/hooks/useRevenueDialog"; // Correctly import new hook
-import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations"; // Correctly import new hook
-import { Revenue } from "@/services/revenueService"; // Keep if used for type annotations
+import { useRevenueDialog } from "@/hooks/useRevenueDialog";
+import { useRevenueCrudOperations } from "@/hooks/useRevenueCrudOperations";
+import { exportRevenueCSV } from "@/utils/csvExport";
+import { Revenue } from "@/services/revenueService";
 
 const Revenues = () => {
   const { toast } = useToast();
   const {
     revenues,
-    setRevenues, // Passed to useRevenueCrudOperations
+    setRevenues,
     customers,
     companies,
     divisions,
@@ -36,25 +37,22 @@ const Revenues = () => {
     searchParams,
     setSearchParams,
     total,
-    fetchData, // Passed to useRevenueCrudOperations
-    handleSaveRevenue, // This is for the dialog save, comes from useRevenueData
-    handleDeleteRevenue, // This is for row delete, comes from useRevenueData
+    fetchData,
+    handleSaveRevenue,
+    handleDeleteRevenue,
   } = useRevenueData();
 
   const revenueCalculations = useRevenueCalculations(currencies, exchangeRates);
   const { getMonthName, getMonthNumber, calculateVNDRevenue } = revenueCalculations;
 
-  // Use the new useRevenueDialog hook
   const {
     revenueInDialog,
     isDialogOpen,
     dialogMode,
     handleOpenDialog,
-    // handleCloseDialog, // RevenueDialog uses setIsDialogOpen directly from the hook
     setIsDialogOpen,
   } = useRevenueDialog();
 
-  // Use the new useRevenueCrudOperations hook
   const {
     handleCellEdit,
     handleAddNewRow,
@@ -62,7 +60,7 @@ const Revenues = () => {
     handleCloneRevenue,
   } = useRevenueCrudOperations(
     { revenues, setRevenues, fetchData, searchParams },
-    { getMonthNumber, calculateVNDRevenue } // Pass calculation functions needed by the hook
+    { getMonthNumber, calculateVNDRevenue }
   );
 
   const currentPage = useMemo(() => searchParams.page || 1, [searchParams.page]);
@@ -98,18 +96,9 @@ const Revenues = () => {
   };
   
   const handleSearch = () => {
-    // This search function's behavior depends on whether search is client-side or server-side.
-    // If client-side via useTableFilter in RevenueTable, searchTerm should be passed as a prop.
-    // If server-side, setSearchParams should include the search term and fetchData will use it.
     console.log("Search triggered with term:", searchTerm);
-    // For now, assume RevenueTable will use `searchTerm` prop for its internal filtering,
-    // or if search is server-side, `useRevenueData` would need to handle `searchParams.q`.
-    // If search term is empty, refetch to clear any server-side search query.
     if (!searchTerm.trim()) {
-      // Example: if server-side and searchParams had a query field 'q'
-      // const { q, ...rest } = searchParams;
-      // setSearchParams(rest);
-      fetchData(); // Refetch if clearing a server-side search or to reset client state
+      fetchData();
     } else {
       // If server-side search is active:
       // setSearchParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
@@ -117,11 +106,44 @@ const Revenues = () => {
     }
   };
   
-  // Placeholder functions for CSV and Clone Data (these were simple logs)
-  const handleImportCSV = () => { console.log("Import CSV clicked"); toast({title: "Import CSV: Not yet implemented."}); };
-  const handleExportCSV = () => { console.log("Export CSV clicked"); toast({title: "Export CSV: Not yet implemented."}); };
-  const handleCloneData = () => { console.log("Clone Data clicked"); toast({title: "Clone Data: Not yet implemented."});};
+  const handleImportCSV = () => { 
+    console.log("Import CSV clicked"); 
+    toast({title: "Import CSV: Not yet implemented."}); 
+  };
 
+  const handleExportCSV = () => {
+    try {
+      exportRevenueCSV({
+        revenues,
+        customers,
+        companies,
+        divisions,
+        projects,
+        projectTypes,
+        resources,
+        currencies,
+        getMonthName,
+        calculateVNDRevenue,
+      });
+      
+      toast({
+        title: "CSV exported successfully!",
+        description: "Revenue data has been downloaded as CSV file.",
+      });
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast({
+        variant: "destructive",
+        title: "Export failed",
+        description: "There was an error exporting the CSV file.",
+      });
+    }
+  };
+
+  const handleCloneData = () => { 
+    console.log("Clone Data clicked"); 
+    toast({title: "Clone Data: Not yet implemented."});
+  };
 
   return (
     <div>
@@ -153,7 +175,7 @@ const Revenues = () => {
                 onImportCSV={handleImportCSV}
                 onExportCSV={handleExportCSV}
                 onCloneData={handleCloneData}
-                onAddNewRow={handleAddNewRow} // From useRevenueCrudOperations
+                onAddNewRow={handleAddNewRow}
               />
             </div>
 
@@ -169,13 +191,11 @@ const Revenues = () => {
               searchParams={searchParams} 
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
-              onCellEdit={handleCellEdit} // From useRevenueCrudOperations
-              onInsertRowBelow={handleInsertRowBelow} // From useRevenueCrudOperations
-              onCloneRevenue={handleCloneRevenue} // From useRevenueCrudOperations
-              onOpenDialog={handleOpenDialog} // From useRevenueDialog
-              onDeleteRevenue={handleDeleteRevenue} // From useRevenueData
-              // Pass searchTerm to RevenueTable if it handles client-side filtering with it
-              // currentSearchTerm={searchTerm} 
+              onCellEdit={handleCellEdit}
+              onInsertRowBelow={handleInsertRowBelow}
+              onCloneRevenue={handleCloneRevenue}
+              onOpenDialog={handleOpenDialog}
+              onDeleteRevenue={handleDeleteRevenue}
             />
             
             <PaginationControls
@@ -194,9 +214,9 @@ const Revenues = () => {
 
       <RevenueDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen} // Control via useRevenueDialog
-        revenue={revenueInDialog} // From useRevenueDialog
-        mode={dialogMode} // From useRevenueDialog
+        onOpenChange={setIsDialogOpen}
+        revenue={revenueInDialog}
+        mode={dialogMode}
         customers={customers}
         companies={companies}
         divisions={divisions}
@@ -204,11 +224,10 @@ const Revenues = () => {
         projectTypes={projectTypes}
         resources={resources}
         currencies={currencies}
-        onSave={handleSaveRevenue} // From useRevenueData (handles create/update from dialog)
+        onSave={handleSaveRevenue}
       />
     </div>
   );
-}; // Ensure this closing brace for the Revenues component is correctly placed.
+};
 
 export default Revenues;
-
