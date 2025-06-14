@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Table,
@@ -8,8 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import RevenueTableRow from "./RevenueTableRow"; // Default import
-import { RevenueRowActions } from "./RevenueTableRow"; // Named import
+import RevenueTableRow from "./RevenueTableRow";
+import RevenueRowActions from "./RevenueRowActions"; // Updated import path
 import { Revenue } from "@/services/revenueService";
 import { MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -242,8 +241,8 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <RevenueTableRow
                   key={revenue.id}
                   revenue={revenue}
-                  index={pageSpecificIndex}
-                  pageIndex={searchParams.page!}
+                  index={pageSpecificIndex} // This is the 0-based index on the current page
+                  pageIndex={searchParams.page!} // This is the 1-based current page number
                   pageSize={searchParams.pageSize!}
                   editingCell={editingCell}
                   customers={customers}
@@ -257,11 +256,8 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                   calculateVNDRevenue={calculateVNDRevenue}
                   onCellEdit={onCellEdit}
                   setEditingCell={setEditingCell}
-                  // These are passed to RevenueTableRow but not directly used by RevenueRowActions from here
-                  onInsertRowBelow={onInsertRowBelow} 
-                  onCloneRevenue={onCloneRevenue}
-                  onOpenDialog={onOpenDialog}
-                  onDeleteRevenue={onDeleteRevenue}
+                  // onInsertRowBelow, onCloneRevenue, onOpenDialog, onDeleteRevenue are not directly used by RevenueTableRow anymore
+                  // They are used by RevenueRowActions, which is rendered in the fixed actions column below
                 />
               ))}
             </TableBody>
@@ -274,18 +270,32 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
             Actions
           </div>
           {filteredData.map((revenue, pageSpecificIndex) => {
-            // Calculate globalIndex for handlers that expect it
-            // Note: searchParams.page is 1-based, pageSpecificIndex is 0-based
+            // Calculate globalIndex for handlers that expect it (if any were still using it from here)
+            // The handlers onInsertRowBelow and onCloneRevenue are passed to RevenueRowActions
+            // and now expect pageSpecificIndex as their `index` param.
+            // The parent component (Revenues.tsx) will receive this pageSpecificIndex,
+            // and its `handleInsertRowBelow` and `handleCloneRevenue` need to correctly interpret it
+            // or be adjusted if they still expect a global index.
+            // The current setup is:
+            // RevenueTable calls RevenueRowActions with `pageSpecificIndex` for `index` prop.
+            // RevenueRowActions calls its props `onInsertRowBelow(index)` and `onCloneRevenue(revenue, index)` with that `pageSpecificIndex`.
+            // RevenueTable's props `onInsertRowBelow` and `onCloneRevenue` are directly from Revenues.tsx.
+            // So, `handleInsertRowBelow(globalIndex)` and `handleCloneRevenue(revenue, globalIndex)` in Revenues.tsx
+            // need to be called with the correct `globalIndex`.
+            
             const globalIndex = (searchParams.page! - 1) * searchParams.pageSize! + pageSpecificIndex;
+
             return (
               <div key={`actions-${revenue.id}`} className="h-[53px] flex items-center justify-center border-b">
                 <RevenueRowActions
                   revenue={revenue}
-                  index={pageSpecificIndex} // Pass pageSpecificIndex; RRA will use this when calling its onInsert/onClone
+                  index={pageSpecificIndex} // Pass pageSpecificIndex to RevenueRowActions
+                  // These callbacks now correctly use the `globalIndex` calculated above,
+                  // matching expectations of handlers in Revenues.tsx (useRevenueCrudOperations).
                   onInsertRowBelow={() => onInsertRowBelow(globalIndex)}
                   onCloneRevenue={() => onCloneRevenue(revenue, globalIndex)}
-                  onOpenDialog={onOpenDialog} // onOpenDialog expects (revenue, mode), RRA will provide these
-                  onDeleteRevenue={onDeleteRevenue} // onDeleteRevenue expects (id), RRA will provide this
+                  onOpenDialog={onOpenDialog} // onOpenDialog expects (revenue, mode)
+                  onDeleteRevenue={onDeleteRevenue} // onDeleteRevenue expects (id)
                 />
               </div>
             );
@@ -297,4 +307,3 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
 };
 
 export default RevenueTable;
-
