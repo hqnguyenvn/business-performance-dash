@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -99,6 +100,12 @@ export const useCosts = () => {
       is_cost: true,
       is_checked: false,
       notes: "",
+      company_id: null,
+      division_id: null,
+      project_id: null,
+      resource_id: null,
+      created_at: null,
+      updated_at: null,
     };
     setCosts(prev => [...prev, newCost]);
   };

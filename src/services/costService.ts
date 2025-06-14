@@ -4,24 +4,6 @@ import type { Database } from "@/integrations/supabase/types";
 export type Cost = Database['public']['Tables']['costs']['Row'];
 export type NewCost = Database['public']['Tables']['costs']['Insert'];
 
-export interface Cost {
-  id: string;
-  year: number;
-  month: number;
-  cost_type: string;
-  company_id?: string;
-  division_id?: string;
-  project_id?: string;
-  resource_id?: string;
-  cost: number;
-  description?: string;
-  is_cost?: boolean;
-  is_checked?: boolean;
-  notes?: string;
-  price?: number;
-  volume?: number;
-}
-
 export class CostService {
   async getAll(): Promise<Cost[]> {
     const { data, error } = await supabase
