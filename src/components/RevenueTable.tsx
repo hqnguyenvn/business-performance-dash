@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Table,
@@ -7,7 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import RevenueTableRow from "./RevenueTableRow";
+import RevenueTableRow from "./RevenueTableRow"; // Default import
+import { RevenueRowActions } from "./RevenueTableRow"; // Named import
 import { Revenue } from "@/services/revenueService";
 import { MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -21,12 +23,12 @@ interface RevenueTableProps {
   projectTypes: MasterData[];
   resources: MasterData[];
   currencies: MasterData[];
-  searchParams: any;
+  searchParams: any; // Contains page and pageSize
   getMonthName: (monthNumber: number) => string;
   calculateVNDRevenue: (revenue: Revenue) => number;
   onCellEdit: (id: string, field: keyof Revenue, value: any) => void;
-  onInsertRowBelow: (index: number) => void;
-  onCloneRevenue: (revenue: Revenue, index: number) => void;
+  onInsertRowBelow: (globalIndex: number) => void;
+  onCloneRevenue: (revenue: Revenue, globalIndex: number) => void;
   onOpenDialog: (revenue: Revenue, mode: 'view' | 'edit') => void;
   onDeleteRevenue: (id: string) => void;
 }
@@ -51,7 +53,6 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
 }) => {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   
-  // Table filtering
   const { filteredData, setFilter, clearAllFilters, getActiveFilters } = useTableFilter(revenues);
 
   // Prepare filter data for table filters - use actual data values for filtering
@@ -62,7 +63,6 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
     });
   };
 
-  // Helper function to get display values for filter options
   const getFilterDisplayData = (field: string) => {
     const uniqueValues = new Set();
     const displayData: any[] = [];
@@ -71,7 +71,6 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
       let value = revenue[field as keyof Revenue];
       let displayValue = value;
       
-      // Convert IDs to codes for display but keep original value for filtering
       if (field === 'customer_id') {
         const customer = customers.find(c => c.id === value);
         displayValue = customer?.code || '';
@@ -125,7 +124,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[60px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('year')}
+                  filterData={getFilterDisplayData('year')}
                   filterField="year"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('year')}
@@ -135,7 +134,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[60px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('month')}
+                  filterData={getFilterDisplayData('month')}
                   filterField="month"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('month')}
@@ -145,7 +144,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('customer_id')}
+                  filterData={getFilterDisplayData('customer_id')}
                   filterField="customer_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('customer_id')}
@@ -155,7 +154,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('company_id')}
+                  filterData={getFilterDisplayData('company_id')}
                   filterField="company_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('company_id')}
@@ -165,7 +164,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('division_id')}
+                  filterData={getFilterDisplayData('division_id')}
                   filterField="division_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('division_id')}
@@ -175,7 +174,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('project_id')}
+                  filterData={getFilterDisplayData('project_id')}
                   filterField="project_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('project_id')}
@@ -185,7 +184,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[120px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('project_name')}
+                  filterData={getFilterDisplayData('project_name')}
                   filterField="project_name"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('project_name')}
@@ -195,7 +194,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('project_type_id')}
+                  filterData={getFilterDisplayData('project_type_id')}
                   filterField="project_type_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('project_type_id')}
@@ -205,7 +204,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[100px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('resource_id')}
+                  filterData={getFilterDisplayData('resource_id')}
                   filterField="resource_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('resource_id')}
@@ -215,7 +214,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[80px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('currency_id')}
+                  filterData={getFilterDisplayData('currency_id')}
                   filterField="currency_id"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('currency_id')}
@@ -229,7 +228,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                 <TableHead 
                   className="w-[120px] border-r"
                   showFilter={true}
-                  filterData={getFilterData('notes')}
+                  filterData={getFilterDisplayData('notes')}
                   filterField="notes"
                   onFilter={setFilter}
                   activeFilters={getActiveFilters('notes')}
@@ -239,11 +238,11 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((revenue, index) => (
+              {filteredData.map((revenue, pageSpecificIndex) => (
                 <RevenueTableRow
                   key={revenue.id}
                   revenue={revenue}
-                  index={index}
+                  index={pageSpecificIndex}
                   pageIndex={searchParams.page!}
                   pageSize={searchParams.pageSize!}
                   editingCell={editingCell}
@@ -258,7 +257,8 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
                   calculateVNDRevenue={calculateVNDRevenue}
                   onCellEdit={onCellEdit}
                   setEditingCell={setEditingCell}
-                  onInsertRowBelow={onInsertRowBelow}
+                  // These are passed to RevenueTableRow but not directly used by RevenueRowActions from here
+                  onInsertRowBelow={onInsertRowBelow} 
                   onCloneRevenue={onCloneRevenue}
                   onOpenDialog={onOpenDialog}
                   onDeleteRevenue={onDeleteRevenue}
@@ -269,17 +269,27 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
         </div>
         
         {/* Fixed Actions column */}
-        <div className="w-[140px] border-l-2 border-gray-200 bg-white">
-          <div className="h-12 px-4 text-left align-middle font-medium text-muted-foreground flex items-center justify-center border-b">
+        <div className="w-[200px] border-l-2 border-gray-200 bg-white"> {/* Increased width for all buttons */}
+          <div className="h-12 px-4 text-left align-middle font-medium text-muted-foreground flex items-center justify-center border-b sticky top-0 bg-white z-10">
             Actions
           </div>
-          {filteredData.map((revenue, index) => (
-            <div key={`actions-${revenue.id}`} className="h-[53px] flex items-center justify-center border-b">
-              <div className="flex justify-center gap-1">
-                {/* Action buttons will be rendered here from RevenueTableRow */}
+          {filteredData.map((revenue, pageSpecificIndex) => {
+            // Calculate globalIndex for handlers that expect it
+            // Note: searchParams.page is 1-based, pageSpecificIndex is 0-based
+            const globalIndex = (searchParams.page! - 1) * searchParams.pageSize! + pageSpecificIndex;
+            return (
+              <div key={`actions-${revenue.id}`} className="h-[53px] flex items-center justify-center border-b">
+                <RevenueRowActions
+                  revenue={revenue}
+                  index={pageSpecificIndex} // Pass pageSpecificIndex; RRA will use this when calling its onInsert/onClone
+                  onInsertRowBelow={() => onInsertRowBelow(globalIndex)}
+                  onCloneRevenue={() => onCloneRevenue(revenue, globalIndex)}
+                  onOpenDialog={onOpenDialog} // onOpenDialog expects (revenue, mode), RRA will provide these
+                  onDeleteRevenue={onDeleteRevenue} // onDeleteRevenue expects (id), RRA will provide this
+                />
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -287,3 +297,4 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
 };
 
 export default RevenueTable;
+
