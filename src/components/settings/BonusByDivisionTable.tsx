@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -6,17 +7,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableCell,
 } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
-import { BonusByDivision } from "@/services/bonusByDivisionService";
+import { BonusByDivision, bonusByDivisionService } from "@/services/bonusByDivisionService";
 import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
-// Sử dụng hook sửa grid mới
-import { useBonusByDivisionGridEdit } from "./useBonusByDivisionGridEdit";
 import BonusByDivisionRow from "./BonusByDivisionRow";
-import BonusByDivisionNewRow from "./BonusByDivisionNewRow";
+import { useToast } from "@/hooks/use-toast";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -31,6 +29,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   setter,
   divisions,
 }) => {
+  const { toast } = useToast();
   const {
     setFilter,
     getActiveFilters,
@@ -38,37 +37,77 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     filterRows,
   } = useBonusByDivisionFilter(data, divisions);
 
-  const {
-    editingCell,
-    handleEditCell,
-    handleBlurCell,
-    saveCell,
-    addingBelowIdx,
-    onInsertBelow,
-    newRowCache,
-    onNewRowFieldChange,
-    handleSaveNewRow,
-    onCancelNewRow,
-    handleDelete,
-  } = useBonusByDivisionGridEdit(data, setter, divisions, thisYear);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: keyof BonusByDivision } | null>(null);
 
-  // Dữ liệu đã được filter và mapping lại index cho "No."
+  const handleEditCell = useCallback((id: string, field: keyof BonusByDivision) => {
+    setEditingCell({ id, field });
+  }, []);
+
+  const handleBlurCell = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  const handleAddRow = useCallback(() => {
+    const newId = `new-${Date.now()}`;
+    const newRow: BonusByDivision = {
+      id: newId,
+      year: thisYear,
+      division_id: divisions.length > 0 ? divisions[0].id : '',
+      bn_bmm: 0,
+      notes: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setter(prev => [newRow, ...prev]);
+    setTimeout(() => handleEditCell(newId, 'year'), 50);
+  }, [setter, divisions, handleEditCell]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    const isNew = id.toString().startsWith('new-');
+    if (isNew) {
+      setter(prev => prev.filter(row => row.id !== id));
+      return;
+    }
+    try {
+      await bonusByDivisionService.delete(id);
+      setter(prev => prev.filter(row => row.id !== id));
+      toast({ title: "Success", description: "Deleted entry" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  }, [setter, toast]);
+
+  const saveCell = useCallback(async (id: string, field: keyof BonusByDivision, value: any) => {
+    const isNew = id.toString().startsWith('new-');
+    const originalRow = data.find(r => r.id === id);
+    if (!originalRow) return;
+
+    setter(prev => prev.map(row => (row.id === id ? { ...row, [field]: value } : row)));
+
+    const updatedRow = { ...originalRow, [field]: value };
+    const { year, division_id, bn_bmm, notes } = updatedRow;
+    
+    if (!division_id) return;
+    
+    try {
+        if (isNew) {
+            if (year && division_id) { // Only add if required fields are present
+                const newRecord = await bonusByDivisionService.add({ year, division_id, bn_bmm, notes: notes ?? '' });
+                setter(prev => prev.map(row => (row.id === id ? newRecord : row)));
+                toast({ title: "Success", description: "Created new entry" });
+            }
+        } else {
+            const updatedRecord = await bonusByDivisionService.update(id, { [field]: value });
+            setter(prev => prev.map(row => (row.id === id ? updatedRecord : row)));
+            toast({ title: "Success", description: "Updated entry" });
+        }
+    } catch (e: any) {
+        setter(prev => prev.map(r => r.id === id ? originalRow : r)); // Revert on error
+        toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  }, [data, setter, toast]);
+
   const filteredData = filterRows(data);
-
-  // Handler khi nhấn Enter hoặc Escape tại dòng new-row: gọi handleSaveNewRow nếu valid, huỷ nếu Escape
-  const useHandleNewRowKeyDown = () =>
-    React.useCallback(
-      (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
-        if (e.key === "Enter") {
-          handleSaveNewRow();
-        }
-        if (e.key === "Escape") {
-          onCancelNewRow();
-        }
-      },
-      [handleSaveNewRow, onCancelNewRow]
-    );
-  const handleNewRowKeyDown = useHandleNewRowKeyDown();
 
   return (
     <Card className="bg-white">
@@ -129,7 +168,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       variant="outline"
                       size="icon"
                       className="ml-1 h-6 w-6 p-0"
-                      onClick={() => onInsertBelow(-1)}
+                      onClick={handleAddRow}
                       title="Add new row"
                     >
                       <Plus size={16} />
@@ -139,52 +178,19 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((row, idx) => {
-                const isInsertBelow = addingBelowIdx === idx;
-
-                return (
-                  <React.Fragment key={row.id}>
-                    <BonusByDivisionRow
-                      row={row}
-                      idx={idx}
-                      divisions={divisions}
-                      editingCell={editingCell}
-                      onEditCell={handleEditCell}
-                      onBlurCell={handleBlurCell}
-                      saveCell={saveCell}
-                      onInsertBelow={onInsertBelow}
-                      onDelete={handleDelete}
-                    />
-                    {isInsertBelow && (
-                      <BonusByDivisionNewRow
-                        newRowCache={newRowCache}
-                        idx={idx}
-                        divisions={divisions}
-                        editingCell={editingCell}
-                        onFieldChange={onNewRowFieldChange}
-                        onSave={handleSaveNewRow}
-                        onCancel={onCancelNewRow}
-                        thisYear={thisYear}
-                        onKeyDown={handleNewRowKeyDown}
-                      />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-              {/* Thêm dòng ở đầu bảng nếu addingBelowIdx === -1 */}
-              {addingBelowIdx === -1 && (
-                <BonusByDivisionNewRow
-                  newRowCache={newRowCache}
-                  idx={null}
+              {filteredData.map((row, idx) => (
+                <BonusByDivisionRow
+                  key={row.id}
+                  row={row}
+                  idx={idx}
                   divisions={divisions}
                   editingCell={editingCell}
-                  onFieldChange={onNewRowFieldChange}
-                  onSave={handleSaveNewRow}
-                  onCancel={onCancelNewRow}
-                  thisYear={thisYear}
-                  onKeyDown={handleNewRowKeyDown}
+                  onEditCell={handleEditCell}
+                  onBlurCell={handleBlurCell}
+                  saveCell={saveCell}
+                  onDelete={handleDelete}
                 />
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>

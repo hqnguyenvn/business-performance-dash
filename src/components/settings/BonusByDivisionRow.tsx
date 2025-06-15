@@ -4,7 +4,6 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
-import { Plus } from "lucide-react";
 import { formatNumber } from "@/lib/format";
 import { FormattedNumberInput } from "./FormattedNumberInput";
 
@@ -15,91 +14,75 @@ interface BonusByDivisionRowProps {
   editingCell: { id: string; field: keyof BonusByDivision } | null;
   onEditCell: (id: string, field: keyof BonusByDivision) => void;
   onBlurCell: () => void;
-  saveCell: (id: string, field: keyof BonusByDivision, value: string | number) => void;
-  onInsertBelow: (idx: number) => void;
+  saveCell: (id: string, field: keyof BonusByDivision, value: any) => void;
   onDelete: (id: string) => void;
 }
 
 export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
-  row, idx, divisions, editingCell, onEditCell, onBlurCell, saveCell, onInsertBelow, onDelete
+  row, idx, divisions, editingCell, onEditCell, onBlurCell, saveCell, onDelete
 }) => {
   const isEditing = (field: keyof BonusByDivision) => editingCell?.id === row.id && editingCell.field === field;
 
-  // State local mỗi khi bắt đầu edit một cell
   const [tempValue, setTempValue] = React.useState<any>(null);
 
   React.useEffect(() => {
-    // Khi row id hoặc trường edit đổi, lấy lại giá trị gốc để show vào input
     if (editingCell?.id === row.id) {
-      switch (editingCell.field) {
-        case "year":
-          setTempValue(row.year);
-          break;
-        case "division_id":
-          setTempValue(row.division_id);
-          break;
-        case "bn_bmm":
-          setTempValue(row.bn_bmm);
-          break;
-        case "notes":
-          setTempValue(row.notes ?? "");
-          break;
-        default:
-          setTempValue(null);
-      }
+      setTempValue(row[editingCell.field] ?? '');
     } else {
       setTempValue(null);
     }
   }, [editingCell, row]);
 
-  // Handler chung cho sự kiện blur: save giá trị và thoát edit
-  const handleCellBlur = (field: keyof BonusByDivision) => {
-    if (editingCell?.id === row.id && editingCell.field === field) {
-      // BN_BMM cần parse về number nếu cần
-      let value = tempValue;
-      if (field === "bn_bmm") {
-        value = typeof value === "number" ? value : Number(value);
-      }
+  const handleCellSave = (field: keyof BonusByDivision, value: any) => {
+    if (value !== row[field]) {
       saveCell(row.id, field, value);
-      onBlurCell();
     }
+    onBlurCell();
   };
-
-  // Handler cho nhấn Enter để save (giống Exchange Rate)
+  
   const handleKeyDown = (event: React.KeyboardEvent, field: keyof BonusByDivision) => {
     if (event.key === "Enter") {
-      handleCellBlur(field);
+      event.preventDefault();
+      handleCellSave(field, tempValue);
     }
     if (event.key === "Escape") {
       onBlurCell();
     }
   };
+  
+  const handleCellClick = (field: keyof BonusByDivision) => {
+    if (!isEditing(field)) {
+      onEditCell(row.id, field);
+    }
+  };
 
   return (
     <TableRow className={`group`}>
-      <TableCell className="text-center font-medium">{idx + 1}</TableCell>
-      <TableCell className="text-center p-1">
+      <TableCell className="text-center font-medium border border-gray-300">{idx + 1}</TableCell>
+      
+      <TableCell className="text-center p-1 border border-gray-300">
         {isEditing("year") ? (
           <input
             type="number"
             className="h-8 w-full border rounded text-center px-2"
             value={tempValue ?? ""}
             onChange={e => setTempValue(Number(e.target.value))}
-            onBlur={() => handleCellBlur("year")}
+            onBlur={() => handleCellSave("year", Number(tempValue))}
             onKeyDown={e => handleKeyDown(e, "year")}
             autoFocus
           />
         ) : (
-          <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "year")}>{row.year}</div>
+          <div className="cursor-pointer h-8 flex items-center justify-center" onClick={() => handleCellClick("year")}>{row.year}</div>
         )}
       </TableCell>
-      <TableCell className="text-center p-1">
+
+      <TableCell className="text-center p-1 border border-gray-300">
         {isEditing("division_id") ? (
           <select
             className="h-8 w-full border rounded px-2"
             value={tempValue ?? ""}
             onChange={e => setTempValue(e.target.value)}
-            onBlur={() => handleCellBlur("division_id")}
+            onBlur={() => handleCellSave("division_id", tempValue)}
             onKeyDown={e => handleKeyDown(e as any, "division_id")}
             autoFocus
           >
@@ -108,59 +91,49 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
             ))}
           </select>
         ) : (
-          <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "division_id")}>
+          <div className="cursor-pointer h-8 flex items-center justify-center" onClick={() => handleCellClick("division_id")}>
             {divisions.find(d => d.id === row.division_id)?.code ?? ""}
           </div>
         )}
       </TableCell>
-      <TableCell className="text-right p-1">
+
+      <TableCell className="text-right p-1 border border-gray-300">
         {isEditing("bn_bmm") ? (
           <FormattedNumberInput
             value={typeof tempValue === "number" ? tempValue : 0}
             onChange={v => setTempValue(v)}
             onBlur={v => {
-              setTempValue(v); // Sync lại nếu có thay đổi ở input
-              handleCellBlur("bn_bmm");
+              handleCellSave("bn_bmm", v);
             }}
-            uniqueKey={row.id + "-bn-bmm"}
+            uniqueKey={`${row.id}-bn-bmm`}
+            className="w-full"
           />
         ) : (
-          <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "bn_bmm")}>
+          <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("bn_bmm")}>
             {formatNumber(row.bn_bmm)}
           </div>
         )}
       </TableCell>
-      <TableCell className="p-1">
+      
+      <TableCell className="p-1 border border-gray-300">
         {isEditing("notes") ? (
           <input
             className="h-8 w-full border rounded px-2"
             value={tempValue ?? ""}
             onChange={e => setTempValue(e.target.value)}
-            onBlur={() => handleCellBlur("notes")}
+            onBlur={() => handleCellSave("notes", tempValue)}
             onKeyDown={e => handleKeyDown(e, "notes")}
             autoFocus
           />
         ) : (
-          <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "notes")}>
+          <div className="cursor-pointer h-8 flex items-center px-2" onClick={() => handleCellClick("notes")}>
             {row.notes}
           </div>
         )}
       </TableCell>
-      <TableCell className="p-1 text-center">
+      
+      <TableCell className="p-1 text-center border border-gray-300">
         <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            title="Insert new row below"
-            onClick={e => {
-              e.stopPropagation();
-              onInsertBelow(idx);
-            }}
-          >
-            <Plus size={18} />
-          </Button>
           <Button
             size="icon"
             variant="destructive"
@@ -171,7 +144,6 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
               onDelete(row.id);
             }}
           >
-            {/* trash-2 icon */}
             <svg width="18" height="18" stroke="currentColor" fill="none" strokeWidth={2}><path d="M3 6h12M8 6v8m4-8v8M9 2h2a2 2 0 012 2v0H7v0a2 2 0 012-2z" /><path d="M5 6v8a2 2 0 002 2h6a2 2 0 002-2V6" /></svg>
           </Button>
         </div>
@@ -181,4 +153,3 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
 };
 
 export default BonusByDivisionRow;
-
