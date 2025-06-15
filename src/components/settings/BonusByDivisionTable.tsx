@@ -62,6 +62,33 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     setTimeout(() => handleEditCell(newId, 'year'), 50);
   }, [setter, divisions, handleEditCell]);
 
+  const handleAddRowAfter = useCallback((afterId: string) => {
+    const anchorRow = data.find(r => r.id === afterId);
+    if (!anchorRow) return;
+
+    const newId = `new-${Date.now()}`;
+    const newRow: BonusByDivision = {
+      id: newId,
+      year: anchorRow.year,
+      division_id: anchorRow.division_id,
+      bn_bmm: 0,
+      notes: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const anchorIndexInData = data.findIndex(r => r.id === afterId);
+
+    if (anchorIndexInData !== -1) {
+      setter(prev => {
+        const newData = [...prev];
+        newData.splice(anchorIndexInData + 1, 0, newRow);
+        return newData;
+      });
+      setTimeout(() => handleEditCell(newId, 'bn_bmm'), 50);
+    }
+  }, [data, setter, handleEditCell]);
+
   const handleDelete = useCallback(async (id: string) => {
     const isNew = id.toString().startsWith('new-');
     if (isNew) {
@@ -189,6 +216,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   onBlurCell={handleBlurCell}
                   saveCell={saveCell}
                   onDelete={handleDelete}
+                  onAddRowAfter={handleAddRowAfter}
                 />
               ))}
             </TableBody>

@@ -6,6 +6,7 @@ import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { formatNumber } from "@/lib/format";
 import { FormattedNumberInput } from "./FormattedNumberInput";
+import { Plus } from "lucide-react";
 
 interface BonusByDivisionRowProps {
   row: BonusByDivision;
@@ -16,10 +17,11 @@ interface BonusByDivisionRowProps {
   onBlurCell: () => void;
   saveCell: (id: string, field: keyof BonusByDivision, value: any) => void;
   onDelete: (id: string) => void;
+  onAddRowAfter: (id: string) => void;
 }
 
 export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
-  row, idx, divisions, editingCell, onEditCell, onBlurCell, saveCell, onDelete
+  row, idx, divisions, editingCell, onEditCell, onBlurCell, saveCell, onDelete, onAddRowAfter
 }) => {
   const isEditing = (field: keyof BonusByDivision) => editingCell?.id === row.id && editingCell.field === field;
 
@@ -134,6 +136,18 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
       
       <TableCell className="p-1 text-center border border-gray-300">
         <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            title="Add row after"
+            onClick={e => {
+              e.stopPropagation();
+              onAddRowAfter(row.id);
+            }}
+          >
+            <Plus size={18} />
+          </Button>
           <Button
             size="icon"
             variant="destructive"
