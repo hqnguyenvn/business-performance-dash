@@ -1,4 +1,9 @@
 
+import React from "react";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { TableFilter } from "@/components/ui/table-filter";
+import { useTableFilter } from "@/hooks/useTableFilter";
+
 export interface GroupedCustomerData {
   year: number;
   month: number;
@@ -32,44 +37,102 @@ interface ReportTableProps {
   bonusRate: number;
 }
 
+// Hàm lấy dữ liệu filter cho từng trường
+function getFilterData(data: GroupedCustomerData[], field: string) {
+  const uniqueValues = new Set();
+  const filterData: any[] = [];
+  data.forEach(item => {
+    let value = item[field];
+    let displayValue = value;
+    if (field === "month") displayValue = MONTH_MAP[value as number] || value;
+    if (field === "company_code") displayValue = item.company_code;
+    if (field === "customer_code") displayValue = item.customer_code;
+    const strValue = String(value ?? "");
+    if (!uniqueValues.has(strValue)) {
+      uniqueValues.add(strValue);
+      filterData.push({
+        [field]: strValue,
+        displayValue: displayValue || strValue || "(Empty)",
+      });
+    }
+  });
+  return filterData;
+}
+
 export function ReportTable({
   loading,
-  paginatedData,
-  startIndex,
+  data,
   bonusRate
 }: ReportTableProps) {
+  // Sử dụng useTableFilter để filter cột
+  const {
+    filteredData,
+    setFilter,
+    getActiveFilters,
+    clearAllFilters
+  } = useTableFilter(data);
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-green-50">
-            <th className="border border-gray-300 p-2 text-center font-medium w-10">No.</th>
-            <th className="border border-gray-300 p-2 text-center font-medium">Month</th>
-            <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
-            <th className="border border-gray-300 p-2 text-left font-medium">Customer</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Bonus</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Total Cost</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">Profit</th>
-            <th className="border border-gray-300 p-2 text-right font-medium">% Profit</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-green-50">
+            <TableHead className="border border-gray-300 p-2 text-center font-medium w-10">
+              No.
+            </TableHead>
+            <TableHead
+              className="border border-gray-300 p-2 text-center font-medium"
+              showFilter
+              filterData={getFilterData(data, "month")}
+              filterField="month"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters("month")}
+            >
+              Month
+            </TableHead>
+            <TableHead
+              className="border border-gray-300 p-2 text-left font-medium"
+              showFilter
+              filterData={getFilterData(data, "company_code")}
+              filterField="company_code"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters("company_code")}
+            >
+              Company
+            </TableHead>
+            <TableHead
+              className="border border-gray-300 p-2 text-left font-medium"
+              showFilter
+              filterData={getFilterData(data, "customer_code")}
+              filterField="customer_code"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters("customer_code")}
+            >
+              Customer
+            </TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">BMM</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Revenue</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Salary Cost</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Bonus</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Total Cost</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">Profit</TableHead>
+            <TableHead className="border border-gray-300 p-2 text-right font-medium">% Profit</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {loading ? (
-            <tr>
-              <td colSpan={12} className="p-8 text-center text-gray-500">Loading...</td>
-            </tr>
-          ) : paginatedData.length === 0 ? (
-            <tr>
-              <td colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
+            <TableRow>
+              <TableCell colSpan={12} className="p-8 text-center text-gray-500">Loading...</TableCell>
+            </TableRow>
+          ) : filteredData.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
-            paginatedData.map((data, idx) => {
+            filteredData.map((data, idx) => {
               const salaryCost = data.salaryCost ?? 0;
               const bonusValue = (salaryCost * bonusRate) / 100;
               const overheadCost = data.overheadCost ?? 0;
@@ -78,29 +141,28 @@ export function ReportTable({
               const profit = revenue - totalCost;
               const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
               return (
-                <tr
+                <TableRow
                   key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
                   className="hover:bg-gray-50"
                 >
-                  <td className="border border-gray-300 p-2 text-center">{idx + 1}</td>
-                  <td className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</td>
-                  <td className="border border-gray-300 p-2">{data.company_code}</td>
-                  <td className="border border-gray-300 p-2">{data.customer_code}</td>
-                  <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
-                  <td className="border border-gray-300 p-2 text-right">{revenue.toLocaleString()}</td>
-                  <td className="border border-gray-300 p-2 text-right">{salaryCost.toLocaleString()}</td>
-                  <td className="border border-gray-300 p-2 text-right">{bonusValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                  <td className="border border-gray-300 p-2 text-right">{overheadCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                  <td className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                  <td className="border border-gray-300 p-2 text-right text-green-700 font-semibold">{profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                  <td className="border border-gray-300 p-2 text-right">{revenue === 0 ? "-" : `${percentProfit.toFixed(1)}%`}</td>
-                </tr>
+                  <TableCell className="border border-gray-300 p-2 text-center">{idx + 1}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</TableCell>
+                  <TableCell className="border border-gray-300 p-2">{data.company_code}</TableCell>
+                  <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{revenue.toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{salaryCost.toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{bonusValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{overheadCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right text-green-700 font-semibold">{profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{revenue === 0 ? "-" : `${percentProfit.toFixed(1)}%`}</TableCell>
+                </TableRow>
               );
             })
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }
-
