@@ -20,6 +20,7 @@ interface GroupedCustomerData {
   company_code: string;
   bmm: number;
   revenue: number;
+  salaryCost?: number;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -35,9 +36,8 @@ const CustomerReport = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      // Get month number
       const monthNumber = MONTHS.indexOf(selectedMonth) + 1;
-      // Query: get all revenues in year/month, get customer_id + company_id, quantity, vnd_revenue
+      // 1. Get all revenues, group and SUM by (customer_id, company_id, year, month)
       const { data: rows, error } = await supabase
         .from('revenues')
         .select(
@@ -64,7 +64,36 @@ const CustomerReport = () => {
         setLoading(false);
         return;
       }
-      // group by (customer_id, company_id, year, month)
+
+      // 2. Get salary_costs: SUM amount by (year, month, customer_id)
+      const { data: salaryRows, error: salaryError } = await supabase
+        .from('salary_costs')
+        .select(`
+          year, month, customer_id, amount
+        `)
+        .eq('year', Number(selectedYear))
+        .eq('month', monthNumber);
+
+      if (salaryError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu salary_costs.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // sum salary cost by (year, month, customer_id)
+      const salaryMap = new Map<string, number>();
+      for (const row of salaryRows ?? []) {
+        if (!row.customer_id) continue;
+        const key = `${row.year}_${row.month}_${row.customer_id}`;
+        const prev = salaryMap.get(key) || 0;
+        salaryMap.set(key, prev + (Number(row.amount) || 0));
+      }
+
+      // group revenues by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
@@ -75,6 +104,8 @@ const CustomerReport = () => {
           prev.bmm += bmm;
           prev.revenue += revenue;
         } else {
+          // Find salary cost for this (year, month, customer_id)
+          const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
           groupMap.set(groupKey, {
             year: row.year,
             month: row.month,
@@ -84,6 +115,7 @@ const CustomerReport = () => {
             company_code: row.companies?.code || 'N/A',
             bmm,
             revenue,
+            salaryCost: salaryMap.get(salaryKey) || 0,
           });
         }
       }
@@ -113,9 +145,10 @@ const CustomerReport = () => {
     });
   };
 
-  // Total for cards
+  // Card totals
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
+  const totalSalaryCost = groupedData.reduce((sum, d) => sum + (d.salaryCost || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -126,7 +159,7 @@ const CustomerReport = () => {
       />
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <Card className="bg-white">
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600">
@@ -141,6 +174,14 @@ const CustomerReport = () => {
                 {totalBMM.toLocaleString()} BMM
               </div>
               <p className="text-sm text-gray-600">Total BMM</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {totalSalaryCost.toLocaleString()} VND
+              </div>
+              <p className="text-sm text-gray-600">Total Salary Cost</p>
             </CardContent>
           </Card>
         </div>
@@ -186,30 +227,28 @@ const CustomerReport = () => {
                     <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">Year</th>
-                    <th className="border border-gray-300 p-2 text-center font-medium">Month</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-500">Loading...</td>
+                      <td colSpan={5} className="p-8 text-center text-gray-500">Loading...</td>
                     </tr>
                   ) : paginatedData.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={5} className="border border-gray-300 p-8 text-center text-gray-500">
                         No data matches the selected filters. Try adjusting the year or month selection.
                       </td>
                     </tr>
                   ) : (
-                    paginatedData.map((data, idx) => (
+                    paginatedData.map((data) => (
                       <tr key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`} className="hover:bg-gray-50">
                         <td className="border border-gray-300 p-2">{data.company_code}</td>
                         <td className="border border-gray-300 p-2">{data.customer_code}</td>
                         <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
                         <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
-                        <td className="border border-gray-300 p-2 text-center">{data.year}</td>
-                        <td className="border border-gray-300 p-2 text-center">{MONTHS[data.month - 1]}</td>
+                        <td className="border border-gray-300 p-2 text-right">{(data.salaryCost ?? 0).toLocaleString()}</td>
                       </tr>
                     ))
                   )}
@@ -234,4 +273,3 @@ const CustomerReport = () => {
 };
 
 export default CustomerReport;
-
