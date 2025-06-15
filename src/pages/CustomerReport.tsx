@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -215,7 +214,18 @@ const CustomerReport = () => {
   // Card totals
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
-  const totalSalaryCost = groupedData.reduce((sum, d) => sum + (d.salaryCost || 0), 0);
+
+  // Tính tổng Total Cost (salaryCost + bonus + overhead)
+  const totalCost = groupedData.reduce((sum, d) => {
+    const salary = d.salaryCost ?? 0;
+    const bonus = (salary * bonusRate) / 100;
+    const oh = d.overheadCost ?? 0;
+    return sum + salary + bonus + oh;
+  }, 0);
+
+  // Tổng profit, %profit
+  const totalProfit = totalRevenue - totalCost;
+  const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -226,10 +236,13 @@ const CustomerReport = () => {
       />
 
       <div className="p-6">
+        {/* Sửa lại, truyền đủ các props mới */}
         <ReportSummary
           totalRevenue={totalRevenue}
           totalBMM={totalBMM}
-          totalSalaryCost={totalSalaryCost}
+          totalCost={totalCost}
+          totalProfit={totalProfit}
+          totalProfitPercent={totalProfitPercent}
         />
 
         <Card className="bg-white">
