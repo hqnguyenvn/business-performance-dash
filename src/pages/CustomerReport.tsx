@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,15 +8,18 @@ import { TrendingUp, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { supabase } from "@/integrations/supabase/client";
 
-interface CustomerData {
-  customerID: string;
-  company: string;
+// Table data interface for group by rows
+interface GroupedCustomerData {
+  year: number;
+  month: number;
+  customer_id: string;
+  customer_code: string;
+  company_id: string;
+  company_code: string;
   bmm: number;
   revenue: number;
-  cost: number;
-  profit: number;
-  profitMargin: number;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -24,57 +27,73 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const CustomerReport = () => {
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
+  const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[new Date().getMonth()]);
+  const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Sample Data
-  const customerData: CustomerData[] = [
-    {
-      customerID: "CUST001",
-      company: "ABC Technology Co.",
-      bmm: 12.5,
-      revenue: 500000000,
-      cost: 300000000,
-      profit: 200000000,
-      profitMargin: 40,
-    },
-    {
-      customerID: "CUST002",
-      company: "XYZ Solutions Ltd",
-      bmm: 8.0,
-      revenue: 320000000,
-      cost: 200000000,
-      profit: 120000000,
-      profitMargin: 37.5,
-    },
-    {
-      customerID: "CUST003",
-      company: "DEF Software Inc",
-      bmm: 15.2,
-      revenue: 680000000,
-      cost: 420000000,
-      profit: 260000000,
-      profitMargin: 38.2,
-    },
-    {
-      customerID: "CUST004",
-      company: "GHI Digital Corp",
-      bmm: 6.8,
-      revenue: 280000000,
-      cost: 180000000,
-      profit: 100000000,
-      profitMargin: 35.7,
-    },
-    {
-      customerID: "CUST005",
-      company: "JKL Systems Pte",
-      bmm: 10.3,
-      revenue: 450000000,
-      cost: 270000000,
-      profit: 180000000,
-      profitMargin: 40,
-    },
-  ];
+  // Fetch and process data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      // Get month number
+      const monthNumber = MONTHS.indexOf(selectedMonth) + 1;
+      // Query: get all revenues in year/month, get customer_id + company_id, quantity, vnd_revenue
+      const { data: rows, error } = await supabase
+        .from('revenues')
+        .select(
+          `
+            year,
+            month,
+            customer_id,
+            company_id,
+            quantity,
+            vnd_revenue,
+            customers!revenues_customer_id_fkey(code),
+            companies!revenues_company_id_fkey(code)
+          `
+        )
+        .eq('year', Number(selectedYear))
+        .eq('month', monthNumber);
 
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu revenues.",
+        });
+        setLoading(false);
+        return;
+      }
+      // group by (customer_id, company_id, year, month)
+      const groupMap = new Map<string, GroupedCustomerData>();
+      for (const row of rows ?? []) {
+        const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
+        let prev = groupMap.get(groupKey);
+        const bmm = Number(row.quantity) || 0;
+        const revenue = Number(row.vnd_revenue) || 0;
+        if (prev) {
+          prev.bmm += bmm;
+          prev.revenue += revenue;
+        } else {
+          groupMap.set(groupKey, {
+            year: row.year,
+            month: row.month,
+            customer_id: row.customer_id,
+            customer_code: row.customers?.code || 'N/A',
+            company_id: row.company_id,
+            company_code: row.companies?.code || 'N/A',
+            bmm,
+            revenue,
+          });
+        }
+      }
+      setGroupedData(Array.from(groupMap.values()));
+      setLoading(false);
+    };
+    fetchData();
+  }, [selectedYear, selectedMonth]);
+
+  // Pagination logic
   const {
     currentPage,
     totalPages,
@@ -85,7 +104,7 @@ const CustomerReport = () => {
     totalItems,
     startIndex,
     endIndex,
-  } = usePagination({ data: customerData });
+  } = usePagination({ data: groupedData });
 
   const exportToCSV = () => {
     toast({
@@ -94,9 +113,9 @@ const CustomerReport = () => {
     });
   };
 
-  const totalRevenue = customerData.reduce((sum, data) => sum + data.revenue, 0);
-  const totalProfit = customerData.reduce((sum, data) => sum + data.profit, 0);
-  const totalBMM = customerData.reduce((sum, data) => sum + data.bmm, 0);
+  // Total for cards
+  const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
+  const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,7 +126,7 @@ const CustomerReport = () => {
       />
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <Card className="bg-white">
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-blue-600">
@@ -118,16 +137,8 @@ const CustomerReport = () => {
           </Card>
           <Card className="bg-white">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {totalProfit.toLocaleString()} VND
-              </div>
-              <p className="text-sm text-gray-600">Total Profit</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
               <div className="text-2xl font-bold text-purple-600">
-                {totalBMM.toFixed(1)} BMM
+                {totalBMM.toLocaleString()} BMM
               </div>
               <p className="text-sm text-gray-600">Total BMM</p>
             </CardContent>
@@ -171,40 +182,34 @@ const CustomerReport = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-green-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
                     <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Cost</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Profit</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">% Profit</th>
+                    <th className="border border-gray-300 p-2 text-center font-medium">Year</th>
+                    <th className="border border-gray-300 p-2 text-center font-medium">Month</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedData.length === 0 ? (
+                  {loading ? (
                     <tr>
-                      <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
+                      <td colSpan={6} className="p-8 text-center text-gray-500">Loading...</td>
+                    </tr>
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="border border-gray-300 p-8 text-center text-gray-500">
                         No data matches the selected filters. Try adjusting the year or month selection.
                       </td>
                     </tr>
                   ) : (
-                    paginatedData.map((data) => (
-                      <tr key={data.customerID} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 font-medium">{data.customerID}</td>
-                        <td className="border border-gray-300 p-2">{data.company}</td>
-                        <td className="border border-gray-300 p-2 text-right">{data.bmm}</td>
-                        <td className="border border-gray-300 p-2 text-right">
-                          {data.revenue.toLocaleString()}
-                        </td>
-                        <td className="border border-gray-300 p-2 text-right">
-                          {data.cost.toLocaleString()}
-                        </td>
-                        <td className="border border-gray-300 p-2 text-right text-green-600 font-medium">
-                          {data.profit.toLocaleString()}
-                        </td>
-                        <td className="border border-gray-300 p-2 text-right">
-                          {data.profitMargin.toFixed(1)}%
-                        </td>
+                    paginatedData.map((data, idx) => (
+                      <tr key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2">{data.company_code}</td>
+                        <td className="border border-gray-300 p-2">{data.customer_code}</td>
+                        <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
+                        <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
+                        <td className="border border-gray-300 p-2 text-center">{data.year}</td>
+                        <td className="border border-gray-300 p-2 text-center">{MONTHS[data.month - 1]}</td>
                       </tr>
                     ))
                   )}
