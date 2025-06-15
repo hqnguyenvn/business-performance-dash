@@ -12,11 +12,12 @@ type UserRolesRow = {
   user_id: string;
   role: AppRole;
   is_active: boolean;
-  profiles: {
-    email: string | null;
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
+};
+type Profile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
 };
 
 const roleOptions: AppRole[] = ["Admin", "Manager", "User"];
@@ -29,26 +30,54 @@ export function UserManagementTable() {
   const fetchUsers = async () => {
     setLoading(true);
 
-    // Lấy toàn bộ user_roles + join sang profiles
-    const { data: userRolesDataRaw, error } = await supabase
+    // 1. Fetch all user_roles
+    const { data: userRolesDataRaw, error: userRolesError } = await supabase
       .from("user_roles")
-      .select("id,user_id,role,is_active,profiles:profiles(email,full_name,avatar_url)");
+      .select("id,user_id,role,is_active");
 
-    if (error) {
-      toast({ title: "Error", description: error.message });
+    if (userRolesError) {
+      toast({ title: "Error", description: userRolesError.message });
       setLoading(false);
       return;
     }
 
-    // Lấy danh sách user (nếu profile chưa có email thì fallback rỗng)
-    const rolesArr: UserRolesRow[] = Array.isArray(userRolesDataRaw) ? userRolesDataRaw as UserRolesRow[] : [];
-    const uRows: UserRowType[] = rolesArr.map((r) => ({
-      id: r.id,
-      user_id: r.user_id,
-      email: r.profiles?.email || "",
-      role: r.role,
-      is_active: r.is_active ?? true,
-    }));
+    // 2. Fetch all profiles
+    const { data: profilesDataRaw, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id,email,full_name,avatar_url");
+
+    if (profilesError) {
+      toast({ title: "Error", description: profilesError.message });
+      setLoading(false);
+      return;
+    }
+
+    // 3. Build a map from user id to profile
+    const profilesMap = new Map<string, Profile>();
+    (profilesDataRaw ?? []).forEach((p) => {
+      profilesMap.set(p.id, {
+        id: p.id,
+        email: p.email,
+        full_name: p.full_name,
+        avatar_url: p.avatar_url,
+      });
+    });
+
+    // 4. Merge info
+    const rolesArr: UserRolesRow[] = Array.isArray(userRolesDataRaw)
+      ? userRolesDataRaw as UserRolesRow[]
+      : [];
+    const uRows: UserRowType[] = rolesArr.map((r) => {
+      const profile = profilesMap.get(r.user_id);
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        email: profile?.email || "",
+        role: r.role,
+        is_active: r.is_active ?? true,
+        // Optionally: add full_name, avatar if you want to display those
+      };
+    });
     setUsers(uRows);
     setLoading(false);
   };
@@ -92,4 +121,3 @@ export function UserManagementTable() {
     </div>
   );
 }
-
