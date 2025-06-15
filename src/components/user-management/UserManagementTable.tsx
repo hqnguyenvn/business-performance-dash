@@ -1,21 +1,12 @@
+
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { UserAddForm } from "./UserAddForm";
+import { UserRow, UserRowType } from "./UserRow";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
-type UserRow = {
-  id: string;
-  email: string;
-  role: AppRole;
-  is_active: boolean;
-  user_id: string;
-};
-
-// Add Supabase user_roles type for strong typing
 type UserRolesRow = {
   id: string;
   user_id: string;
@@ -26,46 +17,39 @@ type UserRolesRow = {
 const roleOptions: AppRole[] = ["Admin", "Manager", "User"];
 
 export function UserManagementTable() {
-  const [users, setUsers] = useState<UserRow[]>([]);
+  const [users, setUsers] = useState<UserRowType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<UserRow>>({});
 
-  // Lấy danh sách user từ Supabase
+  // Fetch user list from Supabase
   const fetchUsers = async () => {
     setLoading(true);
-    // Get all user_roles with explicit type
-    const { data: userRoles, error } = await supabase
+    const { data: userRolesDataRaw, error } = await supabase
       .from("user_roles")
-      .select("id,user_id,role,is_active") as { data: UserRolesRow[] | null, error: any };
-
+      .select("id,user_id,role,is_active");
     if (error) {
       toast({ title: "Error", description: error.message });
       setLoading(false);
       return;
     }
-    // Lấy tài khoản auth
-    const usersResp = await supabase.auth.admin.listUsers(); // For all users (admin access)
+
+    const usersResp = await supabase.auth.admin.listUsers();
     if (usersResp.error) {
       toast({ title: "Error", description: usersResp.error.message });
       setUsers([]);
       setLoading(false);
       return;
     }
-    // Kết hợp user_roles & email
     const userMap: Record<string, string> = {};
-    usersResp.data.users.forEach((u) => {
+    usersResp.data.users.forEach((u: any) => {
       userMap[u.id] = u.email ?? "";
     });
 
-    // Use explicit typing to avoid "never" error
-    const rolesArr: UserRolesRow[] = Array.isArray(userRoles) ? userRoles : [];
-    // Build table data using correct typing
-    const uRows: UserRow[] = rolesArr.map((r) => ({
+    const rolesArr: UserRolesRow[] = Array.isArray(userRolesDataRaw) ? userRolesDataRaw as UserRolesRow[] : [];
+    const uRows: UserRowType[] = rolesArr.map((r) => ({
       id: r.id,
       user_id: r.user_id,
       email: userMap[r.user_id] || "",
-      role: r.role as AppRole,
+      role: r.role,
       is_active: r.is_active ?? true,
     }));
     setUsers(uRows);
@@ -77,114 +61,10 @@ export function UserManagementTable() {
     // eslint-disable-next-line
   }, []);
 
-  // Edit handler
-  const handleEdit = (user: UserRow) => {
-    setEditingId(user.id);
-    setEditForm({ ...user });
-  };
-
-  const handleCancel = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
-
-  // Save handler (Update role & trạng thái)
-  const handleSave = async () => {
-    if (!editingId || !editForm) return;
-    const { role, is_active } = editForm;
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ role, is_active })
-      .eq("id", editingId);
-    if (error) {
-      toast({ title: "Error", description: error.message });
-      return;
-    }
-    toast({ title: "Success", description: "User updated." });
-    setEditingId(null);
-    setEditForm({});
-    fetchUsers();
-  };
-
-  // Delete handler
-  const handleDelete = async (user: UserRow) => {
-    if (!window.confirm(`Delete user ${user.email}?`)) return;
-    // Xóa khỏi user_roles (không xóa trong auth.users để tránh mất dữ liệu auth)
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("id", user.id);
-    if (error) {
-      toast({ title: "Error", description: error.message });
-      return;
-    }
-    toast({ title: "Success", description: "User deleted." });
-    fetchUsers();
-  };
-
-  // Create new user handler (sign up)
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState<AppRole>("User");
-  const handleAdd = async () => {
-    if (!newEmail || !newPassword) {
-      toast({ title: "Error", description: "Email and password required." });
-      return;
-    }
-    // Tạo user mới qua Supabase Auth Admin API
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: newEmail,
-      password: newPassword,
-      email_confirm: true,
-    });
-    if (error || !data?.user?.id) {
-      toast({ title: "Error", description: error?.message || "Failed to create user." });
-      return;
-    }
-    // Gán role và active (bảng user_roles trigger đã tự tạo row role User)
-    const { error: roleErr } = await supabase
-      .from("user_roles")
-      .update({ role: newRole, is_active: true })
-      .eq("user_id", data.user.id);
-    if (roleErr) {
-      toast({ title: "Error", description: roleErr.message });
-    } else {
-      toast({ title: "Success", description: "User created." });
-      setNewEmail("");
-      setNewPassword("");
-      setNewRole("User");
-      fetchUsers();
-    }
-  };
-
   return (
     <div className="bg-white rounded shadow p-6">
       <h2 className="text-lg font-semibold mb-4">User List</h2>
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Input
-          type="email"
-          placeholder="New user email"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          className="w-64"
-        />
-        <Input
-          type="password"
-          placeholder="New user password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="w-48"
-        />
-        <Select
-          value={newRole}
-          onValueChange={(v) => setNewRole(v as AppRole)}
-        >
-          {roleOptions.map((role) => (
-            <option value={role} key={role}>{role}</option>
-          ))}
-        </Select>
-        <Button onClick={handleAdd}>Add User</Button>
-      </div>
+      <UserAddForm onUserAdded={fetchUsers} roleOptions={roleOptions} />
       <div className="overflow-x-auto">
         <table className="min-w-full border border-gray-200">
           <thead>
@@ -206,53 +86,7 @@ export function UserManagementTable() {
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.id}>
-                  <td className="p-2 border">{user.email}</td>
-                  <td className="p-2 border">
-                    {editingId === user.id ? (
-                      <Select
-                        value={editForm.role || user.role}
-                        onValueChange={(v) => setEditForm((ef) => ({ ...ef, role: v as AppRole }))}
-                      >
-                        {roleOptions.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </Select>
-                    ) : (
-                      user.role
-                    )}
-                  </td>
-                  <td className="p-2 border">
-                    {editingId === user.id ? (
-                      <Select
-                        value={editForm.is_active !== undefined ? String(editForm.is_active) : String(user.is_active)}
-                        onValueChange={(v) => setEditForm((ef) => ({ ...ef, is_active: v === "true" }))}
-                      >
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </Select>
-                    ) : (
-                      user.is_active ? "Active" : "Inactive"
-                    )}
-                  </td>
-                  <td className="p-2 border">
-                    {editingId === user.id ? (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={handleSave} className="mr-1">Save</Button>
-                        <Button variant="outline" size="sm" onClick={handleCancel}>Cancel</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(user)} className="mr-1">
-                          Edit
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDelete(user)}>
-                          Delete
-                        </Button>
-                      </>
-                    )}
-                  </td>
-                </tr>
+                <UserRow key={user.id} user={user} roleOptions={roleOptions} onChange={fetchUsers} />
               ))
             )}
           </tbody>
@@ -261,5 +95,3 @@ export function UserManagementTable() {
     </div>
   );
 }
-
-// File này khá dài (hơn 250 dòng). Sau khi mọi thứ hoạt động ổn định, bạn nên yêu cầu mình refactor file này thành các component nhỏ hơn.
