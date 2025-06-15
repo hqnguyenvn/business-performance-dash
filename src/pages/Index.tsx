@@ -6,28 +6,28 @@ import { Home, DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
 const Index = () => {
   const stats = [
     {
-      title: "Tổng Doanh thu",
-      value: "2.5 tỷ VND",
+      title: "Total Revenue",
+      value: "2.5B VND",
       change: "+12.5%",
       icon: DollarSign,
       color: "text-green-600",
     },
     {
-      title: "Tổng Chi phí",
-      value: "1.8 tỷ VND",
+      title: "Total Cost",
+      value: "1.8B VND",
       change: "+8.2%",
       icon: Receipt,
       color: "text-red-600",
     },
     {
-      title: "Lợi nhuận ròng",
-      value: "700 triệu VND",
+      title: "Net Profit",
+      value: "700M VND",
       change: "+18.3%",
       icon: TrendingUp,
       color: "text-blue-600",
     },
     {
-      title: "Số Khách hàng",
+      title: "Customers",
       value: "45",
       change: "+5",
       icon: Users,
@@ -39,7 +39,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Dashboard"
-        description="Tổng quan hoạt động kinh doanh"
+        description="Business overview"
         icon={Home}
       />
       
@@ -56,7 +56,7 @@ const Index = () => {
               <CardContent>
                 <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
                 <p className="text-xs text-green-600 mt-1">
-                  {stat.change} so với tháng trước
+                  {stat.change} compared to last month
                 </p>
               </CardContent>
             </Card>
@@ -67,12 +67,12 @@ const Index = () => {
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">
-                Doanh thu theo tháng
+                Monthly Revenue
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64 flex items-center justify-center text-gray-500">
-                Biểu đồ doanh thu sẽ được hiển thị ở đây
+                Revenue chart will be displayed here
               </div>
             </CardContent>
           </Card>
@@ -80,15 +80,15 @@ const Index = () => {
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">
-                Top Khách hàng
+                Top Customers
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { name: "Công ty ABC", revenue: "500M VND", growth: "+15%" },
-                  { name: "Công ty XYZ", revenue: "350M VND", growth: "+8%" },
-                  { name: "Công ty DEF", revenue: "280M VND", growth: "+22%" },
+                  { name: "ABC Company", revenue: "500M VND", growth: "+15%" },
+                  { name: "XYZ Company", revenue: "350M VND", growth: "+8%" },
+                  { name: "DEF Company", revenue: "280M VND", growth: "+22%" },
                 ].map((customer, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
@@ -110,3 +110,4 @@ const Index = () => {
 };
 
 export default Index;
+
