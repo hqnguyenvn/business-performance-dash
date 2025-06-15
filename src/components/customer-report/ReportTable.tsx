@@ -1,4 +1,3 @@
-import PaginationControls from "@/components/PaginationControls";
 
 export interface GroupedCustomerData {
   year: number;
@@ -35,16 +34,8 @@ interface ReportTableProps {
 
 export function ReportTable({
   loading,
-  data,
   paginatedData,
-  currentPage,
-  totalPages,
-  goToPage,
-  goToNextPage,
-  goToPreviousPage,
-  totalItems,
   startIndex,
-  endIndex,
   bonusRate
 }: ReportTableProps) {
   return (
@@ -91,7 +82,7 @@ export function ReportTable({
                   key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
                   className="hover:bg-gray-50"
                 >
-                  <td className="border border-gray-300 p-2 text-center">{startIndex + idx}</td>
+                  <td className="border border-gray-300 p-2 text-center">{idx + 1}</td>
                   <td className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</td>
                   <td className="border border-gray-300 p-2">{data.company_code}</td>
                   <td className="border border-gray-300 p-2">{data.customer_code}</td>
@@ -109,16 +100,7 @@ export function ReportTable({
           )}
         </tbody>
       </table>
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={goToPage}
-        onNextPage={goToNextPage}
-        onPreviousPage={goToPreviousPage}
-        totalItems={totalItems}
-        startIndex={startIndex}
-        endIndex={endIndex}
-      />
     </div>
   )
 }
+

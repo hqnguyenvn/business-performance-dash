@@ -177,10 +177,10 @@ const CustomerReport = () => {
         }
       }
 
-      // --- Build result array, sorted by month
+      // --- Build result array, sorted by month, company_code, customer_code ---
       const resultArr = Array.from(groupMap.values());
       resultArr.sort((a, b) => {
-        // Sort by month ASC, then company_code, then customer_code
+        // Sort by month ASC, then company_code ASC, then customer_code ASC
         if (a.month !== b.month) return a.month - b.month;
         if (a.company_code !== b.company_code) return a.company_code.localeCompare(b.company_code);
         return a.customer_code.localeCompare(b.customer_code);
@@ -191,18 +191,10 @@ const CustomerReport = () => {
     fetchData();
   }, [selectedYear, selectedMonths]);
 
-  // Pagination logic
-  const {
-    currentPage,
-    totalPages,
-    paginatedData,
-    goToPage,
-    goToNextPage,
-    goToPreviousPage,
-    totalItems,
-    startIndex,
-    endIndex,
-  } = usePagination({ data: groupedData });
+  // XÓA hoàn toàn paging
+  // Pagination logic đã bị loại bỏ
+  // Sử dụng toàn bộ groupedData cho bảng
+  // Không dùng usePagination nữa
 
   const exportToCSV = () => {
     toast({
@@ -266,15 +258,15 @@ const CustomerReport = () => {
             <ReportTable
               data={groupedData}
               loading={loading}
-              paginatedData={paginatedData}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              goToPage={goToPage}
-              goToNextPage={goToNextPage}
-              goToPreviousPage={goToPreviousPage}
-              totalItems={totalItems}
-              startIndex={startIndex}
-              endIndex={endIndex}
+              paginatedData={groupedData}
+              currentPage={1}
+              totalPages={1}
+              goToPage={() => {}}
+              goToNextPage={() => {}}
+              goToPreviousPage={() => {}}
+              totalItems={groupedData.length}
+              startIndex={1}
+              endIndex={groupedData.length}
               bonusRate={bonusRate}
             />
           </CardContent>
