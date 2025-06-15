@@ -12,6 +12,15 @@ export interface BonusByDivision {
   updated_at?: string;
 }
 
+// Define required fields for creation
+export type BonusByDivisionCreate = {
+  year: number;
+  month: number;
+  division_id: string;
+  bn_bmm: number;
+  notes?: string | null;
+};
+
 export const bonusByDivisionService = {
   getAll: async (): Promise<BonusByDivision[]> => {
     const { data, error } = await supabase
@@ -22,7 +31,16 @@ export const bonusByDivisionService = {
     if (error) throw error;
     return data || [];
   },
-  add: async (row: Partial<BonusByDivision>): Promise<BonusByDivision> => {
+  add: async (row: BonusByDivisionCreate): Promise<BonusByDivision> => {
+    // Runtime check for more developer clarity
+    if (
+      typeof row.year !== "number" ||
+      typeof row.month !== "number" ||
+      typeof row.division_id !== "string" ||
+      typeof row.bn_bmm !== "number"
+    ) {
+      throw new Error("Missing required fields for creating bonus_by_d row.");
+    }
     const { data, error } = await supabase
       .from("bonus_by_d")
       .insert([row])
