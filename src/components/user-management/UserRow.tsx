@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
@@ -11,6 +12,7 @@ type AppRole = Database["public"]["Enums"]["app_role"];
 export type UserRowType = {
   id: string;
   email: string;
+  full_name?: string;
   role: AppRole;
   is_active: boolean;
   user_id: string;
@@ -35,6 +37,10 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
   const handleCancel = () => {
     setEditing(false);
     setEditForm({});
+  };
+
+  const handleRoleCheckbox = (role: AppRole) => {
+    setEditForm((ef) => ({ ...ef, role }));
   };
 
   const handleSave = async () => {
@@ -73,16 +79,21 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
   return (
     <tr key={user.id}>
       <td className="p-2 border">{user.email}</td>
+      <td className="p-2 border">{user.full_name || ""}</td>
       <td className="p-2 border">
         {editing ? (
-          <Select
-            value={editForm.role || user.role}
-            onValueChange={(v) => setEditForm((ef) => ({ ...ef, role: v as AppRole }))}
-          >
-            {roleOptions.map((r) => (
-              <option key={r} value={r}>{r}</option>
+          <div className="flex gap-2">
+            {roleOptions.map((role) => (
+              <label className="inline-flex items-center gap-1 cursor-pointer" key={role}>
+                <Checkbox
+                  checked={editForm.role === role}
+                  onCheckedChange={() => handleRoleCheckbox(role)}
+                  disabled={saving}
+                />
+                <span>{role}</span>
+              </label>
             ))}
-          </Select>
+          </div>
         ) : (
           user.role
         )}
@@ -90,21 +101,33 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
       <td className="p-2 border">
         {editing ? (
           <Select
-            value={editForm.is_active !== undefined ? String(editForm.is_active) : String(user.is_active)}
-            onValueChange={(v) => setEditForm((ef) => ({ ...ef, is_active: v === "true" }))}
+            value={
+              editForm.is_active !== undefined
+                ? String(editForm.is_active)
+                : String(user.is_active)
+            }
+            onValueChange={(v) =>
+              setEditForm((ef) => ({ ...ef, is_active: v === "true" }))
+            }
           >
             <option value="true">Active</option>
             <option value="false">Inactive</option>
           </Select>
+        ) : user.is_active ? (
+          "Active"
         ) : (
-          user.is_active ? "Active" : "Inactive"
+          "Inactive"
         )}
       </td>
       <td className="p-2 border">
         {editing ? (
           <>
-            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving} className="mr-1">Save</Button>
-            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>Cancel</Button>
+            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving} className="mr-1">
+              Save
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+              Cancel
+            </Button>
           </>
         ) : (
           <>

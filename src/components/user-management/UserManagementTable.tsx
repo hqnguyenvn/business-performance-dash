@@ -65,7 +65,7 @@ export function UserManagementTable() {
 
     // 4. Merge info
     const rolesArr: UserRolesRow[] = Array.isArray(userRolesDataRaw)
-      ? userRolesDataRaw as UserRolesRow[]
+      ? (userRolesDataRaw as UserRolesRow[])
       : [];
     const uRows: UserRowType[] = rolesArr.map((r) => {
       const profile = profilesMap.get(r.user_id);
@@ -73,9 +73,9 @@ export function UserManagementTable() {
         id: r.id,
         user_id: r.user_id,
         email: profile?.email || "",
+        full_name: profile?.full_name || "",
         role: r.role,
         is_active: r.is_active ?? true,
-        // Optionally: add full_name, avatar if you want to display those
       };
     });
     setUsers(uRows);
@@ -96,6 +96,7 @@ export function UserManagementTable() {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 border">Email</th>
+              <th className="p-2 border">User name</th>
               <th className="p-2 border">Role</th>
               <th className="p-2 border">Active</th>
               <th className="p-2 border">Actions</th>
@@ -104,15 +105,22 @@ export function UserManagementTable() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="p-4 text-center">Loading...</td>
+                <td colSpan={5} className="p-4 text-center">Loading...</td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-gray-500">No users found.</td>
+                <td colSpan={5} className="p-4 text-center text-gray-500">
+                  No users found.
+                </td>
               </tr>
             ) : (
               users.map((user) => (
-                <UserRow key={user.id} user={user} roleOptions={roleOptions} onChange={fetchUsers} />
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  roleOptions={roleOptions}
+                  onChange={fetchUsers}
+                />
               ))
             )}
           </tbody>
