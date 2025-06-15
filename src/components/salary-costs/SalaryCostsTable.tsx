@@ -44,66 +44,76 @@ export const SalaryCostsTable = ({
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>No.</TableHead>
-            <TableHead>Year</TableHead>
-            <TableHead>Month</TableHead>
-            <TableHead>Company</TableHead>
-            <TableHead>Division</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead>Notes</TableHead>
-            <TableHead className="text-center">Actions</TableHead>
+          <TableRow className="bg-red-50">
+            <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
+            <TableHead className="border border-gray-300 text-center">Year</TableHead>
+            <TableHead className="border border-gray-300 text-center">Month</TableHead>
+            <TableHead className="border border-gray-300">Company</TableHead>
+            <TableHead className="border border-gray-300">Division</TableHead>
+            <TableHead className="border border-gray-300">Customer</TableHead>
+            <TableHead className="border border-gray-300 text-right">Amount</TableHead>
+            <TableHead className="border border-gray-300">Notes</TableHead>
+            <TableHead className="border border-gray-300 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {costs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-8">No data available.</TableCell>
+              <TableCell colSpan={9} className="border border-gray-300 text-center py-8 text-gray-500">
+                No data available.
+              </TableCell>
             </TableRow>
           ) : (
             costs.map((cost, index) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
-                <TableCell>{index + 1}</TableCell>
-                <TableCell className="p-1">
-                   <Input
+                <TableCell className="border border-gray-300 text-center p-1">{index + 1}</TableCell>
+                <TableCell className="border border-gray-300 p-1">
+                  <Input
                     value={cost.year.toString()}
                     onChange={(e) => updateCost(cost.id, 'year', parseInt(e.target.value) || currentYear)}
                     className="border-0 p-1 h-8 text-center"
                     type="number"
                   />
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <Select value={String(cost.month)} onValueChange={(v) => updateCost(cost.id, 'month', Number(v))}>
                     <SelectTrigger className="border-0 p-1 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{MONTHS.map(m => <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {MONTHS.map(m => <SelectItem key={m.id} value={String(m.id)}>{m.name.substring(0, 3)}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <Select value={cost.company_id || ''} onValueChange={(v) => updateCost(cost.id, 'company_id', v)}>
                     <SelectTrigger className="border-0 p-1 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{companies.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <Select value={cost.division_id || ''} onValueChange={(v) => updateCost(cost.id, 'division_id', v)}>
                     <SelectTrigger className="border-0 p-1 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {divisions.map(d => <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <Select value={cost.customer_id || ''} onValueChange={(v) => updateCost(cost.id, 'customer_id', v)}>
                     <SelectTrigger className="border-0 p-1 h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="p-1">
-                  <NumberInput value={cost.amount} onChange={(v) => updateCost(cost.id, 'amount', v)} className="border-0 p-1 h-8" />
+                <TableCell className="border border-gray-300 p-1 text-right">
+                  <NumberInput value={cost.amount} onChange={(v) => updateCost(cost.id, 'amount', v)} className="border-0 p-1 h-8 text-right" />
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <Input value={cost.notes || ''} onChange={(e) => updateCost(cost.id, 'notes', e.target.value)} className="border-0 p-1 h-8" />
                 </TableCell>
-                <TableCell className="p-1">
+                <TableCell className="border border-gray-300 p-1">
                   <div className="flex gap-1 justify-center">
                     <Button size="sm" variant="outline" onClick={() => insertRowBelow(cost.id)} className="h-6 w-6 p-0" title="Add Row Below"><Plus className="h-3 w-3" /></Button>
                     <Button size="sm" variant="outline" onClick={() => cloneRow(cost.id)} className="h-6 w-6 p-0" title="Clone Row"><Copy className="h-3 w-3" /></Button>
@@ -120,3 +130,4 @@ export const SalaryCostsTable = ({
     </div>
   );
 };
+
