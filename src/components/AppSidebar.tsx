@@ -45,6 +45,11 @@ const menuItems = [
     icon: TrendingUp,
   },
   {
+    title: "Company Report",
+    url: "/company-report",
+    icon: Building,
+  },
+  {
     title: "User Management",
     url: "/user-management",
     icon: Shield,
