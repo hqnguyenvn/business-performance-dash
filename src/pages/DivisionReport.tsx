@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { report as ReportIcon } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
@@ -49,7 +49,7 @@ const DivisionReport = () => {
       <PageHeader
         title="Division Report"
         description="Business performance report by division"
-        icon={ReportIcon}
+        icon={BarChart3}
       />
       <div className="p-6">
         <ReportSummary
