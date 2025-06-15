@@ -125,7 +125,7 @@ const Index = () => {
 
       <div className="p-6">
         <StatCards stats={statCardsData} />
-        <DashboardWidgets />
+        <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
       </div>
     </div>
   );
