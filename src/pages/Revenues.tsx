@@ -229,6 +229,16 @@ const Revenues = () => {
       );
     };
 
+    // ===> Thêm hàm lấy quantity từ cột BMM nếu có
+    const getQuantityValue = (row: any) => {
+      return (
+        row["BMM"] ??
+        row["bmm"] ??
+        row["Quantity"] ??
+        row["quantity"]
+      );
+    };
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       let missingRequiredFields: string[] = [];
@@ -303,7 +313,13 @@ const Revenues = () => {
           errorRows.push({ row: i + 2, reason: `Số tiền gốc không hợp lệ: ${originalAmountRaw}` });
           continue;
         }
-        
+
+        // ===> Dùng giá trị quantity lấy từ cột BMM (ưu tiên), fallback xuống Quantity/quantity
+        let quantityRaw = getQuantityValue(row);
+        const quantity = quantityRaw !== undefined && quantityRaw !== null && quantityRaw !== ""
+          ? Number(quantityRaw)
+          : undefined;
+
         const newRevenuePartial: Partial<Revenue> = {
           year: Number(row["Year"] || row["year"]),
           month: monthValue,
@@ -315,7 +331,7 @@ const Revenues = () => {
           resource_id: resource_id || undefined,
           currency_id: currency_id || undefined,
           unit_price: row["Unit Price"] !== undefined ? Number(row["Unit Price"]) : (row["unit_price"] !== undefined ? Number(row["unit_price"]) : undefined),
-          quantity: row["Quantity"] !== undefined ? Number(row["Quantity"]) : (row["quantity"] !== undefined ? Number(row["quantity"]) : undefined),
+          quantity,
           original_amount: original_amount,
           notes: row["Notes"] || row["notes"] || undefined,
           project_name: row["Project Name"] || row["project_name"] || "",
