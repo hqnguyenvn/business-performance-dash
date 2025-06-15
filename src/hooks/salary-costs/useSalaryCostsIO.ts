@@ -1,4 +1,3 @@
-
 import Papa from 'papaparse';
 import { useToast } from "@/hooks/use-toast";
 import { SalaryCost, SalaryCostInsert } from '@/services/salaryCostService';
@@ -30,17 +29,39 @@ export const useSalaryCostsIO = ({
   const { bulkCreateSalaryCostMutation } = useSalaryCostsMutations();
 
   const exportToCSV = () => {
-    const dataToExport = filteredSalaryCosts.map(cost => ({
-      Year: cost.year,
-      Month: getMonthName(cost.month),
-      Company: getMasterDataName(cost.company_id, companies, 'code'),
-      Division: getMasterDataName(cost.division_id, divisions, 'code'),
-      Customer: getMasterDataName(cost.customer_id, customers, 'code'),
-      Amount: cost.amount,
-      Notes: cost.notes,
-    }));
+    // Khai báo headers rõ ràng
+    const headers = [
+      'Year',
+      'Month',
+      'Company',
+      'Division',
+      'Customer',
+      'Amount',
+      'Notes',
+    ];
 
-    const csv = Papa.unparse(dataToExport);
+    // Luôn luôn có header dù không có dữ liệu
+    const dataToExport = filteredSalaryCosts.length > 0
+      ? filteredSalaryCosts.map(cost => ({
+          Year: cost.year,
+          Month: getMonthName(cost.month),
+          Company: getMasterDataName(cost.company_id, companies, 'code'),
+          Division: getMasterDataName(cost.division_id, divisions, 'code'),
+          Customer: getMasterDataName(cost.customer_id, customers, 'code'),
+          Amount: cost.amount,
+          Notes: cost.notes,
+        }))
+      : [];
+
+    // Sử dụng papaparse xây dựng csv với header luôn có ngay cả khi data rỗng
+    // Nếu dataToExport rỗng thì truyền vào mảng chỉ chứa header
+    let csv = '';
+    if (dataToExport.length === 0) {
+      csv = Papa.unparse([headers], { header: false }); // chỉ header
+    } else {
+      csv = Papa.unparse(dataToExport, { columns: headers, header: true });
+    }
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
