@@ -23,10 +23,10 @@ interface BonusByDivisionEditRowProps {
 const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
   idx, editCache, row, divisions, onFieldChange, onSave, onCancel, saving
 }) => {
-  // Quản lý state tạm cho BN_BMM, sync từ prop
+  // Local state cho BN_BMM, sync từ prop
   const [localBnBmm, setLocalBnBmm] = React.useState<number>(editCache.bn_bmm ?? row.bn_bmm);
 
-  // Nếu chuyển sang edit row khác thì reset local
+  // Sync lại local khi chuyển hàng, hoặc khi giá trị thay đổi từ editCache
   React.useEffect(() => {
     setLocalBnBmm(editCache.bn_bmm ?? row.bn_bmm);
     // eslint-disable-next-line
@@ -64,8 +64,8 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
       <TableCell className="p-1 text-right">
         <FormattedNumberInput
           value={localBnBmm}
-          onChange={v => setLocalBnBmm(v)} // chỉ update state local khi nhập
-          onBlur={v => onFieldChange("bn_bmm", v)} // chỉ lưu lên server khi BLUR cell
+          onChange={v => setLocalBnBmm(v)}
+          onBlur={v => onFieldChange("bn_bmm", v)}
           disabled={saving}
           uniqueKey={row.id}
         />
@@ -86,6 +86,7 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           ) : null}
+          {/* Luôn hiển thị nút huỷ trên dòng editing */}
           <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
             <Trash size={18} />
           </Button>

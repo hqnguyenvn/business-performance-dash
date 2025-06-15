@@ -20,12 +20,12 @@ interface BonusByDivisionRowProps {
 const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
   row, idx, divisions, onEdit, onInsertBelow, onDelete, editingRowId
 }) => {
-  // Hiện Action nếu không có dòng đang edit hoặc nhập mới
+  // Hiện Action nếu không có dòng đang edit/new
   const showActions = editingRowId === null;
 
   return (
     <TableRow
-      className="hover:bg-blue-50 cursor-pointer group"
+      className={`hover:bg-blue-50 cursor-pointer group`}
       onClick={showActions ? () => onEdit(row) : undefined}
       style={{ opacity: showActions ? 1 : 0.7 }}
       tabIndex={0}

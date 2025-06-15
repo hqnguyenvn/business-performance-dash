@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -139,7 +138,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                         row={row}
                         divisions={divisions}
                         onFieldChange={onFieldChange}
-                        onSave={handleSave}
+                        onSave={handleSave} // <-- giữ nút Lưu, hiện Cancel dưới actions
                         onCancel={onCancel}
                         saving={saving}
                       />
@@ -168,8 +167,6 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   </React.Fragment>
                 );
               })}
-
-              {/* Nếu bấm Add trên "Actions" header (thêm mới đầu bảng) */}
               {editingRowId === "" && addingBelowIdx === -1 && (
                 <BonusByDivisionNewRow
                   divisions={divisions}
