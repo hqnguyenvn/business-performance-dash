@@ -33,6 +33,8 @@ import {
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import MasterDataTableBody from "./MasterDataTableBody";
+import { Plus } from "lucide-react";
 
 interface MasterData {
   id: string;
@@ -77,17 +79,17 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
 
   // Add pagination
-  const {
-    currentPage,
-    totalPages,
-    paginatedData,
-    goToPage,
-    goToNextPage,
-    goToPreviousPage,
-    totalItems,
-    startIndex,
-    endIndex,
-  } = usePagination({ data: filteredData });
+  // const {
+  //   currentPage,
+  //   totalPages,
+  //   paginatedData,
+  //   goToPage,
+  //   goToNextPage,
+  //   goToPreviousPage,
+  //   totalItems,
+  //   startIndex,
+  //   endIndex,
+  // } = usePagination({ data: filteredData });
 
   // Tạo state để giữ giá trị đang được chỉnh sửa tạm thời
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof MasterData } | null>(null);
@@ -192,7 +194,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
-          {/* Loại bỏ button Save/AddNew */}
+          {/* Nút Save/AddNew đã bỏ, chỉ giữ lại header */}
         </div>
       </CardHeader>
       <CardContent>
@@ -255,114 +257,36 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                   Description
                 </TableHead>
                 <TableHead className="border border-gray-300 text-center">
-                  Actions
+                  <div className="flex items-center justify-center gap-1">
+                    Actions
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="ml-1"
+                      onClick={addNewItem}
+                      title="Add new"
+                      type="button"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedData.map((item) => (
-                <TableRow key={item.id} className="hover:bg-gray-50">
-                  {showCompanyColumn && (
-                    <TableCell className="border border-gray-300 p-1">
-                      <select
-                        className="border-0 p-1 h-8 w-full"
-                        value={item.company_id || ""}
-                        onChange={(e) => handleCellEdit(item.id, 'company_id', e.target.value)}
-                      >
-                        <option value="">Select company</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={company.id}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </select>
-                    </TableCell>
-                  )}
-                  {showCustomerColumn && (
-                    <TableCell className="border border-gray-300 p-1">
-                      <select
-                        className="border-0 p-1 h-8 w-full"
-                        value={item.customer_id || ""}
-                        onChange={(e) => handleCellEdit(item.id, 'customer_id', e.target.value)}
-                      >
-                        <option value="">Select customer</option>
-                        {customers.map((customer) => (
-                          <option key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </option>
-                        ))}
-                      </select>
-                    </TableCell>
-                  )}
-                  <TableCell className="border border-gray-300 p-1">
-                    <input
-                      className="border-0 p-1 h-8 w-full"
-                      value={item.code}
-                      onChange={(e) => handleCellEdit(item.id, 'code', e.target.value)}
-                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-1">
-                    <input
-                      className="border-0 p-1 h-8 w-full"
-                      value={item.name}
-                      onChange={(e) => handleCellEdit(item.id, 'name', e.target.value)}
-                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-1">
-                    <input
-                      className="border-0 p-1 h-8 w-full"
-                      value={item.description || ""}
-                      onChange={(e) => handleCellEdit(item.id, 'description', e.target.value)}
-                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
-                    />
-                  </TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-center">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this item? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteItem(item.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
+              <MasterDataTableBody
+                data={filteredData}
+                companies={companies}
+                customers={customers}
+                showCompanyColumn={showCompanyColumn}
+                showCustomerColumn={showCustomerColumn}
+                handleCellEdit={handleCellEdit}
+                deleteItem={deleteItem}
+              />
             </TableBody>
           </Table>
         </div>
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={goToPage}
-          onNextPage={goToNextPage}
-          onPreviousPage={goToPreviousPage}
-          totalItems={totalItems}
-          startIndex={startIndex}
-          endIndex={endIndex}
-        />
+        {/* Bỏ PaginationControls */}
       </CardContent>
     </Card>
   );
