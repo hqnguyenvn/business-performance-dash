@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
-import { Plus, Trash } from "lucide-react";
+import { Trash } from "lucide-react";
+import { ReloadIcon } from "@radix-ui/react-icons";
 
 interface BonusByDivisionEditRowProps {
   idx: number;
@@ -16,10 +17,11 @@ interface BonusByDivisionEditRowProps {
   onFieldChange: (field: keyof BonusByDivision, value: any) => void;
   onSave: () => void;
   onCancel: () => void;
+  saving?: boolean;
 }
 
 const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
-  idx, editCache, row, divisions, onFieldChange, onSave, onCancel
+  idx, editCache, row, divisions, onFieldChange, onSave, onCancel, saving
 }) => (
   <TableRow>
     <TableCell className="text-center font-medium">{idx + 1}</TableCell>
@@ -30,12 +32,14 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
         min={2020}
         onChange={e => onFieldChange("year", Number(e.target.value))}
         className="h-8"
+        disabled={saving}
       />
     </TableCell>
     <TableCell className="p-1">
       <Select
         value={editCache.division_id ?? row.division_id}
         onValueChange={v => onFieldChange("division_id", v)}
+        disabled={saving}
       >
         <SelectTrigger className="h-8">
           <SelectValue placeholder="Select Division" />
@@ -55,6 +59,7 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
         step={0.01}
         onChange={e => onFieldChange("bn_bmm", Number(e.target.value))}
         className="h-8"
+        disabled={saving}
       />
     </TableCell>
     <TableCell className="p-1">
@@ -62,13 +67,14 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
         value={editCache.notes ?? row.notes ?? ""}
         onChange={e => onFieldChange("notes", e.target.value)}
         className="h-8"
+        disabled={saving}
       />
     </TableCell>
     <TableCell className="p-1 text-center">
       <div className="flex items-center justify-center gap-2">
-        <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={onSave}>
-          <Plus size={18} />
-        </Button>
+        {saving ? (
+          <ReloadIcon className="animate-spin h-4 w-4 text-blue-500" />
+        ) : null}
         <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
           <Trash size={18} />
         </Button>

@@ -49,7 +49,8 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     onCancel,
     onFieldChange,
     handleSave,
-    handleDelete
+    handleDelete,
+    saving
   } = useBonusByDivisionEdit(data, setter, divisions, thisYear);
 
   return (
@@ -148,6 +149,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                     onFieldChange={onFieldChange}
                     onSave={handleSave}
                     onCancel={onCancel}
+                    saving={saving}
                   />
                 ) : (
                   <BonusByDivisionRow

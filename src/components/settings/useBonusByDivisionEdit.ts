@@ -15,6 +15,7 @@ export const useBonusByDivisionEdit = (
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [editCache, setEditCache] = useState<Partial<BonusByDivision>>({});
   const [addingBelowIdx, setAddingBelowIdx] = useState<number | null>(null);
+  const [saving, setSaving] = useState<boolean>(false);
 
   // Helper: generate empty row
   const emptyRow = () => ({
@@ -45,12 +46,51 @@ export const useBonusByDivisionEdit = (
     setEditingRowId(null);
     setEditCache({});
     setAddingBelowIdx(null);
+    setSaving(false);
   };
 
-  const onFieldChange = (field: keyof BonusByDivision, value: any) => {
+  // Auto-save for changed fields in edit mode
+  const onFieldChange = async (field: keyof BonusByDivision, value: any) => {
     setEditCache((prev) => ({ ...prev, [field]: value }));
+    // Only auto-save if updating existing record (not new)
+    if (editingRowId && editingRowId !== "") {
+      // Build update input: always use fields from current editCache + the new value
+      const updateInput: Partial<BonusByDivision> = {
+        ...editCache,
+        [field]: value,
+      };
+      // Only save if required fields are present
+      if (
+        typeof updateInput.year === "number" &&
+        typeof updateInput.division_id === "string" &&
+        updateInput.division_id &&
+        typeof updateInput.bn_bmm === "number"
+      ) {
+        setSaving(true);
+        try {
+          const updated = await bonusByDivisionService.update(editingRowId, {
+            year: updateInput.year,
+            division_id: updateInput.division_id,
+            bn_bmm: updateInput.bn_bmm,
+            notes: updateInput.notes ?? "",
+          });
+          setter((prev) =>
+            prev.map((item) => (item.id === editingRowId ? updated : item))
+          );
+          setEditCache((cache) => ({
+            ...cache,
+            ...updated,
+          }));
+          toast({ title: "Đã lưu", description: "Đã tự động lưu thay đổi.", variant: "default" });
+        } catch (e: any) {
+          toast({ title: "Lỗi", description: e.message, variant: "destructive" });
+        }
+        setSaving(false);
+      }
+    }
   };
 
+  // Save handler for new row creation (remain same)
   const handleSave = async () => {
     try {
       if (editingRowId === "") {
@@ -75,32 +115,6 @@ export const useBonusByDivisionEdit = (
             setter((prev) => [added, ...prev]);
           }
           toast({ title: "Success", description: "Created new entry" });
-        } else {
-          toast({
-            title: "Error",
-            description: "Fill all required fields",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else if (editingRowId) {
-        // update
-        if (
-          typeof editCache.year === "number" &&
-          typeof editCache.division_id === "string" &&
-          editCache.division_id &&
-          typeof editCache.bn_bmm === "number"
-        ) {
-          const updated = await bonusByDivisionService.update(editingRowId, {
-            year: editCache.year,
-            division_id: editCache.division_id,
-            bn_bmm: editCache.bn_bmm,
-            notes: editCache.notes ?? "",
-          });
-          setter((prev) =>
-            prev.map((item) => (item.id === editingRowId ? updated : item))
-          );
-          toast({ title: "Success", description: "Updated entry" });
         } else {
           toast({
             title: "Error",
@@ -151,6 +165,7 @@ export const useBonusByDivisionEdit = (
     onCancel,
     onFieldChange,
     handleSave,
-    handleDelete
+    handleDelete,
+    saving
   };
 };
