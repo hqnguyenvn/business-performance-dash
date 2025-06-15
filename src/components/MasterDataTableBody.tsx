@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -31,6 +30,7 @@ interface MasterDataTableBodyProps {
   showCustomerColumn: boolean;
   handleCellEdit: (id: string, field: keyof MasterData, value: string) => void;
   deleteItem: (id: string) => void;
+  addRowBelow: (index: number) => void;
 }
 
 const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
@@ -41,10 +41,11 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   showCustomerColumn,
   handleCellEdit,
   deleteItem,
+  addRowBelow,
 }) => {
   return (
     <>
-      {data.map((item) => (
+      {data.map((item, idx) => (
         <tr key={item.id} className="hover:bg-gray-50">
           {showCompanyColumn && (
             <td className="border border-gray-300 p-1">
@@ -100,34 +101,59 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
             />
           </td>
           <td className="border border-gray-300 p-2 text-center">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this item? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteItem(item.id)}
-                    className="bg-red-600 hover:bg-red-700"
+            <div className="flex items-center justify-center gap-1">
+              {/* Nút + để thêm dòng mới bên dưới */}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                title="Insert new row below"
+                onClick={() => addRowBelow(idx)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <line x1="12" x2="12" y1="5" y2="19" />
+                  <line x1="5" x2="19" y1="12" y2="12" />
+                </svg>
+              </Button>
+              {/* Nút xóa với màu đỏ nổi bật */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Delete"
                   >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" x2="10" y1="11" y2="17"></line>
+                      <line x1="14" x2="14" y1="11" y2="17"></line>
+                    </svg>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this item? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteItem(item.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </td>
         </tr>
       ))}

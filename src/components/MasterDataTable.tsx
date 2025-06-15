@@ -143,7 +143,6 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     [data, service, setter, toast]
   );
 
-  // Hàm thêm row mới (giữ lại logic nếu user cần dùng ở đâu đó khác)
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
       id: Date.now().toString(),
@@ -188,12 +187,28 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     return customer ? customer.name : "";
   };
 
+  // Hàm chèn row mới ngay dưới dòng được chọn
+  const addRowBelow = useCallback((index: number) => {
+    const newItem: MasterData = {
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+      code: "",
+      name: "",
+      description: "",
+      ...(showCompanyColumn && { company_id: "" }),
+      ...(showCustomerColumn && { customer_id: "" }),
+    };
+    setter(prev => {
+      const next = [...prev];
+      next.splice(index + 1, 0, newItem);
+      return next;
+    });
+  }, [setter, showCompanyColumn, showCustomerColumn]);
+
   return (
     <Card className="bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
-          {/* Nút Save/AddNew đã bỏ, chỉ giữ lại header */}
         </div>
       </CardHeader>
       <CardContent>
@@ -256,19 +271,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                   Description
                 </TableHead>
                 <TableHead className="border border-gray-300 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    Actions
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="ml-1"
-                      onClick={addNewItem}
-                      title="Add new"
-                      type="button"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -281,11 +284,11 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 showCustomerColumn={showCustomerColumn}
                 handleCellEdit={handleCellEdit}
                 deleteItem={deleteItem}
+                addRowBelow={addRowBelow}
               />
             </TableBody>
           </Table>
         </div>
-        {/* Bỏ PaginationControls */}
       </CardContent>
     </Card>
   );
