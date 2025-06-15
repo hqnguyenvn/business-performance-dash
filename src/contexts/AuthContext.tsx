@@ -22,33 +22,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
+  // Lấy session ban đầu và lắng nghe thay đổi
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    let unsub: (() => void) | null = null;
+
+    const getInitialSessionAndListen = async () => {
       try {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
+        setLoading(true);
+        // LẤY SESSION HIỆN TẠI TRƯỚC
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        // Lấy quyền role nếu có user
+        if (currentSession?.user) {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', session.user.id)
+            .eq('user_id', currentSession.user.id)
             .single();
           setRole(roleData?.role as UserRole ?? null);
         } else {
           setRole(null);
         }
       } catch (error) {
-        console.error("Error on auth state change:", error);
         setSession(null);
         setUser(null);
         setRole(null);
       } finally {
         setLoading(false);
       }
+    };
+
+    getInitialSessionAndListen();
+
+    // ĐĂNG KÝ LẮNG NGHE các sự kiện auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, gotSession) => {
+      setSession(gotSession);
+      setUser(gotSession?.user ?? null);
+
+      if (gotSession?.user) {
+        // Lấy lại role mỗi lần auth change, defer để tránh deadlock
+        setTimeout(async () => {
+          try {
+            const { data: roleData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', gotSession.user.id)
+              .single();
+            setRole(roleData?.role as UserRole ?? null);
+          } catch {
+            setRole(null);
+          } finally {
+            setLoading(false);
+          }
+        }, 0);
+      } else {
+        setRole(null);
+        setLoading(false);
+      }
     });
 
+    unsub = () => {
+      subscription?.unsubscribe();
+    };
+
     return () => {
-      authListener.subscription.unsubscribe();
+      if (unsub) unsub();
     };
   }, []);
 
