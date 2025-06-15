@@ -47,6 +47,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
     <>
       {data.map((item, idx) => (
         <tr key={item.id} className="hover:bg-gray-50">
+          <td className="border border-gray-300 text-center font-medium w-12">{idx + 1}</td>
           {showCompanyColumn && (
             <td className="border border-gray-300 p-1">
               <select

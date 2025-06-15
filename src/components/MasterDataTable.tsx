@@ -216,6 +216,9 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
+                <TableHead className="border border-gray-300 w-12 text-center">
+                  No.
+                </TableHead>
                 {showCompanyColumn && (
                   <TableHead 
                     className="border border-gray-300"
