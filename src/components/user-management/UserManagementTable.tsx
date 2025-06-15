@@ -13,6 +13,7 @@ type UserRow = {
   email: string;
   role: AppRole;
   is_active: boolean;
+  user_id: string;
 };
 
 const roleOptions: AppRole[] = ["Admin", "Manager", "User"];
@@ -48,15 +49,15 @@ export function UserManagementTable() {
     usersResp.data.users.forEach((u) => {
       userMap[u.id] = u.email ?? "";
     });
-    // Build table data
-    const uRows = userRoles?.map((r: any) => ({
+    // Build table data: map to UserRow[]
+    const uRows: UserRow[] = (userRoles ?? []).map((r: any) => ({
       id: r.id,
+      user_id: r.user_id,
       email: userMap[r.user_id] || "",
       role: r.role as AppRole,
       is_active: r.is_active ?? true,
-      user_id: r.user_id,
     }));
-    setUsers(uRows || []);
+    setUsers(uRows);
     setLoading(false);
   };
 
@@ -249,3 +250,5 @@ export function UserManagementTable() {
     </div>
   );
 }
+
+// File này khá dài (hơn 250 dòng). Sau khi mọi thứ hoạt động ổn định, bạn nên yêu cầu mình refactor file này thành các component nhỏ hơn.
