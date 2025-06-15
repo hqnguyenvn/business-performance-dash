@@ -13,6 +13,7 @@ import SalaryCosts from "./pages/SalaryCosts";
 import BusinessReport from "./pages/BusinessReport";
 import CustomerReport from "./pages/CustomerReport";
 import CompanyReport from "./pages/CompanyReport";
+import DivisionReport from "./pages/DivisionReport";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -44,6 +45,7 @@ const AppRoutes = () => {
             <Route path="/business-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><BusinessReport /></RoleBasedRoute>} />
             <Route path="/customer-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><CustomerReport /></RoleBasedRoute>} />
             <Route path="/company-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><CompanyReport /></RoleBasedRoute>} />
+            <Route path="/division-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><DivisionReport /></RoleBasedRoute>} />
             <Route path="/user-management" element={<RoleBasedRoute allowedRoles={['Admin']}><UserManagement /></RoleBasedRoute>} />
             <Route path="/settings" element={<RoleBasedRoute allowedRoles={['Admin']}><Settings /></RoleBasedRoute>} />
             <Route path="*" element={<NotFound />} />

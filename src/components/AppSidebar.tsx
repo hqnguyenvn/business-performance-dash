@@ -50,6 +50,11 @@ const menuItems = [
     icon: Building,
   },
   {
+    title: "Division Report",
+    url: "/division-report",
+    icon: BarChart3,
+  },
+  {
     title: "User Management",
     url: "/user-management",
     icon: Shield,
