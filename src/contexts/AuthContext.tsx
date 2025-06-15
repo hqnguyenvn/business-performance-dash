@@ -23,36 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .single();
-          setRole(roleData?.role as UserRole ?? null);
-        } else {
-          setRole(null);
-        }
-      } catch (error) {
-        console.error("Error fetching initial session:", error);
-        setSession(null);
-        setUser(null);
-        setRole(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getSession();
-
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setLoading(true);
       try {
         setSession(session);
         setUser(session?.user ?? null);
@@ -68,6 +39,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error("Error on auth state change:", error);
+        setSession(null);
+        setUser(null);
         setRole(null);
       } finally {
         setLoading(false);
