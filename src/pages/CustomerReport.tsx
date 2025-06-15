@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { supabase } from "@/integrations/supabase/client";
+import { ReportFilter } from "@/components/customer-report/ReportFilter";
+import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
+import { ReportSummary } from "@/components/customer-report/ReportSummary";
 
 // Table data interface for group by rows
 interface GroupedCustomerData {
@@ -24,6 +26,8 @@ interface GroupedCustomerData {
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const years = [2023, 2024, 2025];
 
 const CustomerReport = () => {
   const { toast } = useToast();
@@ -159,108 +163,37 @@ const CustomerReport = () => {
       />
 
       <div className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">
-                {totalRevenue.toLocaleString()} VND
-              </div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-600">
-                {totalBMM.toLocaleString()} BMM
-              </div>
-              <p className="text-sm text-gray-600">Total BMM</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {totalSalaryCost.toLocaleString()} VND
-              </div>
-              <p className="text-sm text-gray-600">Total Salary Cost</p>
-            </CardContent>
-          </Card>
-        </div>
+        <ReportSummary
+          totalRevenue={totalRevenue}
+          totalBMM={totalBMM}
+          totalSalaryCost={totalSalaryCost}
+        />
 
         <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle>Customer Report</CardTitle>
-              <div className="flex gap-4 items-center">
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2023, 2024, 2025].map(year => (
-                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map(month => (
-                      <SelectItem key={month} value={month}>{month}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-              </div>
+              <ReportFilter
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                selectedMonth={selectedMonth}
+                setSelectedMonth={setSelectedMonth}
+                months={MONTHS}
+                years={years}
+                onExport={exportToCSV}
+              />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-green-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-gray-500">Loading...</td>
-                    </tr>
-                  ) : paginatedData.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="border border-gray-300 p-8 text-center text-gray-500">
-                        No data matches the selected filters. Try adjusting the year or month selection.
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedData.map((data) => (
-                      <tr key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2">{data.company_code}</td>
-                        <td className="border border-gray-300 p-2">{data.customer_code}</td>
-                        <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
-                        <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
-                        <td className="border border-gray-300 p-2 text-right">{(data.salaryCost ?? 0).toLocaleString()}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <PaginationControls
+            <ReportTable
+              data={groupedData}
+              loading={loading}
+              paginatedData={paginatedData}
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={goToPage}
-              onNextPage={goToNextPage}
-              onPreviousPage={goToPreviousPage}
+              goToPage={goToPage}
+              goToNextPage={goToNextPage}
+              goToPreviousPage={goToPreviousPage}
               totalItems={totalItems}
               startIndex={startIndex}
               endIndex={endIndex}
