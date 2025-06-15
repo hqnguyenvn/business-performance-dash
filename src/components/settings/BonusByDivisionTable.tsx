@@ -36,7 +36,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     setFilter,
     getActiveFilters,
     filterData,
-    filterRows
+    filterRows,
   } = useBonusByDivisionFilter(data, divisions);
 
   const {
@@ -50,8 +50,11 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     onFieldChange,
     handleSave,
     handleDelete,
-    saving
+    saving,
   } = useBonusByDivisionEdit(data, setter, divisions, thisYear);
+
+  // Dữ liệu đã được filter và mapping lại index cho "No."
+  const filteredData = filterRows(data);
 
   return (
     <Card className="bg-white">
@@ -63,9 +66,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="border border-gray-300 w-12 text-center">
-                  No.
-                </TableHead>
+                <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
                 <TableHead
                   className="border border-gray-300 text-center"
                   showFilter={true}
@@ -115,7 +116,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                         variant="outline"
                         size="icon"
                         className="ml-1 h-6 w-6 p-0"
-                        onClick={onAddNew}
+                        onClick={() => onInsertBelow(-1)}
                         title="Add new row"
                       >
                         <Plus size={16} />
@@ -126,8 +127,50 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* New Row (add at top or below) */}
-              {editingRowId === "" && (
+              {filteredData.map((row, idx) => {
+                // Sau dòng mà user bấm Add, sẽ hiển thị dòng nhập mới
+                const isInsertBelow = editingRowId === "" && addingBelowIdx === idx;
+                return (
+                  <React.Fragment key={row.id}>
+                    {editingRowId === row.id ? (
+                      <BonusByDivisionEditRow
+                        idx={idx}
+                        editCache={editCache}
+                        row={row}
+                        divisions={divisions}
+                        onFieldChange={onFieldChange}
+                        onSave={handleSave}
+                        onCancel={onCancel}
+                        saving={saving}
+                      />
+                    ) : (
+                      <BonusByDivisionRow
+                        row={row}
+                        idx={idx}
+                        divisions={divisions}
+                        onEdit={onEdit}
+                        onInsertBelow={onInsertBelow}
+                        onDelete={handleDelete}
+                        editingRowId={editingRowId}
+                      />
+                    )}
+                    {/* Nếu đúng vị trí cần insert dòng mới thì render dòng nhập mới ngay phía dưới */}
+                    {isInsertBelow && (
+                      <BonusByDivisionNewRow
+                        divisions={divisions}
+                        editCache={editCache}
+                        thisYear={thisYear}
+                        onFieldChange={onFieldChange}
+                        onSave={handleSave}
+                        onCancel={onCancel}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Nếu bấm Add trên "Actions" header (thêm mới đầu bảng) */}
+              {editingRowId === "" && addingBelowIdx === -1 && (
                 <BonusByDivisionNewRow
                   divisions={divisions}
                   editCache={editCache}
@@ -136,32 +179,6 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   onSave={handleSave}
                   onCancel={onCancel}
                 />
-              )}
-              {/* Data Rows */}
-              {filterRows(data).map((row, idx) =>
-                editingRowId === row.id ? (
-                  <BonusByDivisionEditRow
-                    key={row.id}
-                    idx={idx}
-                    editCache={editCache}
-                    row={row}
-                    divisions={divisions}
-                    onFieldChange={onFieldChange}
-                    onSave={handleSave}
-                    onCancel={onCancel}
-                    saving={saving}
-                  />
-                ) : (
-                  <BonusByDivisionRow
-                    key={row.id}
-                    row={row}
-                    idx={idx}
-                    divisions={divisions}
-                    onEdit={onEdit}
-                    onInsertBelow={onInsertBelow}
-                    onDelete={handleDelete}
-                  />
-                )
               )}
             </TableBody>
           </Table>
