@@ -1,8 +1,8 @@
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
-import { UserMenu } from "./UserMenu"; // Thêm import
+import { UserMenu } from "./UserMenu";
+import { Bell } from "lucide-react";
 
 interface PageHeaderProps {
   title: string;
@@ -27,6 +27,15 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
         </div>
         <div className="flex items-center gap-2">
           {actions}
+          <button
+            type="button"
+            className="relative rounded-full p-2 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            aria-label="Notifications"
+          >
+            <Bell className="w-5 h-5 text-gray-700" />
+            {/* Badge số lượng notification (có thể mở sau) */}
+            {/* <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">3</span> */}
+          </button>
           <UserMenu />
         </div>
       </div>
