@@ -18,6 +18,7 @@ const CustomerReport = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[new Date().getMonth()]);
   const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [bonusRate, setBonusRate] = useState<number>(15);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -220,12 +221,9 @@ const CustomerReport = () => {
                 setSelectedMonth={setSelectedMonth}
                 months={MONTHS}
                 years={years}
-                onExport={() =>
-                  toast({
-                    title: "Export Successful",
-                    description: "Customer report has been successfully exported as a CSV file.",
-                  })
-                }
+                onExport={exportToCSV}
+                bonusRate={bonusRate}
+                setBonusRate={setBonusRate}
               />
             </div>
           </CardHeader>
@@ -242,6 +240,7 @@ const CustomerReport = () => {
               totalItems={totalItems}
               startIndex={startIndex}
               endIndex={endIndex}
+              bonusRate={bonusRate}
             />
           </CardContent>
         </Card>

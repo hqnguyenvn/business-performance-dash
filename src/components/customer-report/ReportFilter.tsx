@@ -11,6 +11,8 @@ interface ReportFilterProps {
   months: string[];
   years: number[];
   onExport: () => void;
+  bonusRate: number;
+  setBonusRate: (rate: number) => void;
 }
 
 export function ReportFilter({
@@ -21,9 +23,23 @@ export function ReportFilter({
   months,
   years,
   onExport,
+  bonusRate,
+  setBonusRate,
 }: ReportFilterProps) {
   return (
     <div className="flex gap-4 items-center flex-wrap">
+      <div className="flex items-center gap-1">
+        <span className="text-sm mr-1">Bonus %</span>
+        <input
+          type="number"
+          className="border border-gray-300 rounded px-2 py-1 w-16 text-right"
+          value={bonusRate}
+          min={0}
+          max={100}
+          step={0.1}
+          onChange={e => setBonusRate(Number(e.target.value))}
+        />
+      </div>
       <Select value={selectedYear} onValueChange={setSelectedYear}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Year" />

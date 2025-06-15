@@ -1,3 +1,4 @@
+
 import PaginationControls from "@/components/PaginationControls";
 
 export interface GroupedCustomerData {
@@ -25,6 +26,7 @@ interface ReportTableProps {
   totalItems: number;
   startIndex: number;
   endIndex: number;
+  bonusRate: number;
 }
 
 export function ReportTable({
@@ -38,7 +40,8 @@ export function ReportTable({
   goToPreviousPage,
   totalItems,
   startIndex,
-  endIndex
+  endIndex,
+  bonusRate
 }: ReportTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -51,30 +54,36 @@ export function ReportTable({
             <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</th>
+            <th className="border border-gray-300 p-2 text-right font-medium">Total Cost</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={6} className="p-8 text-center text-gray-500">Loading...</td>
+              <td colSpan={7} className="p-8 text-center text-gray-500">Loading...</td>
             </tr>
           ) : paginatedData.length === 0 ? (
             <tr>
-              <td colSpan={6} className="border border-gray-300 p-8 text-center text-gray-500">
+              <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </td>
             </tr>
           ) : (
-            paginatedData.map((data) => (
-              <tr key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`} className="hover:bg-gray-50">
-                <td className="border border-gray-300 p-2">{data.company_code}</td>
-                <td className="border border-gray-300 p-2">{data.customer_code}</td>
-                <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
-                <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
-                <td className="border border-gray-300 p-2 text-right">{(data.salaryCost ?? 0).toLocaleString()}</td>
-                <td className="border border-gray-300 p-2 text-right">{(data.overheadCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-              </tr>
-            ))
+            paginatedData.map((data) => {
+              const bonusValue = ((data.salaryCost ?? 0) * bonusRate) / 100;
+              const totalCost = (data.salaryCost ?? 0) + (data.overheadCost ?? 0) + bonusValue;
+              return (
+                <tr key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 p-2">{data.company_code}</td>
+                  <td className="border border-gray-300 p-2">{data.customer_code}</td>
+                  <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
+                  <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
+                  <td className="border border-gray-300 p-2 text-right">{(data.salaryCost ?? 0).toLocaleString()}</td>
+                  <td className="border border-gray-300 p-2 text-right">{(data.overheadCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                  <td className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
