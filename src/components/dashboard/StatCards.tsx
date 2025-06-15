@@ -36,7 +36,7 @@ export const StatCards: React.FC<StatCardsProps> = ({ stats }) => (
             <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
             <p className={`text-xs mt-1 ${changeColor}`}>
               {stat.change !== undefined ? stat.change : "--"}{" "}
-              compared to last month
+              Compared to last year
             </p>
           </CardContent>
         </Card>
