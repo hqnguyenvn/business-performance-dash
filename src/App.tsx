@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleBasedRoute from "./components/RoleBasedRoute";
+import UserManagement from "./pages/UserManagement";
 
 // Create QueryClient with default options
 const queryClient = new QueryClient({
@@ -42,6 +42,7 @@ const AppRoutes = () => {
             <Route path="/salary-costs" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager']}><SalaryCosts /></RoleBasedRoute>} />
             <Route path="/business-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><BusinessReport /></RoleBasedRoute>} />
             <Route path="/customer-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><CustomerReport /></RoleBasedRoute>} />
+            <Route path="/user-management" element={<RoleBasedRoute allowedRoles={['Admin']}><UserManagement /></RoleBasedRoute>} />
             <Route path="/settings" element={<RoleBasedRoute allowedRoles={['Admin']}><Settings /></RoleBasedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
