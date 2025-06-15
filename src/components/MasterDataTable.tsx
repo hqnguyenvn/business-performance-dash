@@ -34,7 +34,6 @@ import { useTableFilter } from "@/hooks/useTableFilter";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import MasterDataTableBody from "./MasterDataTableBody";
-import { Plus } from "lucide-react";
 
 interface MasterData {
   id: string;
