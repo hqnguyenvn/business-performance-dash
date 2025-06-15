@@ -2,6 +2,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
+import { UserMenu } from "./UserMenu"; // Thêm import
 
 interface PageHeaderProps {
   title: string;
@@ -24,7 +25,10 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
             </div>
           </div>
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        <div className="flex items-center gap-2">
+          {actions}
+          <UserMenu />
+        </div>
       </div>
     </div>
   );
