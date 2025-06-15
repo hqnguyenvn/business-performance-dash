@@ -62,13 +62,12 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
     // Nếu có cập nhật tên
     if (full_name !== undefined) {
       // Thử update profile
-      const { error, count } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .update({ full_name })
-        .eq("id", user.user_id)
-        .select('id', { count: 'exact', head: true }); // lấy count affected row
-      
-      if (!error && count === 0) {
+        .eq("id", user.user_id);
+
+      if (!error && (!data || data.length === 0)) {
         // Không có profile -> tạo mới
         const { error: insertError } = await supabase
           .from("profiles")
