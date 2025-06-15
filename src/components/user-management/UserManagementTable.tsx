@@ -37,7 +37,7 @@ export function UserManagementTable() {
     // Get all user_roles with explicit type
     const { data: userRoles, error } = await supabase
       .from("user_roles")
-      .select("id,user_id,role,is_active");
+      .select("id,user_id,role,is_active") as { data: UserRolesRow[] | null, error: any };
 
     if (error) {
       toast({ title: "Error", description: error.message });
@@ -58,8 +58,8 @@ export function UserManagementTable() {
       userMap[u.id] = u.email ?? "";
     });
 
-    // Strongly type userRoles
-    const rolesArr: UserRolesRow[] = Array.isArray(userRoles) ? userRoles as UserRolesRow[] : [];
+    // Use explicit typing to avoid "never" error
+    const rolesArr: UserRolesRow[] = Array.isArray(userRoles) ? userRoles : [];
     // Build table data using correct typing
     const uRows: UserRow[] = rolesArr.map((r) => ({
       id: r.id,
