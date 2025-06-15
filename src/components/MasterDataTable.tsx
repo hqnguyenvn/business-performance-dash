@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,7 +72,6 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
 }) => {
   const { toast } = useToast();
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   // Add table filtering
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
@@ -91,6 +89,60 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     endIndex,
   } = usePagination({ data: filteredData });
 
+  // Tạo state để giữ giá trị đang được chỉnh sửa tạm thời
+  const [editingCell, setEditingCell] = useState<{ id: string; field: keyof MasterData } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+
+  // Khi user thay đổi trường dữ liệu => tự động lưu
+  const handleCellEdit = useCallback(
+    async (id: string, field: keyof MasterData, value: string) => {
+      const oldItem: MasterData | undefined = data.find(item => item.id === id);
+      if (!oldItem) return;
+      // Update UI ngay lập tức
+      setter(prev => prev.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      ));
+
+      try {
+        const isNewItem = !isNaN(Number(id)); // row mới chưa lưu DB
+        if (!isNewItem) {
+          const payload: Partial<MasterData> = { ...oldItem, [field]: value };
+          await service.update(id, { [field]: value });
+          toast({
+            title: "Saved",
+            description: "Data saved successfully.",
+          });
+        } else {
+          // Nếu là row mới => tạo mới
+          const { id: _, ...toCreate } = { ...oldItem, [field]: value };
+          const created = await service.create(toCreate);
+          // Cập nhật lại id vừa được DB trả về
+          setter(prev =>
+            prev.map(item =>
+              item.id === id ? created : item
+            )
+          );
+          toast({
+            title: "Created",
+            description: "New item added and saved.",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save data.",
+          variant: "destructive"
+        });
+        // Rollback UI nếu lỗi:
+        setter(prev => prev.map(item =>
+          item.id === id ? { ...item, [field]: oldItem[field] } : item
+        ));
+      }
+    },
+    [data, service, setter, toast]
+  );
+
+  // Hàm thêm row mới (giữ lại logic nếu user cần dùng ở đâu đó khác)
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
       id: Date.now().toString(),
@@ -100,24 +152,15 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       ...(showCompanyColumn && { company_id: "" }),
       ...(showCustomerColumn && { customer_id: "" }),
     };
-    // Update local state immediately
     setter(prev => [...prev, newItem]);
   }, [setter, showCompanyColumn, showCustomerColumn]);
 
-  const updateItem = useCallback((id: string, field: keyof MasterData, value: string) => {
-    setter(prev => prev.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  }, [setter]);
-
   const deleteItem = useCallback(async (id: string) => {
     try {
-      // Only delete from database if it's not a temporary ID (new items have timestamp IDs)
       const isNewItem = !isNaN(Number(id));
       if (!isNewItem) {
         await service.delete(id);
       }
-      
       setter(prev => prev.filter(item => item.id !== id));
       toast({
         title: "Deleted",
@@ -134,45 +177,6 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     }
   }, [setter, toast, service]);
 
-  const saveData = useCallback(async () => {
-    try {
-      setSaving(true);
-      const promises = data.map(async (item) => {
-        // Check if it's a new item (has timestamp ID) or existing item
-        const isNewItem = !isNaN(Number(item.id));
-        
-        if (isNewItem && (item.code || item.name)) {
-          // Create new item
-          const { id, ...itemData } = item;
-          return await service.create(itemData);
-        } else if (!isNewItem && (item.code || item.name)) {
-          // Update existing item
-          return await service.update(item.id, item);
-        }
-        return item;
-      });
-
-      const results = await Promise.all(promises);
-      
-      // Update the state with the returned data from database
-      setter(results.filter(Boolean));
-      
-      toast({
-        title: "Saved",
-        description: "Data saved successfully",
-      });
-    } catch (error) {
-      console.error('Error saving data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save data",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [data, service, setter, toast]);
-
   const getCompanyName = (companyID: string) => {
     const company = companies.find(c => c.id === companyID);
     return company ? company.name : "";
@@ -188,16 +192,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={saveData} disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "Saving..." : "Save"}
-            </Button>
-            <Button onClick={addNewItem}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
-          </div>
+          {/* Loại bỏ button Save/AddNew */}
         </div>
       </CardHeader>
       <CardContent>
@@ -261,15 +256,6 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 </TableHead>
                 <TableHead className="border border-gray-300 text-center">
                   Actions
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={addNewItem}
-                    className="h-6 w-6 p-0 ml-1"
-                    title="Add New Item"
-                  >
-                    <Plus className="h-4 w-4 text-blue-600" />
-                  </Button>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -278,64 +264,58 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 <TableRow key={item.id} className="hover:bg-gray-50">
                   {showCompanyColumn && (
                     <TableCell className="border border-gray-300 p-1">
-                      <Select
+                      <select
+                        className="border-0 p-1 h-8 w-full"
                         value={item.company_id || ""}
-                        onValueChange={(value) => updateItem(item.id, 'company_id', value)}
+                        onChange={(e) => handleCellEdit(item.id, 'company_id', e.target.value)}
                       >
-                        <SelectTrigger className="border-0 p-1 h-8">
-                          <SelectValue placeholder="Select company" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies.map((company) => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <option value="">Select company</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.name}
+                          </option>
+                        ))}
+                      </select>
                     </TableCell>
                   )}
                   {showCustomerColumn && (
                     <TableCell className="border border-gray-300 p-1">
-                      <Select
+                      <select
+                        className="border-0 p-1 h-8 w-full"
                         value={item.customer_id || ""}
-                        onValueChange={(value) => updateItem(item.id, 'customer_id', value)}
+                        onChange={(e) => handleCellEdit(item.id, 'customer_id', e.target.value)}
                       >
-                        <SelectTrigger className="border-0 p-1 h-8">
-                          <SelectValue placeholder="Select customer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <option value="">Select customer</option>
+                        {customers.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </option>
+                        ))}
+                      </select>
                     </TableCell>
                   )}
                   <TableCell className="border border-gray-300 p-1">
-                    <Input
+                    <input
+                      className="border-0 p-1 h-8 w-full"
                       value={item.code}
-                      onChange={(e) => updateItem(item.id, 'code', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleCellEdit(item.id, 'code', e.target.value)}
+                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-1">
-                    <Input
+                    <input
+                      className="border-0 p-1 h-8 w-full"
                       value={item.name}
-                      onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleCellEdit(item.id, 'name', e.target.value)}
+                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-1">
-                    <Input
+                    <input
+                      className="border-0 p-1 h-8 w-full"
                       value={item.description || ""}
-                      onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      className="border-0 p-1 h-8"
-                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => handleCellEdit(item.id, 'description', e.target.value)}
+                      onBlur={(e) => {/* No-op, lưu luôn khi onChange */}}
                     />
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 text-center">
