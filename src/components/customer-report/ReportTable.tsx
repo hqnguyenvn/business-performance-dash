@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
@@ -140,6 +139,8 @@ export function ReportTable({
               const revenue = data.revenue ?? 0;
               const profit = revenue - totalCost;
               const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
+              // Determine highlight if negative
+              const negativeProfit = profit < 0;
               return (
                 <TableRow
                   key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
@@ -155,8 +156,16 @@ export function ReportTable({
                   <TableCell className="border border-gray-300 p-2 text-right">{bonusValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{overheadCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right text-green-700 font-semibold">{profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{revenue === 0 ? "-" : `${percentProfit.toFixed(1)}%`}</TableCell>
+                  <TableCell
+                    className={`border border-gray-300 p-2 text-right font-semibold ${negativeProfit ? "bg-yellow-200" : "text-green-700"}`}
+                  >
+                    {profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </TableCell>
+                  <TableCell
+                    className={`border border-gray-300 p-2 text-right ${negativeProfit ? "bg-yellow-200" : ""}`}
+                  >
+                    {revenue === 0 ? "-" : `${percentProfit.toFixed(1)}%`}
+                  </TableCell>
                 </TableRow>
               );
             })
