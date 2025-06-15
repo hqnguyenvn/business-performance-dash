@@ -212,13 +212,38 @@ const Revenues = () => {
     let errorRows: { row: number; reason: string }[] = [];
     const requiredFields = ['Year', 'Month', 'Original Amount']; // VND Revenue is calculated
 
+    // Thêm nhiều biến thể tên cột cho Original Amount/Revenue
+    const getOriginalAmountValue = (row: any) => {
+      return (
+        row["Original Amount"] ??
+        row["Original Amount".toLowerCase()] ??
+        row["OriginalAmount"] ??
+        row["OriginalRevenue"] ??
+        row["Original Revenue"] ??
+        row["original_amount"] ??
+        row["originalamount"] ??
+        row["original_revenue"] ??
+        row["originalrevenue"] ??
+        row["OriginalAmount"] ??
+        row["Original Revenue"]
+      );
+    };
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       let missingRequiredFields: string[] = [];
       requiredFields.forEach(rf => {
-        const keyVariations = [rf, rf.toLowerCase(), rf.replace(/\s+/g, ''), rf.replace(/\s+/g, '_').toLowerCase()];
-        if (!keyVariations.some(k => row[k] !== undefined && row[k] !== null && row[k] !== '')) {
-          missingRequiredFields.push(rf);
+        // Đối với Original Amount/Original Revenue
+        if (rf === "Original Amount") {
+          const val = getOriginalAmountValue(row);
+          if (val === undefined || val === null || val === "") {
+            missingRequiredFields.push(rf);
+          }
+        } else {
+          const keyVariations = [rf, rf.toLowerCase(), rf.replace(/\s+/g, ''), rf.replace(/\s+/g, '_').toLowerCase()];
+          if (!keyVariations.some(k => row[k] !== undefined && row[k] !== null && row[k] !== '')) {
+            missingRequiredFields.push(rf);
+          }
         }
       });
 
@@ -272,7 +297,7 @@ const Revenues = () => {
            continue;
         }
         
-        const originalAmountRaw = row["Original Amount"] || row["original_amount"] || row["originalamount"];
+        const originalAmountRaw = getOriginalAmountValue(row);
         const original_amount = Number(originalAmountRaw);
         if (isNaN(original_amount)) {
           errorRows.push({ row: i + 2, reason: `Số tiền gốc không hợp lệ: ${originalAmountRaw}` });
