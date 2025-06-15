@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
@@ -9,13 +10,30 @@ import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Define month info for filtering & display
+const MONTHS = [
+  { value: 1, label: "January", short: "Jan" },
+  { value: 2, label: "February", short: "Feb" },
+  { value: 3, label: "March", short: "Mar" },
+  { value: 4, label: "April", short: "Apr" },
+  { value: 5, label: "May", short: "May" },
+  { value: 6, label: "June", short: "Jun" },
+  { value: 7, label: "July", short: "Jul" },
+  { value: 8, label: "August", short: "Aug" },
+  { value: 9, label: "September", short: "Sep" },
+  { value: 10, label: "October", short: "Oct" },
+  { value: 11, label: "November", short: "Nov" },
+  { value: 12, label: "December", short: "Dec" },
+];
 const years = [2023, 2024, 2025];
 
 const CustomerReport = () => {
   const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>(MONTHS[new Date().getMonth()]);
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  // --- Year, months state (multi-checkbox)
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
   const [loading, setLoading] = useState(false);
   const [bonusRate, setBonusRate] = useState<number>(15);
@@ -23,9 +41,8 @@ const CustomerReport = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const monthNumber = MONTHS.indexOf(selectedMonth) + 1;
 
-      // 1. Fetch revenues with group data
+      // 1. Fetch revenues with group data for all months selected
       const { data: rows, error } = await supabase
         .from('revenues')
         .select(
@@ -41,7 +58,7 @@ const CustomerReport = () => {
           `
         )
         .eq('year', Number(selectedYear))
-        .eq('month', monthNumber);
+        .in('month', selectedMonths);
 
       if (error) {
         toast({
@@ -60,7 +77,7 @@ const CustomerReport = () => {
           year, month, customer_id, amount
         `)
         .eq('year', Number(selectedYear))
-        .eq('month', monthNumber);
+        .in('month', selectedMonths);
 
       if (salaryError) {
         toast({
@@ -79,7 +96,7 @@ const CustomerReport = () => {
           year, month, cost, is_cost
         `)
         .eq('year', Number(selectedYear))
-        .eq('month', monthNumber)
+        .in('month', selectedMonths)
         .eq('is_cost', true);
 
       if (costError) {
@@ -92,10 +109,9 @@ const CustomerReport = () => {
         return;
       }
 
-      // --------------------------
-      // 1. Calculate total salary costs by (year, month)
+      // Aggregation per filter
+
       const salaryByPeriod = new Map<string, number>();
-      // 2. Also, salary cost by (year, month, customer_id)
       const salaryMap = new Map<string, number>();
       for (const row of salaryRows ?? []) {
         if (!row.customer_id) continue;
@@ -105,21 +121,18 @@ const CustomerReport = () => {
         salaryMap.set(custKey, (salaryMap.get(custKey) ?? 0) + Number(row.amount) || 0);
       }
 
-      // 3. Total cost by (year, month) is sum of 'cost' from costRows
       const costByPeriod = new Map<string, number>();
       for (const row of costRows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
       }
 
-      // 4. Total BMM by (year, month): sum quantity in revenue rows
       const bmmByPeriod = new Map<string, number>();
       for (const row of rows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
       }
 
-      // 5. Precompute overheadPerBMM (costByPeriod - salaryByPeriod) / bmmByPeriod
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCost] of costByPeriod.entries()) {
         const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
@@ -131,7 +144,7 @@ const CustomerReport = () => {
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
 
-      // 6. group revenues by (customer_id, company_id, year, month), aggregate bmm, revenue
+      // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
@@ -152,7 +165,7 @@ const CustomerReport = () => {
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
           groupMap.set(groupKey, {
             year: row.year,
-            month: row.month,
+            month: row.month, // integer 1-12
             customer_id: row.customer_id,
             customer_code: row.customers?.code || 'N/A',
             company_id: row.company_id,
@@ -164,11 +177,20 @@ const CustomerReport = () => {
           });
         }
       }
-      setGroupedData(Array.from(groupMap.values()));
+
+      // --- Build result array, sorted by month
+      const resultArr = Array.from(groupMap.values());
+      resultArr.sort((a, b) => {
+        // Sort by month ASC, then company_code, then customer_code
+        if (a.month !== b.month) return a.month - b.month;
+        if (a.company_code !== b.company_code) return a.company_code.localeCompare(b.company_code);
+        return a.customer_code.localeCompare(b.customer_code);
+      });
+      setGroupedData(resultArr);
       setLoading(false);
     };
     fetchData();
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonths]);
 
   // Pagination logic
   const {
@@ -217,8 +239,8 @@ const CustomerReport = () => {
               <ReportFilter
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
-                selectedMonth={selectedMonth}
-                setSelectedMonth={setSelectedMonth}
+                selectedMonths={selectedMonths}
+                setSelectedMonths={setSelectedMonths}
                 months={MONTHS}
                 years={years}
                 onExport={exportToCSV}

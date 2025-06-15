@@ -14,6 +14,11 @@ export interface GroupedCustomerData {
   overheadCost?: number;
 }
 
+const MONTH_MAP = {
+  1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May", 6: "Jun",
+  7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"
+};
+
 interface ReportTableProps {
   data: GroupedCustomerData[];
   loading: boolean;
@@ -49,6 +54,7 @@ export function ReportTable({
         <thead>
           <tr className="bg-green-50">
             <th className="border border-gray-300 p-2 text-center font-medium w-10">No.</th>
+            <th className="border border-gray-300 p-2 text-center font-medium">Month</th>
             <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
             <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
             <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
@@ -64,11 +70,11 @@ export function ReportTable({
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={11} className="p-8 text-center text-gray-500">Loading...</td>
+              <td colSpan={12} className="p-8 text-center text-gray-500">Loading...</td>
             </tr>
           ) : paginatedData.length === 0 ? (
             <tr>
-              <td colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
+              <td colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </td>
             </tr>
@@ -81,13 +87,13 @@ export function ReportTable({
               const revenue = data.revenue ?? 0;
               const profit = revenue - totalCost;
               const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
-
               return (
                 <tr
                   key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
                   className="hover:bg-gray-50"
                 >
                   <td className="border border-gray-300 p-2 text-center">{startIndex + idx}</td>
+                  <td className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</td>
                   <td className="border border-gray-300 p-2">{data.company_code}</td>
                   <td className="border border-gray-300 p-2">{data.customer_code}</td>
                   <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>

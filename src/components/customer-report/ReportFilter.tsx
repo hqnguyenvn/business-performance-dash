@@ -1,14 +1,14 @@
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReportFilterProps {
   selectedYear: string;
   setSelectedYear: (year: string) => void;
-  selectedMonth: string;
-  setSelectedMonth: (month: string) => void;
-  months: string[];
+  selectedMonths: number[];
+  setSelectedMonths: (months: number[]) => void;
+  months: { value: number; label: string; short: string }[];
   years: number[];
   onExport: () => void;
   bonusRate: number;
@@ -18,52 +18,71 @@ interface ReportFilterProps {
 export function ReportFilter({
   selectedYear,
   setSelectedYear,
-  selectedMonth,
-  setSelectedMonth,
+  selectedMonths,
+  setSelectedMonths,
   months,
   years,
   onExport,
   bonusRate,
   setBonusRate,
 }: ReportFilterProps) {
+  const handleMonthChange = (value: number) => {
+    setSelectedMonths(
+      selectedMonths.includes(value)
+        ? selectedMonths.filter(m => m !== value)
+        : [...selectedMonths, value].sort((a, b) => a - b)
+    );
+  };
+
   return (
-    <div className="flex gap-4 items-center flex-wrap">
-      <div className="flex items-center gap-1">
-        <span className="text-sm mr-1">Bonus %</span>
+    <div className="p-4 bg-white rounded-md border">
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        {/* Year select */}
+        <div>
+          <select
+            value={selectedYear}
+            onChange={e => setSelectedYear(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-2 w-24 text-base"
+          >
+            {years.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Months checkboxes */}
+        <div className="flex flex-wrap gap-x-8 gap-y-2">
+          {months.map((m, idx) => (
+            <label key={m.value} className="inline-flex items-center space-x-2 cursor-pointer">
+              <Checkbox
+                checked={selectedMonths.includes(m.value)}
+                onCheckedChange={() => handleMonthChange(m.value)}
+                id={`month-check-${m.value}`}
+              />
+              <span className="font-semibold text-base">{m.short}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom - Bonus */}
+      <div className="flex items-center space-x-2 mt-4">
+        <label className="text-base font-medium">Bonus Rate:</label>
         <input
           type="number"
-          className="border border-gray-300 rounded px-2 py-1 w-16 text-right"
+          className="border border-gray-300 rounded px-3 py-1 w-20 text-right text-base"
           value={bonusRate}
           min={0}
           max={100}
           step={0.1}
           onChange={e => setBonusRate(Number(e.target.value))}
         />
+        <span className="font-medium text-base">%</span>
+        <Button variant="outline" className="ml-4" onClick={onExport}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
-      <Select value={selectedYear} onValueChange={setSelectedYear}>
-        <SelectTrigger className="w-32">
-          <SelectValue placeholder="Year" />
-        </SelectTrigger>
-        <SelectContent>
-          {years.map(year => (
-            <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-        <SelectTrigger className="w-32">
-          <SelectValue placeholder="Month" />
-        </SelectTrigger>
-        <SelectContent>
-          {months.map(month => (
-            <SelectItem key={month} value={month}>{month}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button variant="outline" onClick={onExport}>
-        <Download className="h-4 w-4 mr-2" />
-        Export CSV
-      </Button>
     </div>
   );
 }
