@@ -61,11 +61,12 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
     let profileError;
     // Nếu có cập nhật tên
     if (full_name !== undefined) {
-      // Thử update profile
+      // Thử update profile (use .select to get affected rows!)
       const { data, error } = await supabase
         .from("profiles")
         .update({ full_name })
-        .eq("id", user.user_id);
+        .eq("id", user.user_id)
+        .select('id');
 
       if (!error && (!data || data.length === 0)) {
         // Không có profile -> tạo mới
@@ -91,7 +92,6 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
     toast({ title: "Success", description: "User updated." });
     setEditing(false);
     setEditForm({});
-    // Chờ ngắn trước khi reload lại danh sách để Supabase kịp đồng bộ
     setTimeout(() => {
       onChange();
     }, 300);
