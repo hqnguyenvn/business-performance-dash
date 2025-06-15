@@ -56,7 +56,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Bonus by D</CardTitle>
+        <CardTitle>Bonus by Division</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -67,7 +67,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   No.
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300"
+                  className="border border-gray-300 text-center"
                   showFilter={true}
                   filterData={filterData.year}
                   filterField="year"
@@ -77,7 +77,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   Year
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300"
+                  className="border border-gray-300 text-center"
                   showFilter={true}
                   filterData={filterData.division_id}
                   filterField="division_id"
@@ -87,7 +87,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   Division
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300"
+                  className="border border-gray-300 text-right"
                   showFilter={true}
                   filterData={filterData.bn_bmm}
                   filterField="bn_bmm"

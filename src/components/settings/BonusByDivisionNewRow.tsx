@@ -22,16 +22,16 @@ const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
 }) => (
   <TableRow>
     <TableCell />
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-center">
       <Input
         type="number"
         value={editCache.year ?? thisYear}
         min={2020}
         onChange={e => onFieldChange("year", Number(e.target.value))}
-        className="h-8"
+        className="h-8 text-center"
       />
     </TableCell>
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-center">
       <Select
         value={editCache.division_id ?? ""}
         onValueChange={v => onFieldChange("division_id", v)}
@@ -41,19 +41,19 @@ const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
         </SelectTrigger>
         <SelectContent>
           {divisions.map(d => (
-            <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
+            <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
           ))}
         </SelectContent>
       </Select>
     </TableCell>
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-right">
       <Input
         type="number"
         value={editCache.bn_bmm ?? 0}
         min={0}
         step={0.01}
         onChange={e => onFieldChange("bn_bmm", Number(e.target.value))}
-        className="h-8"
+        className="h-8 text-right"
       />
     </TableCell>
     <TableCell className="p-1">

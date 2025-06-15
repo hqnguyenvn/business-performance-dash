@@ -1,10 +1,10 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { Plus, Trash } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 
 interface BonusByDivisionRowProps {
   row: BonusByDivision;
@@ -21,12 +21,12 @@ const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
   return (
     <TableRow className="hover:bg-gray-50">
       <TableCell className="text-center font-medium">{idx + 1}</TableCell>
-      <TableCell>{row.year}</TableCell>
-      <TableCell>
+      <TableCell className="text-center">{row.year}</TableCell>
+      <TableCell className="text-center">
         {divisions.find(d => d.id === row.division_id)?.code ?? ""}
       </TableCell>
-      <TableCell>{row.bn_bmm}</TableCell>
-      <TableCell>{row.notes}</TableCell>
+      <TableCell className="text-right">{formatNumber(row.bn_bmm)}</TableCell>
+      <TableCell className="">{row.notes}</TableCell>
       <TableCell className="p-1 text-center">
         <div className="flex items-center justify-center gap-2">
           <Button

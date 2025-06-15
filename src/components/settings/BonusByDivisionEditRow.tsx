@@ -46,17 +46,17 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
 }) => (
   <TableRow>
     <TableCell className="text-center font-medium">{idx + 1}</TableCell>
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-center">
       <Input
         type="number"
         value={editCache.year ?? row.year}
         min={2020}
         onChange={e => onFieldChange("year", Number(e.target.value))}
-        className="h-8"
+        className="h-8 text-center"
         disabled={saving}
       />
     </TableCell>
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-center">
       <Select
         value={editCache.division_id ?? row.division_id}
         onValueChange={v => onFieldChange("division_id", v)}
@@ -67,19 +67,19 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
         </SelectTrigger>
         <SelectContent>
           {divisions.map(d => (
-            <SelectItem key={d.id} value={d.id}>{d.code} - {d.name}</SelectItem>
+            <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
           ))}
         </SelectContent>
       </Select>
     </TableCell>
-    <TableCell className="p-1">
+    <TableCell className="p-1 text-right">
       <Input
         type="number"
         value={editCache.bn_bmm ?? row.bn_bmm}
         min={0}
         step={0.01}
         onChange={e => onFieldChange("bn_bmm", Number(e.target.value))}
-        className="h-8"
+        className="h-8 text-right"
         disabled={saving}
       />
     </TableCell>
