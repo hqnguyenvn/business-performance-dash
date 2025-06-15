@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/PageHeader";
 import { useState } from "react";
 import { DashboardFilter } from "@/components/dashboard/DashboardFilter";
@@ -25,10 +26,16 @@ const months = [
 
 const years = Array.from({ length: 2035 - 2020 + 1 }, (_, idx) => 2020 + idx);
 
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1; // getMonth trả về 0-11
+
 const Index = () => {
   // Filter states
-  const [selectedYear, setSelectedYear] = useState<number>(2024);
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6]);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(
+    Array.from({ length: currentMonth }, (_, idx) => idx + 1)
+  );
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
 
