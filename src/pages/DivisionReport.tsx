@@ -10,6 +10,8 @@ import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useDivisionReportData, MONTHS, YEARS, GroupedDivisionData } from "@/hooks/useDivisionReportData";
 
+console.log("DivisionReport component loaded!");
+
 const DivisionReport = () => {
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
