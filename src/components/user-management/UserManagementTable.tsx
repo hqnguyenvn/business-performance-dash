@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,14 @@ type UserRow = {
   user_id: string;
 };
 
+// Add Supabase user_roles type for strong typing
+type UserRolesRow = {
+  id: string;
+  user_id: string;
+  role: AppRole;
+  is_active: boolean;
+};
+
 const roleOptions: AppRole[] = ["Admin", "Manager", "User"];
 
 export function UserManagementTable() {
@@ -27,10 +34,11 @@ export function UserManagementTable() {
   // Lấy danh sách user từ Supabase
   const fetchUsers = async () => {
     setLoading(true);
-    // Get all user_roles
+    // Get all user_roles with explicit type
     const { data: userRoles, error } = await supabase
       .from("user_roles")
       .select("id,user_id,role,is_active");
+
     if (error) {
       toast({ title: "Error", description: error.message });
       setLoading(false);
@@ -49,8 +57,11 @@ export function UserManagementTable() {
     usersResp.data.users.forEach((u) => {
       userMap[u.id] = u.email ?? "";
     });
-    // Build table data: map to UserRow[]
-    const uRows: UserRow[] = (userRoles ?? []).map((r: any) => ({
+
+    // Strongly type userRoles
+    const rolesArr: UserRolesRow[] = Array.isArray(userRoles) ? userRoles as UserRolesRow[] : [];
+    // Build table data using correct typing
+    const uRows: UserRow[] = rolesArr.map((r) => ({
       id: r.id,
       user_id: r.user_id,
       email: userMap[r.user_id] || "",
