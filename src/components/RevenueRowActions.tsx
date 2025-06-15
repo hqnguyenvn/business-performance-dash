@@ -90,7 +90,10 @@ const RevenueRowActions: React.FC<RevenueRowActionsProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onDeleteRevenue(revenue.id)}>
+            <AlertDialogAction 
+              variant="destructive"
+              onClick={() => onDeleteRevenue(revenue.id)}
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
