@@ -56,6 +56,7 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
         value={editCache.bn_bmm ?? row.bn_bmm}
         onChange={v => onFieldChange("bn_bmm", v)}
         disabled={saving}
+        uniqueKey={row.id}
       />
     </TableCell>
     <TableCell className="p-1">

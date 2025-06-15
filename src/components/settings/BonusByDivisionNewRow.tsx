@@ -51,6 +51,7 @@ const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
       <FormattedNumberInput
         value={editCache.bn_bmm ?? 0}
         onChange={v => onFieldChange("bn_bmm", v)}
+        uniqueKey={"new-row"} // nhận biết dòng mới
       />
     </TableCell>
     <TableCell className="p-1">
