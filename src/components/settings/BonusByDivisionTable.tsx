@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,6 +16,7 @@ import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
 // Sử dụng hook sửa grid mới
 import { useBonusByDivisionGridEdit } from "./useBonusByDivisionGridEdit";
 import BonusByDivisionRow from "./BonusByDivisionRow";
+import BonusByDivisionNewRow from "./BonusByDivisionNewRow";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -55,15 +55,20 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   // Dữ liệu đã được filter và mapping lại index cho "No."
   const filteredData = filterRows(data);
 
-  // Handler khi nhấn Enter tại dòng new-row: gọi handleSaveNewRow nếu valid
-  const handleNewRowKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (e.key === "Enter") {
-      handleSaveNewRow();
-    }
-    if (e.key === "Escape") {
-      onCancelNewRow();
-    }
-  };
+  // Handler khi nhấn Enter hoặc Escape tại dòng new-row: gọi handleSaveNewRow nếu valid, huỷ nếu Escape
+  const useHandleNewRowKeyDown = () =>
+    React.useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
+        if (e.key === "Enter") {
+          handleSaveNewRow();
+        }
+        if (e.key === "Escape") {
+          onCancelNewRow();
+        }
+      },
+      [handleSaveNewRow, onCancelNewRow]
+    );
+  const handleNewRowKeyDown = useHandleNewRowKeyDown();
 
   return (
     <Card className="bg-white">
@@ -151,131 +156,34 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       onDelete={handleDelete}
                     />
                     {isInsertBelow && (
-                      <TableRow>
-                        {/* Số thứ tự: idx+2 vì thêm dưới idx */}
-                        <TableCell className="text-center font-medium">{idx + 2}</TableCell>
-                        <TableCell className="p-1 text-center">
-                          <input
-                            type="number"
-                            className="h-8 w-full border rounded text-center px-2"
-                            value={newRowCache.year ?? thisYear}
-                            onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
-                            autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
-                            onKeyDown={handleNewRowKeyDown}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1 text-center">
-                          <select
-                            className="h-8 w-full border rounded px-2"
-                            value={newRowCache.division_id ?? ''}
-                            onChange={e => onNewRowFieldChange("division_id", e.target.value)}
-                            onKeyDown={handleNewRowKeyDown}
-                          >
-                            <option value="">Select</option>
-                            {divisions.map(d => (
-                              <option key={d.id} value={d.id}>{d.code}</option>
-                            ))}
-                          </select>
-                        </TableCell>
-                        <TableCell className="p-1 text-right">
-                          {/* Định dạng số với dấu phẩy, có thể nhập Enter để lưu */}
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            className="h-8 w-full border rounded text-right px-2"
-                            value={(newRowCache.bn_bmm ?? "")?.toLocaleString?.() ?? ""}
-                            onChange={e => {
-                              // Giữ số, bỏ dấu phẩy khi lưu vào cache
-                              const val = e.target.value.replace(/,/g, "");
-                              onNewRowFieldChange("bn_bmm", Number(val));
-                            }}
-                            onKeyDown={handleNewRowKeyDown}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <input
-                            className="h-8 w-full border rounded px-2"
-                            value={newRowCache.notes ?? ""}
-                            onChange={e => onNewRowFieldChange("notes", e.target.value)}
-                            onKeyDown={handleNewRowKeyDown}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={handleSaveNewRow}>
-                              <Plus size={18} />
-                            </Button>
-                            <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancelNewRow}>
-                              {/* trash-2 icon */}
-                              <svg width="18" height="18" stroke="currentColor" fill="none" strokeWidth={2}><path d="M3 6h12M8 6v8m4-8v8M9 2h2a2 2 0 012 2v0H7v0a2 2 0 012-2z" /><path d="M5 6v8a2 2 0 002 2h6a2 2 0 002-2V6" /></svg>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <BonusByDivisionNewRow
+                        newRowCache={newRowCache}
+                        idx={idx}
+                        divisions={divisions}
+                        editingCell={editingCell}
+                        onFieldChange={onNewRowFieldChange}
+                        onSave={handleSaveNewRow}
+                        onCancel={onCancelNewRow}
+                        thisYear={thisYear}
+                        onKeyDown={handleNewRowKeyDown}
+                      />
                     )}
                   </React.Fragment>
                 );
               })}
+              {/* Thêm dòng ở đầu bảng nếu addingBelowIdx === -1 */}
               {addingBelowIdx === -1 && (
-                <TableRow>
-                  {/* Số thứ tự: 1 */}
-                  <TableCell className="text-center font-medium">1</TableCell>
-                  <TableCell className="p-1 text-center">
-                    <input
-                      type="number"
-                      className="h-8 w-full border rounded text-center px-2"
-                      value={newRowCache.year ?? thisYear}
-                      onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
-                      autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
-                      onKeyDown={handleNewRowKeyDown}
-                    />
-                  </TableCell>
-                  <TableCell className="p-1 text-center">
-                    <select
-                      className="h-8 w-full border rounded px-2"
-                      value={newRowCache.division_id ?? ''}
-                      onChange={e => onNewRowFieldChange("division_id", e.target.value)}
-                      onKeyDown={handleNewRowKeyDown}
-                    >
-                      <option value="">Select</option>
-                      {divisions.map(d => (
-                        <option key={d.id} value={d.id}>{d.code}</option>
-                      ))}
-                    </select>
-                  </TableCell>
-                  <TableCell className="p-1 text-right">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className="h-8 w-full border rounded text-right px-2"
-                      value={(newRowCache.bn_bmm ?? "")?.toLocaleString?.() ?? ""}
-                      onChange={e => {
-                        const val = e.target.value.replace(/,/g, "");
-                        onNewRowFieldChange("bn_bmm", Number(val));
-                      }}
-                      onKeyDown={handleNewRowKeyDown}
-                    />
-                  </TableCell>
-                  <TableCell className="p-1">
-                    <input
-                      className="h-8 w-full border rounded px-2"
-                      value={newRowCache.notes ?? ""}
-                      onChange={e => onNewRowFieldChange("notes", e.target.value)}
-                      onKeyDown={handleNewRowKeyDown}
-                    />
-                  </TableCell>
-                  <TableCell className="p-1 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={handleSaveNewRow}>
-                        <Plus size={18} />
-                      </Button>
-                      <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancelNewRow}>
-                        {/* trash-2 icon */}
-                        <svg width="18" height="18" stroke="currentColor" fill="none" strokeWidth={2}><path d="M3 6h12M8 6v8m4-8v8M9 2h2a2 2 0 012 2v0H7v0a2 2 0 012-2z" /><path d="M5 6v8a2 2 0 002 2h6a2 2 0 002-2V6" /></svg>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <BonusByDivisionNewRow
+                  newRowCache={newRowCache}
+                  idx={null}
+                  divisions={divisions}
+                  editingCell={editingCell}
+                  onFieldChange={onNewRowFieldChange}
+                  onSave={handleSaveNewRow}
+                  onCancel={onCancelNewRow}
+                  thisYear={thisYear}
+                  onKeyDown={handleNewRowKeyDown}
+                />
               )}
             </TableBody>
           </Table>
@@ -286,4 +194,3 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 };
 
 export default BonusByDivisionTable;
-
