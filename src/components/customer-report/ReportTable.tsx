@@ -1,4 +1,3 @@
-
 import PaginationControls from "@/components/PaginationControls";
 
 export interface GroupedCustomerData {
@@ -56,7 +55,7 @@ export function ReportTable({
             <th className="border border-gray-300 p-2 text-center font-medium w-10">No.</th>
             <th className="border border-gray-300 p-2 text-center font-medium">Month</th>
             <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
-            <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
+            <th className="border border-gray-300 p-2 text-left font-medium">Customer</th>
             <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
