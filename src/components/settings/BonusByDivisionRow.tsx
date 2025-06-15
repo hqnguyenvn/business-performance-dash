@@ -6,6 +6,7 @@ import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { Plus } from "lucide-react";
 import { formatNumber } from "@/lib/format";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface BonusByDivisionRowProps {
   row: BonusByDivision;
@@ -42,7 +43,6 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
   return (
     <TableRow className={`group`}>
       <TableCell className="text-center font-medium">{idx + 1}</TableCell>
-
       <TableCell className="text-center p-1">
         {isEditing("year") ? (
           <input
@@ -50,7 +50,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
             className="h-8 w-full border rounded text-center px-2"
             value={editYear}
             onChange={e => setEditYear(Number(e.target.value))}
-            onBlur={(e) => { saveCell(row.id, "year", editYear); onBlurCell(); }}
+            onBlur={() => { saveCell(row.id, "year", editYear); onBlurCell(); }}
             autoFocus
           />
         ) : (
@@ -78,14 +78,11 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
       </TableCell>
       <TableCell className="text-right p-1">
         {isEditing("bn_bmm") ? (
-          <input
-            type="text"
-            inputMode="decimal"
-            className="h-8 w-full border rounded text-right px-2"
+          <FormattedNumberInput
             value={editBnm}
-            onChange={e => setEditBnm(Number(e.target.value.replace(/,/g, '')))}
-            onBlur={() => { saveCell(row.id, "bn_bmm", editBnm); onBlurCell(); }}
-            autoFocus
+            onChange={v => setEditBnm(v)}
+            onBlur={v => { saveCell(row.id, "bn_bmm", v); onBlurCell(); }}
+            uniqueKey={row.id}
           />
         ) : (
           <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "bn_bmm")}>
