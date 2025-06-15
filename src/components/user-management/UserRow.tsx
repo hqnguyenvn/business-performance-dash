@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -59,14 +58,25 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
       .update({ role, is_active })
       .eq("id", user.id);
 
-    // Cập nhật profiles (cột full_name)
     let profileError;
+    // Nếu có cập nhật tên
     if (full_name !== undefined) {
-      const { error } = await supabase
+      // Thử update profile
+      const { error, count } = await supabase
         .from("profiles")
         .update({ full_name })
-        .eq("id", user.user_id);
-      profileError = error;
+        .eq("id", user.user_id)
+        .select('id', { count: 'exact', head: true }); // lấy count affected row
+      
+      if (!error && count === 0) {
+        // Không có profile -> tạo mới
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert([{ id: user.user_id, full_name }]);
+        profileError = insertError;
+      } else {
+        profileError = error;
+      }
     }
 
     setSaving(false);
@@ -82,7 +92,10 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
     toast({ title: "Success", description: "User updated." });
     setEditing(false);
     setEditForm({});
-    onChange();
+    // Chờ ngắn trước khi reload lại danh sách để Supabase kịp đồng bộ
+    setTimeout(() => {
+      onChange();
+    }, 300);
   };
 
   const handleDelete = async () => {
