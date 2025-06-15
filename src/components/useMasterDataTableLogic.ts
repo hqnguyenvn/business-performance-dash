@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -28,6 +27,27 @@ interface MasterDataTableLogicProps {
   service: MasterDataService;
 }
 
+// Hàm sort theo Customer (nếu có) và sau đó code
+function sortByCustomerThenCode(data: MasterData[], customers: MasterData[]) {
+  return [...data].sort((a, b) => {
+    // Ưu tiên theo tên Customer (trường hợp cả 2 cùng có customer_id)
+    const aCustomer = customers?.find(c => c.id === a.customer_id);
+    const bCustomer = customers?.find(c => c.id === b.customer_id);
+
+    const nameA = (aCustomer?.name || "").toLowerCase();
+    const nameB = (bCustomer?.name || "").toLowerCase();
+
+    if (nameA !== nameB) {
+      return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+    }
+
+    // Nếu trùng Customer, so sánh Code (không phân biệt hoa/thường)
+    const codeA = (a.code || "").toLowerCase();
+    const codeB = (b.code || "").toLowerCase();
+    return codeA.localeCompare(codeB, undefined, { sensitivity: 'base' });
+  });
+}
+
 export const useMasterDataTableLogic = ({
   data,
   setter,
@@ -39,8 +59,13 @@ export const useMasterDataTableLogic = ({
 }: MasterDataTableLogicProps) => {
   const { toast } = useToast();
 
+  // Áp dụng sort trước khi lọc nếu có cột Customer
+  const sortedData = showCustomerColumn && customers?.length
+    ? sortByCustomerThenCode(data, customers)
+    : data;
+
   // Table filter
-  const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
+  const { filteredData, setFilter, getActiveFilters } = useTableFilter(sortedData);
 
   // Delete dialog
   const [deleteId, setDeleteId] = useState<string | null>(null);
