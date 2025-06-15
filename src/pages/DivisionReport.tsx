@@ -60,14 +60,7 @@ const DivisionReport = () => {
         icon={BarChart3}
       />
       <div className="p-6">
-        <ReportSummary
-          totalRevenue={totalRevenue}
-          totalBMM={totalBMM}
-          totalCost={totalCost}
-          totalProfit={totalProfit}
-          totalProfitPercent={totalProfitPercent}
-        />
-
+        {/* Bỏ block tổng hợp ReportSummary */}
         <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
