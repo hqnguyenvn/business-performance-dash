@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,15 +9,14 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import BonusByDivisionRow from "./BonusByDivisionRow";
-import BonusByDivisionEditRow from "./BonusByDivisionEditRow";
-import BonusByDivisionNewRow from "./BonusByDivisionNewRow";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
-import { useBonusByDivisionEdit } from "./useBonusByDivisionEdit";
+// Sử dụng hook sửa grid mới
+import { useBonusByDivisionGridEdit } from "./useBonusByDivisionGridEdit";
+import BonusByDivisionRow from "./BonusByDivisionRow";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -39,18 +39,18 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   } = useBonusByDivisionFilter(data, divisions);
 
   const {
-    editingRowId,
-    editCache,
+    editingCell,
+    handleEditCell,
+    handleBlurCell,
+    saveCell,
     addingBelowIdx,
-    onEdit,
-    onAddNew,
     onInsertBelow,
-    onCancel,
-    onFieldChange,
-    handleSave,
+    newRowCache,
+    onNewRowFieldChange,
+    handleSaveNewRow,
+    onCancelNewRow,
     handleDelete,
-    saving,
-  } = useBonusByDivisionEdit(data, setter, divisions, thisYear);
+  } = useBonusByDivisionGridEdit(data, setter, divisions, thisYear);
 
   // Dữ liệu đã được filter và mapping lại index cho "No."
   const filteredData = filterRows(data);
@@ -109,18 +109,16 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                 <TableHead className="border border-gray-300 text-center w-28">
                   <div className="flex items-center justify-center gap-1">
                     <span>Actions</span>
-                    {editingRowId === null && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="ml-1 h-6 w-6 p-0"
-                        onClick={() => onInsertBelow(-1)}
-                        title="Add new row"
-                      >
-                        <Plus size={16} />
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="ml-1 h-6 w-6 p-0"
+                      onClick={() => onInsertBelow(-1)}
+                      title="Add new row"
+                    >
+                      <Plus size={16} />
+                    </Button>
                   </div>
                 </TableHead>
               </TableRow>
@@ -128,54 +126,129 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
             <TableBody>
               {filteredData.map((row, idx) => {
                 // Sau dòng mà user bấm Add, sẽ hiển thị dòng nhập mới
-                const isInsertBelow = editingRowId === "" && addingBelowIdx === idx;
+                const isInsertBelow = addingBelowIdx === idx;
+
                 return (
                   <React.Fragment key={row.id}>
-                    {editingRowId === row.id ? (
-                      <BonusByDivisionEditRow
-                        idx={idx}
-                        editCache={editCache}
-                        row={row}
-                        divisions={divisions}
-                        onFieldChange={onFieldChange}
-                        onSave={handleSave} // <-- giữ nút Lưu, hiện Cancel dưới actions
-                        onCancel={onCancel}
-                        saving={saving}
-                      />
-                    ) : (
-                      <BonusByDivisionRow
-                        row={row}
-                        idx={idx}
-                        divisions={divisions}
-                        onEdit={onEdit}
-                        onInsertBelow={onInsertBelow}
-                        onDelete={handleDelete}
-                        editingRowId={editingRowId}
-                      />
-                    )}
-                    {/* Nếu đúng vị trí cần insert dòng mới thì render dòng nhập mới ngay phía dưới */}
+                    <BonusByDivisionRow
+                      row={row}
+                      idx={idx}
+                      divisions={divisions}
+                      editingCell={editingCell}
+                      onEditCell={handleEditCell}
+                      onBlurCell={handleBlurCell}
+                      saveCell={saveCell}
+                      onInsertBelow={onInsertBelow}
+                      onDelete={handleDelete}
+                    />
                     {isInsertBelow && (
-                      <BonusByDivisionNewRow
-                        divisions={divisions}
-                        editCache={editCache}
-                        thisYear={thisYear}
-                        onFieldChange={onFieldChange}
-                        onSave={handleSave}
-                        onCancel={onCancel}
-                      />
+                      <TableRow>
+                        <TableCell />
+                        <TableCell className="p-1 text-center">
+                          <input
+                            type="number"
+                            className="h-8 w-full border rounded text-center px-2"
+                            value={newRowCache.year ?? thisYear}
+                            onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
+                            autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
+                          />
+                        </TableCell>
+                        <TableCell className="p-1 text-center">
+                          <select
+                            className="h-8 w-full border rounded px-2"
+                            value={newRowCache.division_id ?? ''}
+                            onChange={e => onNewRowFieldChange("division_id", e.target.value)}
+                          >
+                            <option value="">Select</option>
+                            {divisions.map(d => (
+                              <option key={d.id} value={d.id}>{d.code}</option>
+                            ))}
+                          </select>
+                        </TableCell>
+                        <TableCell className="p-1 text-right">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="h-8 w-full border rounded text-right px-2"
+                            value={newRowCache.bn_bmm ?? ""}
+                            onChange={e => onNewRowFieldChange("bn_bmm", Number(e.target.value.replace(/,/g, '')))}
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <input
+                            className="h-8 w-full border rounded px-2"
+                            value={newRowCache.notes ?? ""}
+                            onChange={e => onNewRowFieldChange("notes", e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell className="p-1 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={handleSaveNewRow}>
+                              <Plus size={18} />
+                            </Button>
+                            <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancelNewRow}>
+                              {/* trash-2 icon */}
+                              <svg width="18" height="18" stroke="currentColor" fill="none" strokeWidth={2}><path d="M3 6h12M8 6v8m4-8v8M9 2h2a2 2 0 012 2v0H7v0a2 2 0 012-2z" /><path d="M5 6v8a2 2 0 002 2h6a2 2 0 002-2V6" /></svg>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </React.Fragment>
                 );
               })}
-              {editingRowId === "" && addingBelowIdx === -1 && (
-                <BonusByDivisionNewRow
-                  divisions={divisions}
-                  editCache={editCache}
-                  thisYear={thisYear}
-                  onFieldChange={onFieldChange}
-                  onSave={handleSave}
-                  onCancel={onCancel}
-                />
+              {addingBelowIdx === -1 && (
+                <TableRow>
+                  <TableCell />
+                  <TableCell className="p-1 text-center">
+                    <input
+                      type="number"
+                      className="h-8 w-full border rounded text-center px-2"
+                      value={newRowCache.year ?? thisYear}
+                      onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
+                      autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
+                    />
+                  </TableCell>
+                  <TableCell className="p-1 text-center">
+                    <select
+                      className="h-8 w-full border rounded px-2"
+                      value={newRowCache.division_id ?? ''}
+                      onChange={e => onNewRowFieldChange("division_id", e.target.value)}
+                    >
+                      <option value="">Select</option>
+                      {divisions.map(d => (
+                        <option key={d.id} value={d.id}>{d.code}</option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  <TableCell className="p-1 text-right">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="h-8 w-full border rounded text-right px-2"
+                      value={newRowCache.bn_bmm ?? ""}
+                      onChange={e => onNewRowFieldChange("bn_bmm", Number(e.target.value.replace(/,/g, '')))}
+                    />
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <input
+                      className="h-8 w-full border rounded px-2"
+                      value={newRowCache.notes ?? ""}
+                      onChange={e => onNewRowFieldChange("notes", e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell className="p-1 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={handleSaveNewRow}>
+                        <Plus size={18} />
+                      </Button>
+                      <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancelNewRow}>
+                        {/* trash-2 icon */}
+                        <svg width="18" height="18" stroke="currentColor" fill="none" strokeWidth={2}><path d="M3 6h12M8 6v8m4-8v8M9 2h2a2 2 0 012 2v0H7v0a2 2 0 012-2z" /><path d="M5 6v8a2 2 0 002 2h6a2 2 0 002-2V6" /></svg>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
