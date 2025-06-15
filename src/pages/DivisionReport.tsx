@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,7 +99,7 @@ const DivisionReport = () => {
               startIndex={1}
               endIndex={mappedData.length}
               bonusRate={bonusRate}
-              // Không cần sửa thêm vì company_code bây giờ là division_code
+              companyLabel="Division"
             />
           </CardContent>
         </Card>
@@ -110,4 +109,3 @@ const DivisionReport = () => {
 };
 
 export default DivisionReport;
-

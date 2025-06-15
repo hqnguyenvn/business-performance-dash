@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
@@ -34,6 +35,7 @@ interface ReportTableProps {
   startIndex: number;
   endIndex: number;
   bonusRate: number;
+  companyLabel?: string; // Add this line
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -61,7 +63,10 @@ function getFilterData(data: GroupedCustomerData[], field: string) {
 export function ReportTable({
   loading,
   data,
-  bonusRate
+  bonusRate,
+  companyLabel,
+  // ... rest of props
+  // (use ...props if desired for future extensibility)
 }: ReportTableProps) {
   // Sử dụng useTableFilter để filter cột
   const {
@@ -71,8 +76,7 @@ export function ReportTable({
     clearAllFilters
   } = useTableFilter(data);
 
-  // Detect DivisionReport context by checking if company_code === division_code for 1st row
-  const isDivisionReport = data.length > 0 && data[0].company_code === data[0].division_code;
+  // Remove: checking data[0].company_code === data[0].division_code
 
   return (
     <div className="overflow-x-auto">
@@ -100,7 +104,7 @@ export function ReportTable({
               onFilter={setFilter}
               activeFilters={getActiveFilters("company_code")}
             >
-              {isDivisionReport ? "Division" : "Company"}
+              {companyLabel || "Company"}
             </TableHead>
             <TableHead
               className="border border-gray-300 p-2 text-left font-medium"
