@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,7 +8,6 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { useToast } from "@/hooks/use-toast";
@@ -247,12 +245,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   return (
     <Card className="bg-white">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Bonus by Division</CardTitle>
-          <Button onClick={onAddNew} variant="outline" size="sm">
-            Add
-          </Button>
-        </div>
+        <CardTitle>Bonus by Division</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -302,7 +295,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                 >
                   Notes
                 </TableHead>
-                <TableHead className="border border-gray-300 text-center">
+                <TableHead className="border border-gray-300 text-center w-28">
                   Actions
                 </TableHead>
               </TableRow>
@@ -353,4 +346,3 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 };
 
 export default BonusByDivisionTable;
-

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
+import { Plus, Trash } from "lucide-react";
 
 interface BonusByDivisionNewRowProps {
   divisions: MasterData[];
@@ -63,8 +64,14 @@ const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
       />
     </TableCell>
     <TableCell className="p-1 text-center">
-      <Button size="sm" className="mr-2" onClick={onSave}>Save</Button>
-      <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+      <div className="flex items-center justify-center gap-2">
+        <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={onSave}>
+          <Plus size={18} />
+        </Button>
+        <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
+          <Trash size={18} />
+        </Button>
+      </div>
     </TableCell>
   </TableRow>
 );
