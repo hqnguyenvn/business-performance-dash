@@ -48,6 +48,7 @@ export function ReportTable({
       <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-green-50">
+            <th className="border border-gray-300 p-2 text-center font-medium w-10">No.</th>
             <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
             <th className="border border-gray-300 p-2 text-left font-medium">Customer Code</th>
             <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
@@ -56,38 +57,47 @@ export function ReportTable({
             <th className="border border-gray-300 p-2 text-right font-medium">Bonus</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Total Cost</th>
+            <th className="border border-gray-300 p-2 text-right font-medium">Profit</th>
+            <th className="border border-gray-300 p-2 text-right font-medium">% Profit</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={8} className="p-8 text-center text-gray-500">Loading...</td>
+              <td colSpan={11} className="p-8 text-center text-gray-500">Loading...</td>
             </tr>
           ) : paginatedData.length === 0 ? (
             <tr>
-              <td colSpan={8} className="border border-gray-300 p-8 text-center text-gray-500">
+              <td colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </td>
             </tr>
           ) : (
-            paginatedData.map((data) => {
+            paginatedData.map((data, idx) => {
               const salaryCost = data.salaryCost ?? 0;
               const bonusValue = (salaryCost * bonusRate) / 100;
               const overheadCost = data.overheadCost ?? 0;
               const totalCost = salaryCost + bonusValue + overheadCost;
+              const revenue = data.revenue ?? 0;
+              const profit = revenue - totalCost;
+              const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
+
               return (
                 <tr
                   key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
                   className="hover:bg-gray-50"
                 >
+                  <td className="border border-gray-300 p-2 text-center">{startIndex + idx}</td>
                   <td className="border border-gray-300 p-2">{data.company_code}</td>
                   <td className="border border-gray-300 p-2">{data.customer_code}</td>
                   <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
-                  <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
+                  <td className="border border-gray-300 p-2 text-right">{revenue.toLocaleString()}</td>
                   <td className="border border-gray-300 p-2 text-right">{salaryCost.toLocaleString()}</td>
                   <td className="border border-gray-300 p-2 text-right">{bonusValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                   <td className="border border-gray-300 p-2 text-right">{overheadCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                   <td className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                  <td className="border border-gray-300 p-2 text-right text-green-700 font-semibold">{profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                  <td className="border border-gray-300 p-2 text-right">{revenue === 0 ? "-" : `${percentProfit.toFixed(1)}%`}</td>
                 </tr>
               );
             })
