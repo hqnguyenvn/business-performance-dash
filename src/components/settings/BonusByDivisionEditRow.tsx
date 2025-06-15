@@ -7,7 +7,6 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { Trash } from "lucide-react";
-import { ReloadIcon } from "@radix-ui/react-icons";
 
 interface BonusByDivisionEditRowProps {
   idx: number;
@@ -19,6 +18,28 @@ interface BonusByDivisionEditRowProps {
   onCancel: () => void;
   saving?: boolean;
 }
+
+const Spinner = () => (
+  <svg
+    className="animate-spin h-4 w-4 text-blue-500"
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+    />
+  </svg>
+);
 
 const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
   idx, editCache, row, divisions, onFieldChange, onSave, onCancel, saving
@@ -72,9 +93,7 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
     </TableCell>
     <TableCell className="p-1 text-center">
       <div className="flex items-center justify-center gap-2">
-        {saving ? (
-          <ReloadIcon className="animate-spin h-4 w-4 text-blue-500" />
-        ) : null}
+        {saving ? <Spinner /> : null}
         <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
           <Trash size={18} />
         </Button>
