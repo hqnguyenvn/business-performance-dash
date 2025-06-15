@@ -90,9 +90,9 @@ const RevenueRowActions: React.FC<RevenueRowActionsProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              variant="destructive"
+            <AlertDialogAction
               onClick={() => onDeleteRevenue(revenue.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
             </AlertDialogAction>
