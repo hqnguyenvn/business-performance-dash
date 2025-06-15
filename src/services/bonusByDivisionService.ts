@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface BonusByDivision {
   id: string;
   year: number;
-  month: number;
   division_id: string;
   bn_bmm: number;
   notes?: string | null;
@@ -12,10 +11,8 @@ export interface BonusByDivision {
   updated_at?: string;
 }
 
-// Define required fields for creation
 export type BonusByDivisionCreate = {
   year: number;
-  month: number;
   division_id: string;
   bn_bmm: number;
   notes?: string | null;
@@ -26,16 +23,13 @@ export const bonusByDivisionService = {
     const { data, error } = await supabase
       .from("bonus_by_d")
       .select("*")
-      .order("year", { ascending: false })
-      .order("month", { ascending: false });
+      .order("year", { ascending: false });
     if (error) throw error;
     return data || [];
   },
   add: async (row: BonusByDivisionCreate): Promise<BonusByDivision> => {
-    // Runtime check for more developer clarity
     if (
       typeof row.year !== "number" ||
-      typeof row.month !== "number" ||
       typeof row.division_id !== "string" ||
       typeof row.bn_bmm !== "number"
     ) {
