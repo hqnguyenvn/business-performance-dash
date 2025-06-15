@@ -7,6 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { Trash } from "lucide-react";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface BonusByDivisionEditRowProps {
   idx: number;
@@ -18,28 +19,6 @@ interface BonusByDivisionEditRowProps {
   onCancel: () => void;
   saving?: boolean;
 }
-
-const Spinner = () => (
-  <svg
-    className="animate-spin h-4 w-4 text-blue-500"
-    viewBox="0 0 24 24"
-    fill="none"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    />
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-    />
-  </svg>
-);
 
 const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
   idx, editCache, row, divisions, onFieldChange, onSave, onCancel, saving
@@ -73,13 +52,9 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
       </Select>
     </TableCell>
     <TableCell className="p-1 text-right">
-      <Input
-        type="number"
+      <FormattedNumberInput
         value={editCache.bn_bmm ?? row.bn_bmm}
-        min={0}
-        step={0.01}
-        onChange={e => onFieldChange("bn_bmm", Number(e.target.value))}
-        className="h-8 text-right"
+        onChange={v => onFieldChange("bn_bmm", v)}
         disabled={saving}
       />
     </TableCell>
@@ -93,7 +68,12 @@ const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
     </TableCell>
     <TableCell className="p-1 text-center">
       <div className="flex items-center justify-center gap-2">
-        {saving ? <Spinner /> : null}
+        {saving ? (
+          <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : null}
         <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
           <Trash size={18} />
         </Button>

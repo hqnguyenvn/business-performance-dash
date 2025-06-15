@@ -7,6 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
 import { Plus, Trash } from "lucide-react";
+import { FormattedNumberInput } from "./FormattedNumberInput";
 
 interface BonusByDivisionNewRowProps {
   divisions: MasterData[];
@@ -47,13 +48,9 @@ const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
       </Select>
     </TableCell>
     <TableCell className="p-1 text-right">
-      <Input
-        type="number"
+      <FormattedNumberInput
         value={editCache.bn_bmm ?? 0}
-        min={0}
-        step={0.01}
-        onChange={e => onFieldChange("bn_bmm", Number(e.target.value))}
-        className="h-8 text-right"
+        onChange={v => onFieldChange("bn_bmm", v)}
       />
     </TableCell>
     <TableCell className="p-1">
