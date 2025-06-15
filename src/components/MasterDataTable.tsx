@@ -105,16 +105,15 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       ));
 
       try {
-        const isNewItem = !isNaN(Number(id)); // row mới chưa lưu DB
-        if (!isNewItem) {
-          const payload: Partial<MasterData> = { ...oldItem, [field]: value };
+        const isTemporaryId = id.startsWith("tmp-"); // id tạm
+        if (!isTemporaryId) {
           await service.update(id, { [field]: value });
           toast({
             title: "Saved",
             description: "Data saved successfully.",
           });
         } else {
-          // Nếu là row mới => tạo mới
+          // Nếu là row mới => tạo mới. BỎ trường id ra khỏi payload!
           const { id: _, ...toCreate } = { ...oldItem, [field]: value };
           const created = await service.create(toCreate);
           // Cập nhật lại id vừa được DB trả về
@@ -143,9 +142,10 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     [data, service, setter, toast]
   );
 
+  // Sửa lại hàm tạo row mới để id tránh trùng với UUID
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
-      id: Date.now().toString(),
+      id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
       code: "",
       name: "",
       description: "",
@@ -190,7 +190,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
   // Hàm chèn row mới ngay dưới dòng được chọn
   const addRowBelow = useCallback((index: number) => {
     const newItem: MasterData = {
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+      id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
       code: "",
       name: "",
       description: "",
