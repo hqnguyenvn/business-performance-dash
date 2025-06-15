@@ -17,6 +17,7 @@ interface UserAddFormProps {
 export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newFullName, setNewFullName] = useState(""); // NEW 
   const [newRole, setNewRole] = useState<AppRole>("User");
   const [adding, setAdding] = useState(false);
 
@@ -57,6 +58,7 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     if (!userId) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } else {
+      // Thêm role cho user
       const { error: roleErr } = await supabase
         .from("user_roles")
         .update({ role: newRole, is_active: true })
@@ -66,15 +68,28 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
         setAdding(false);
         setNewEmail("");
         setNewPassword("");
+        setNewFullName("");
         setNewRole("User");
         onUserAdded();
         return;
+      }
+      // Cập nhật full_name vào profiles (nếu có nhập)
+      if (newFullName.trim()) {
+        const { error: profileErr } = await supabase
+          .from("profiles")
+          .update({ full_name: newFullName.trim() })
+          .eq("id", userId);
+        if (profileErr) {
+          toast({ title: "Warning", description: "Failed to set full name: " + profileErr.message });
+          // Tiếp tục luồng tạo user, chỉ báo warning lên UI
+        }
       }
     }
 
     toast({ title: "Success", description: "User created. Please ask user to check email to verify account!" });
     setNewEmail("");
     setNewPassword("");
+    setNewFullName("");
     setNewRole("User");
     setAdding(false);
     onUserAdded();
@@ -98,6 +113,15 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
         className="w-48"
         disabled={adding}
       />
+      {/* Thêm ô nhập Full name */}
+      <Input
+        type="text"
+        placeholder="Full name"
+        value={newFullName}
+        onChange={(e) => setNewFullName(e.target.value)}
+        className="w-56"
+        disabled={adding}
+      />
       <div className="flex gap-3 items-center">
         {roleOptions.map((role) => (
           <label className="inline-flex items-center gap-1 cursor-pointer" key={role}>
@@ -114,3 +138,4 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     </div>
   );
 }
+
