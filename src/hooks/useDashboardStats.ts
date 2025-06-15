@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,14 +20,10 @@ export interface DashboardStats {
   loading: boolean;
 }
 
-function getPreviousMonth(year: number, months: number[]): { prevYear: number, prevMonth: number } | null {
+// Hàm lấy khoảng kỳ trước: năm trước với cùng range tháng
+function getPreviousPeriod(year: number, months: number[]): { prevYear: number, prevMonths: number[] } | null {
   if (months.length === 0) return null;
-  // Lấy tháng nhỏ nhất -1
-  const minMonth = Math.min(...months);
-  if (minMonth === 1) { // Nếu tháng 1, quay về tháng 12 năm trước
-    return { prevYear: year - 1, prevMonth: 12 };
-  }
-  return { prevYear: year, prevMonth: minMonth - 1 };
+  return { prevYear: year - 1, prevMonths: [...months] };
 }
 
 export function useDashboardStats({
@@ -45,8 +40,8 @@ export function useDashboardStats({
   const [prevCosts, setPrevCosts] = useState<any[]>([]);
   // We can't get customers info directly from stat cards, but for dashboard show count of unique revenue.customer_id
 
-  // Tìm tháng trước để so sánh
-  const prevMonthInfo = useMemo(() => getPreviousMonth(year, months), [year, months]);
+  // Lấy kỳ trước: cùng tháng năm trước
+  const prevPeriod = useMemo(() => getPreviousPeriod(year, months), [year, months]);
 
   useEffect(() => {
     async function fetchData() {
@@ -58,11 +53,11 @@ export function useDashboardStats({
         supabase.from("costs").select("*").in("year", [year]).in("month", months),
         supabase.from("cost_types").select("id, code"),
       ];
-      // Thêm truy vấn tháng trước nếu có
-      if (prevMonthInfo) {
+      // Lấy dữ liệu cùng kỳ năm trước (same months nhưng year-1)
+      if (prevPeriod) {
         queries.push(
-          supabase.from("revenues").select("*").eq("year", prevMonthInfo.prevYear).eq("month", prevMonthInfo.prevMonth),
-          supabase.from("costs").select("*").eq("year", prevMonthInfo.prevYear).eq("month", prevMonthInfo.prevMonth)
+          supabase.from("revenues").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
+          supabase.from("costs").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths)
         );
       }
 
@@ -71,7 +66,7 @@ export function useDashboardStats({
       setRevenues(results[0]?.data || []);
       setCosts(results[1]?.data || []);
       setCostTypes(results[2]?.data || []);
-      if (prevMonthInfo) {
+      if (prevPeriod) {
         setPrevRevenues(results[3]?.data || []);
         setPrevCosts(results[4]?.data || []);
       } else {
@@ -144,12 +139,12 @@ export function useDashboardStats({
     }
 
     const nowStats = calcStats(revenues, costs, costTypes);
-    const prevStats = prevMonthInfo && prevRevenues.length + prevCosts.length > 0
+    const prevStats = prevPeriod && prevRevenues.length + prevCosts.length > 0
       ? calcStats(prevRevenues, prevCosts, costTypes)
       : null;
 
     function percentChange(current: number, prev: number | null): number | null {
-      if (prev === null || prev === 0) return null; // Không hiển thị nếu không so sánh được hoặc chia cho 0
+      if (prev === null || prev === 0) return null;
       return ((current - prev) / Math.abs(prev)) * 100;
     }
 
@@ -179,9 +174,8 @@ export function useDashboardStats({
   }, [
     revenues, costs, costTypes, loading,
     bonusRate, incomeTaxRate, months, year,
-    prevMonthInfo, prevRevenues, prevCosts,
+    prevPeriod, prevRevenues, prevCosts,
   ]);
 
   return stats;
 }
-
