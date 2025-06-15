@@ -12,6 +12,11 @@ type UserRolesRow = {
   user_id: string;
   role: AppRole;
   is_active: boolean;
+  profiles: {
+    email: string | null;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 const roleOptions: AppRole[] = ["Admin", "Manager", "User"];
@@ -23,32 +28,24 @@ export function UserManagementTable() {
   // Fetch user list from Supabase
   const fetchUsers = async () => {
     setLoading(true);
+
+    // Lấy toàn bộ user_roles + join sang profiles
     const { data: userRolesDataRaw, error } = await supabase
       .from("user_roles")
-      .select("id,user_id,role,is_active");
+      .select("id,user_id,role,is_active,profiles:profiles(email,full_name,avatar_url)");
+
     if (error) {
       toast({ title: "Error", description: error.message });
       setLoading(false);
       return;
     }
 
-    const usersResp = await supabase.auth.admin.listUsers();
-    if (usersResp.error) {
-      toast({ title: "Error", description: usersResp.error.message });
-      setUsers([]);
-      setLoading(false);
-      return;
-    }
-    const userMap: Record<string, string> = {};
-    usersResp.data.users.forEach((u: any) => {
-      userMap[u.id] = u.email ?? "";
-    });
-
+    // Lấy danh sách user (nếu profile chưa có email thì fallback rỗng)
     const rolesArr: UserRolesRow[] = Array.isArray(userRolesDataRaw) ? userRolesDataRaw as UserRolesRow[] : [];
     const uRows: UserRowType[] = rolesArr.map((r) => ({
       id: r.id,
       user_id: r.user_id,
-      email: userMap[r.user_id] || "",
+      email: r.profiles?.email || "",
       role: r.role,
       is_active: r.is_active ?? true,
     }));
@@ -95,3 +92,4 @@ export function UserManagementTable() {
     </div>
   );
 }
+
