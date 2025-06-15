@@ -1,32 +1,18 @@
+
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, Download } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePagination } from "@/hooks/usePagination";
-import PaginationControls from "@/components/PaginationControls";
 import { supabase } from "@/integrations/supabase/client";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 
-// Table data interface for group by rows
-interface GroupedCustomerData {
-  year: number;
-  month: number;
-  customer_id: string;
-  customer_code: string;
-  company_id: string;
-  company_code: string;
-  bmm: number;
-  revenue: number;
-  salaryCost?: number;
-}
+// Removed local GroupedCustomerData definition
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 const years = [2023, 2024, 2025];
 
 const CustomerReport = () => {
@@ -206,3 +192,4 @@ const CustomerReport = () => {
 };
 
 export default CustomerReport;
+
