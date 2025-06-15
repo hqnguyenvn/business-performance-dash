@@ -5,40 +5,9 @@ import { DashboardFilter } from "@/components/dashboard/DashboardFilter";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 import { DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
-// Stats data
-const statCardsData = [
-  {
-    title: "Total Revenue",
-    value: "2.5B VND",
-    change: "+12.5%",
-    icon: DollarSign,
-    color: "text-green-600",
-  },
-  {
-    title: "Total Cost",
-    value: "1.8B VND",
-    change: "+8.2%",
-    icon: Receipt,
-    color: "text-red-600",
-  },
-  {
-    title: "Net Profit",
-    value: "700M VND",
-    change: "+18.3%",
-    icon: TrendingUp,
-    color: "text-blue-600",
-  },
-  {
-    title: "Customers",
-    value: "45",
-    change: "+5",
-    icon: Users,
-    color: "text-purple-600",
-  },
-];
-
-// Month options
+// Month & year options
 const months = [
   { value: 1, label: "Jan" },
   { value: 2, label: "Feb" },
@@ -71,6 +40,51 @@ const Index = () => {
         : [...prev, month].sort((a, b) => a - b)
     );
   };
+
+  // Get live dashboard stats!
+  const {
+    totalRevenue,
+    totalCost,
+    netProfit,
+    customerCount,
+    loading: statsLoading,
+  } = useDashboardStats({
+    year: selectedYear,
+    months: selectedMonths,
+    incomeTaxRate,
+    bonusRate,
+  });
+
+  const statCardsData = [
+    {
+      title: "Total Revenue",
+      value: statsLoading ? "..." : `${(totalRevenue / 1_000_000).toLocaleString()}M VND`,
+      change: "--",
+      icon: DollarSign,
+      color: "text-green-600",
+    },
+    {
+      title: "Total Cost",
+      value: statsLoading ? "..." : `${(totalCost / 1_000_000).toLocaleString()}M VND`,
+      change: "--",
+      icon: Receipt,
+      color: "text-red-600",
+    },
+    {
+      title: "Net Profit",
+      value: statsLoading ? "..." : `${(netProfit / 1_000_000).toLocaleString()}M VND`,
+      change: "--",
+      icon: TrendingUp,
+      color: "text-blue-600",
+    },
+    {
+      title: "Customers",
+      value: statsLoading ? "..." : customerCount.toString(),
+      change: "--",
+      icon: Users,
+      color: "text-purple-600",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
