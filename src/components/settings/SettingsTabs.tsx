@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MasterDataTable from "@/components/MasterDataTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
@@ -14,6 +13,8 @@ import {
   currenciesService,
   costTypesService,
 } from "@/services/masterDataService";
+import BonusByDivisionTable from "./BonusByDivisionTable";
+import { BonusByDivision } from "@/services/bonusByDivisionService";
 
 interface SettingsTabsProps {
   data: {
@@ -26,6 +27,7 @@ interface SettingsTabsProps {
     currencies: MasterData[];
     costTypes: MasterData[];
     exchangeRates: ExchangeRateDisplay[];
+    bonusByDivision: BonusByDivision[];
   };
   setters: {
     setCustomers: React.Dispatch<React.SetStateAction<MasterData[]>>;
@@ -37,13 +39,14 @@ interface SettingsTabsProps {
     setCurrencies: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setCostTypes: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
+    setBonusByDivision: React.Dispatch<React.SetStateAction<BonusByDivision[]>>;
   };
 }
 
 export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
   return (
     <Tabs defaultValue="customers" className="w-full">
-      <TabsList className="grid w-full grid-cols-9">
+      <TabsList className="grid w-full grid-cols-10">
         <TabsTrigger value="customers">Customers</TabsTrigger>
         <TabsTrigger value="companies">Companies</TabsTrigger>
         <TabsTrigger value="divisions">Divisions</TabsTrigger>
@@ -53,6 +56,7 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
         <TabsTrigger value="currencies">Currencies</TabsTrigger>
         <TabsTrigger value="costTypes">Cost Types</TabsTrigger>
         <TabsTrigger value="exchangeRates">Exchange Rates</TabsTrigger>
+        <TabsTrigger value="bonusByDivision">Bonus by Division</TabsTrigger>
       </TabsList>
 
       <TabsContent value="customers">
@@ -136,6 +140,13 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           exchangeRates={data.exchangeRates}
           setExchangeRates={setters.setExchangeRates}
           currencies={data.currencies}
+        />
+      </TabsContent>
+      <TabsContent value="bonusByDivision">
+        <BonusByDivisionTable
+          data={data.bonusByDivision}
+          setter={setters.setBonusByDivision}
+          divisions={data.divisions}
         />
       </TabsContent>
     </Tabs>

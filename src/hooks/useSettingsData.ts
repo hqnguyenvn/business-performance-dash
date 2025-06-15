@@ -13,6 +13,7 @@ import {
   MasterData
 } from "@/services/masterDataService";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
+import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
 
 export const useSettingsData = () => {
   const { toast } = useToast();
@@ -25,6 +26,7 @@ export const useSettingsData = () => {
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
   const [costTypes, setCostTypes] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
+  const [bonusByDivision, setBonusByDivision] = useState<BonusByDivision[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAllData = useCallback(async () => {
@@ -39,7 +41,8 @@ export const useSettingsData = () => {
         resourcesData,
         currenciesData,
         costTypesData,
-        exchangeRatesData
+        exchangeRatesData,
+        bonusByDivisionData
       ] = await Promise.all([
         customersService.getAll(),
         companiesService.getAll(),
@@ -49,7 +52,8 @@ export const useSettingsData = () => {
         resourcesService.getAll(),
         currenciesService.getAll(),
         costTypesService.getAll(),
-        exchangeRateService.getAll()
+        exchangeRateService.getAll(),
+        bonusByDivisionService.getAll()
       ]);
 
       setCustomers(customersData);
@@ -61,6 +65,7 @@ export const useSettingsData = () => {
       setCurrencies(currenciesData);
       setCostTypes(costTypesData);
       setExchangeRates(exchangeRatesData);
+      setBonusByDivision(bonusByDivisionData);
 
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
@@ -89,6 +94,7 @@ export const useSettingsData = () => {
       currencies,
       costTypes,
       exchangeRates,
+      bonusByDivision,
     },
     setters: {
       setCustomers,
@@ -100,6 +106,7 @@ export const useSettingsData = () => {
       setCurrencies,
       setCostTypes,
       setExchangeRates,
+      setBonusByDivision,
     },
     loading,
     setLoading,
