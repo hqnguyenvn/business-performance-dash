@@ -1,8 +1,8 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useMonthlyRevenueStats } from "@/hooks/useMonthlyRevenueStats";
+import { useTopCustomers } from "@/hooks/useTopCustomers";
 import { useState } from "react";
 
 // Lấy context filter từ trang Index
@@ -26,6 +26,12 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
     name: monthLabels[d.month - 1],
     totalRevenue: Math.round(d.totalRevenue / 1_000_000), // hiển thị triệu VND
   }));
+
+  // Fetch top customers
+  const {
+    data: topCustomers,
+    loading: loadingTopCustomers,
+  } = useTopCustomers(selectedYear, selectedMonths, 5);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -56,7 +62,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
           </div>
         </CardContent>
       </Card>
-      {/* Block Top Customers giữ nguyên */}
+      {/* Block Top Customers động */}
       <Card className="bg-white">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
@@ -65,21 +71,27 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { name: "ABC Company", revenue: "500M VND", growth: "+15%" },
-              { name: "XYZ Company", revenue: "350M VND", growth: "+8%" },
-              { name: "DEF Company", revenue: "280M VND", growth: "+22%" },
-            ].map((customer, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">{customer.name}</p>
-                  <p className="text-sm text-gray-600">{customer.revenue}</p>
+            {loadingTopCustomers ? (
+              <div>Loading top customers...</div>
+            ) : topCustomers.length === 0 ? (
+              <div className="text-gray-500">No customer data</div>
+            ) : (
+              topCustomers.map((customer, index) => (
+                <div
+                  key={customer.customer_id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {index + 1}. {customer.customer_name}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {Math.round(customer.totalRevenue / 1_000_000)}M VND
+                    </p>
+                  </div>
                 </div>
-                <span className="text-sm text-green-600 font-medium">
-                  {customer.growth}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
