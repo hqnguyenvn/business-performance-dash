@@ -4,6 +4,7 @@ import React from "react";
 const ExchangeRateTableHead: React.FC = () => (
   <thead>
     <tr className="bg-gray-50">
+      <th className="border border-gray-300 w-12 text-center font-medium">No.</th>
       <th className="border border-gray-300 p-2 text-left font-medium w-24">Year</th>
       <th className="border border-gray-300 p-2 text-left font-medium w-24">Month</th>
       <th className="border border-gray-300 p-2 text-left font-medium w-40">Currency Code</th>

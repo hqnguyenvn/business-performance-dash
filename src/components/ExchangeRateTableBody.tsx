@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,10 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
     <tbody>
       {data.map((rate, idx) => (
         <tr key={rate.id} className="hover:bg-gray-50">
+          {/* No. */}
+          <td className="border border-gray-300 w-12 text-center">
+            {idx + 1}
+          </td>
           {/* Year */}
           <td
             className="border border-gray-300 p-1 w-24 cursor-pointer"
@@ -155,45 +160,47 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
             )}
           </td>
           {/* Actions */}
-          <td className="border border-gray-300 p-2 text-center w-32 flex items-center justify-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              title="Add row below"
-              onClick={() => addRowBelow(rate.id)}
-            >
-              <Plus className="h-4 w-4 text-green-600" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this exchange rate? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteRow(rate.id)}
-                    className="bg-red-600 hover:bg-red-700"
+          <td className="border border-gray-300 p-2 text-center w-32">
+            <div className="flex items-center justify-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Add row below"
+                onClick={() => addRowBelow(rate.id)}
+              >
+                <Plus className="h-4 w-4 text-green-600" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Delete"
                   >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this exchange rate? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteRow(rate.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </td>
         </tr>
       ))}
