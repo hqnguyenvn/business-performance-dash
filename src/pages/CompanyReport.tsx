@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -266,8 +265,6 @@ const CompanyReport = () => {
               startIndex={1}
               endIndex={groupedData.length}
               bonusRate={bonusRate}
-              // Giao diện Table reuse - cột nhóm sẽ là company_code
-              groupBy="company"
             />
           </CardContent>
         </Card>
