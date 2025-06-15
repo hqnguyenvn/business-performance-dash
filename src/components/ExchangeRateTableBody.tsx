@@ -163,13 +163,14 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
           <td className="border border-gray-300 p-2 text-center w-32">
             <div className="flex items-center justify-center gap-1">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 className="h-8 w-8"
                 title="Add row below"
                 onClick={() => addRowBelow(rate.id)}
+                tabIndex={0}
               >
-                <Plus className="h-4 w-4 text-green-600" />
+                <Plus className="h-4 w-4" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
