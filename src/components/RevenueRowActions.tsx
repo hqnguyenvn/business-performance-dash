@@ -92,7 +92,8 @@ const RevenueRowActions: React.FC<RevenueRowActionsProps> = ({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => onDeleteRevenue(revenue.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="!bg-destructive !text-destructive-foreground !hover:bg-destructive/90 px-4 py-2 rounded-md font-semibold"
+              style={{ minWidth: 80 }}
             >
               Delete
             </AlertDialogAction>
@@ -104,3 +105,4 @@ const RevenueRowActions: React.FC<RevenueRowActionsProps> = ({
 };
 
 export default RevenueRowActions;
+
