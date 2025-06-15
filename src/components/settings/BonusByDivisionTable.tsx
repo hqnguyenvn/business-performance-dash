@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import BonusByDivisionRow from "./BonusByDivisionRow";
 import BonusByDivisionEditRow from "./BonusByDivisionEditRow";
 import BonusByDivisionNewRow from "./BonusByDivisionNewRow";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Helper để hiển thị tên division từ division_id.
 const getDivisionDisplay = (divisions: MasterData[], id: string) => {
@@ -245,7 +247,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Bonus by Division</CardTitle>
+        <CardTitle>Bonus by D</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -296,7 +298,22 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   Notes
                 </TableHead>
                 <TableHead className="border border-gray-300 text-center w-28">
-                  Actions
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Actions</span>
+                    {/* Nút (+) chỉ cho thêm mới nếu chưa có dòng thêm mới hiện tại */}
+                    {editingRowId === null && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="ml-1 h-6 w-6 p-0"
+                        onClick={onAddNew}
+                        title="Add new row"
+                      >
+                        <Plus size={16} />
+                      </Button>
+                    )}
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
