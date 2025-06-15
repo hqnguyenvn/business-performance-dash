@@ -138,7 +138,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
         <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
           <Button
             size="icon"
-            variant="ghost"
+            variant="outline"
             className="h-8 w-8"
             title="Add row after"
             onClick={e => {
@@ -146,7 +146,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
               onAddRowAfter(row.id);
             }}
           >
-            <Plus size={18} />
+            <Plus className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
