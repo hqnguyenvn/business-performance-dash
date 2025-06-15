@@ -1,10 +1,8 @@
-
-import React from "react";
-import { TableRow, TableCell } from "@/components/ui/table";
+import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatNumber } from "@/lib/format";
 
 interface MasterData {
   id: string;
@@ -34,69 +31,140 @@ interface ExchangeRateDisplay {
 }
 
 interface ExchangeRateTableBodyProps {
-  paginatedData: ExchangeRateDisplay[];
-  updateExchangeRate: (id: string, field: keyof ExchangeRateDisplay, value: string | number) => void;
-  handleExchangeRateChange: (id: string, value: string) => void;
-  deleteExchangeRate: (id: string) => void;
+  data: ExchangeRateDisplay[];
+  setEditingCell: React.Dispatch<React.SetStateAction<{id: string, field: keyof ExchangeRateDisplay | null} | null>>;
+  editingCell: {id: string, field: keyof ExchangeRateDisplay | null} | null;
+  onEditCell: (id: string, field: keyof ExchangeRateDisplay) => void;
+  onBlurCell: () => void;
+  saveCell: (id: string, field: keyof ExchangeRateDisplay, value: string | number) => void;
+  deleteRow: (id: string) => void;
+  addRowBelow: (id: string) => void;
   currencies: MasterData[];
   MONTHS: string[];
 }
 
 const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
-  paginatedData,
-  updateExchangeRate,
-  handleExchangeRateChange,
-  deleteExchangeRate,
+  data,
+  setEditingCell,
+  editingCell,
+  onEditCell,
+  onBlurCell,
+  saveCell,
+  deleteRow,
+  addRowBelow,
   currencies,
-  MONTHS
+  MONTHS,
 }) => {
+  const inputRefs = useRef({} as any);
+
   return (
-    <>
-      {paginatedData.map((rate) => (
-        <TableRow key={rate.id} className="hover:bg-gray-50">
-          <TableCell className="border border-gray-300 p-1 w-24">
-            <Input
-              type="number"
-              value={rate.year}
-              onChange={(e) => updateExchangeRate(rate.id, 'year', parseInt(e.target.value) || 0)}
-              className="border-0 p-1 h-8"
-              onFocus={(e) => e.target.select()}
-            />
-          </TableCell>
-          <TableCell className="border border-gray-300 p-1 w-24">
-            <Select value={rate.month} onValueChange={(value) => updateExchangeRate(rate.id, 'month', value)}>
-              <SelectTrigger className="border-0 p-1 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map(month => (
-                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </TableCell>
-          <TableCell className="border border-gray-300 p-1 w-40">
-            <Select value={rate.currencyID} onValueChange={(value) => updateExchangeRate(rate.id, 'currencyID', value)}>
-              <SelectTrigger className="border-0 p-1 h-8">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map(currency => (
-                  <SelectItem key={currency.id} value={currency.code}>{currency.code} - {currency.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </TableCell>
-          <TableCell className="border border-gray-300 p-1 w-40 text-right">
-            <Input
-              type="text"
-              value={formatNumber(rate.exchangeRate)}
-              onChange={(e) => handleExchangeRateChange(rate.id, e.target.value)}
-              className="border-0 p-1 h-8 text-right"
-              onFocus={(e) => e.target.select()}
-            />
-          </TableCell>
-          <TableCell className="border border-gray-300 p-2 text-center w-32">
+    <tbody>
+      {data.map((rate, idx) => (
+        <tr key={rate.id} className="hover:bg-gray-50">
+          {/* Year */}
+          <td
+            className="border border-gray-300 p-1 w-24 cursor-pointer"
+            onClick={() => onEditCell(rate.id, "year")}
+          >
+            {editingCell?.id === rate.id && editingCell?.field === "year" ? (
+              <Input
+                type="number"
+                autoFocus
+                value={rate.year}
+                onChange={(e) => saveCell(rate.id, "year", parseInt(e.target.value) || 0)}
+                onBlur={onBlurCell}
+                className="border-0 p-1 h-8"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === "Tab") onBlurCell();
+                  else if (e.key === "Escape") onBlurCell();
+                }}
+              />
+            ) : (
+              <span>{rate.year}</span>
+            )}
+          </td>
+          {/* Month */}
+          <td
+            className="border border-gray-300 p-1 w-24 cursor-pointer"
+            onClick={() => onEditCell(rate.id, "month")}
+          >
+            {editingCell?.id === rate.id && editingCell?.field === "month" ? (
+              <Select value={rate.month} onValueChange={(value) => {saveCell(rate.id, "month", value); onBlurCell();}} open={true}>
+                <SelectTrigger className="border-0 p-1 h-8" autoFocus>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map(month => (
+                    <SelectItem key={month} value={month}>{month}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span>{rate.month}</span>
+            )}
+          </td>
+          {/* Currency Code */}
+          <td
+            className="border border-gray-300 p-1 w-40 cursor-pointer"
+            onClick={() => onEditCell(rate.id, "currencyID")}
+          >
+            {editingCell?.id === rate.id && editingCell?.field === "currencyID" ? (
+              <Select value={rate.currencyID} onValueChange={(value) => {saveCell(rate.id, "currencyID", value); onBlurCell();}} open={true}>
+                <SelectTrigger className="border-0 p-1 h-8" autoFocus>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map(currency => (
+                    <SelectItem key={currency.id} value={currency.code}>{currency.code} - {currency.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span>
+                {currencies.find((c) => c.code === rate.currencyID)?.code || ""}
+                {currencies.find((c) => c.code === rate.currencyID)?.name ? ` - ${currencies.find((c) => c.code === rate.currencyID)?.name}` : ""}
+              </span>
+            )}
+          </td>
+          {/* Exchange Rate */}
+          <td
+            className="border border-gray-300 p-1 w-40 text-right cursor-pointer"
+            onClick={() => onEditCell(rate.id, "exchangeRate")}
+          >
+            {editingCell?.id === rate.id && editingCell?.field === "exchangeRate" ? (
+              <Input
+                type="number"
+                step="0.1"
+                autoFocus
+                value={rate.exchangeRate}
+                onChange={(e) => {
+                  let val = parseFloat(e.target.value);
+                  if (isNaN(val)) val = 0;
+                  // Always keep 1 decimal
+                  saveCell(rate.id, "exchangeRate", Math.round(val * 10) / 10);
+                }}
+                onBlur={onBlurCell}
+                className="border-0 p-1 h-8 text-right"
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === "Tab") onBlurCell();
+                  else if (e.key === "Escape") onBlurCell();
+                }}
+              />
+            ) : (
+              <span>{Number(rate.exchangeRate).toFixed(1)}</span>
+            )}
+          </td>
+          {/* Actions */}
+          <td className="border border-gray-300 p-2 text-center w-32 flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Add row below"
+              onClick={() => addRowBelow(rate.id)}
+            >
+              <Plus className="h-4 w-4 text-green-600" />
+            </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -118,7 +186,7 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => deleteExchangeRate(rate.id)}
+                    onClick={() => deleteRow(rate.id)}
                     className="bg-red-600 hover:bg-red-700"
                   >
                     Delete
@@ -126,10 +194,10 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </TableCell>
-        </TableRow>
+          </td>
+        </tr>
       ))}
-    </>
+    </tbody>
   );
 };
 

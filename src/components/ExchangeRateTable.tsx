@@ -1,13 +1,8 @@
 
-import React, { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
-import { formatNumber, parseFormattedNumber } from "@/lib/format";
-import { usePagination } from "@/hooks/usePagination";
-import PaginationControls from "@/components/PaginationControls";
 import ExchangeRateTableHead from "./ExchangeRateTableHead";
 import ExchangeRateTableBody from "./ExchangeRateTableBody";
 
@@ -26,140 +21,143 @@ interface ExchangeRateTableProps {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({ 
-  exchangeRates, 
-  setExchangeRates, 
-  currencies 
+const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
+  exchangeRates,
+  setExchangeRates,
+  currencies,
 }) => {
   const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
+  // Track editing cell: {id, field}
+  const [editingCell, setEditingCell] = useState<{
+    id: string;
+    field: keyof ExchangeRateDisplay | null;
+  } | null>(null);
 
-  const {
-    currentPage,
-    totalPages,
-    paginatedData,
-    goToPage,
-    goToNextPage,
-    goToPreviousPage,
-    totalItems,
-    startIndex,
-    endIndex,
-  } = usePagination({ data: exchangeRates });
-
-  const addNewExchangeRate = useCallback(() => {
+  // Add row BELOW given id, or append if id === null
+  const addExchangeRateBelow = useCallback((afterId: string | null) => {
     const newRate: ExchangeRateDisplay = {
-      id: Date.now().toString(), // Temporary ID
+      id: Date.now().toString(),
       year: new Date().getFullYear(),
       month: "Jan",
       currencyID: "",
       exchangeRate: 0,
     };
-    setExchangeRates(prev => [...prev, newRate]);
+    setExchangeRates((prev) => {
+      if (!afterId) return [...prev, newRate];
+      const idx = prev.findIndex((item) => item.id === afterId);
+      if (idx === -1) return [...prev, newRate];
+      const newArr = [...prev.slice(0, idx + 1), newRate, ...prev.slice(idx + 1)];
+      return newArr;
+    });
+    // focus cell mới: year
+    setTimeout(() => {
+      setEditingCell({ id: newRate.id, field: "year" });
+    }, 100);
   }, [setExchangeRates]);
 
-  const updateExchangeRate = useCallback((id: string, field: keyof ExchangeRateDisplay, value: string | number) => {
-    setExchangeRates(prev => prev.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  }, [setExchangeRates]);
-
-  const handleExchangeRateChange = useCallback((id: string, value: string) => {
-    const numericValue = parseFormattedNumber(value);
-    updateExchangeRate(id, 'exchangeRate', numericValue);
-  }, [updateExchangeRate]);
-
-  const deleteExchangeRate = useCallback(async (id: string) => {
-    try {
-      const isNewItem = !isNaN(Number(id));
-      if (!isNewItem) {
-        await exchangeRateService.delete(id);
-      }
-      setExchangeRates(prev => prev.filter(item => item.id !== id));
-      toast({
-        title: "Deleted",
-        description: "Exchange rate deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete exchange rate",
-        variant: "destructive",
-      });
-    }
-  }, [setExchangeRates, toast]);
-
-  const saveData = useCallback(async () => {
-    try {
-      setSaving(true);
-      const promises = exchangeRates.map(async (item) => {
-        const isNewItem = !isNaN(Number(item.id));
-        if (isNewItem && item.currencyID) {
-          const { id, ...itemData } = item;
-          return await exchangeRateService.create(itemData);
-        } else if (!isNewItem && item.currencyID) {
-          return await exchangeRateService.update(item.id, item);
+  // Inline edit-saving: on change cell AND on blur/enter sẽ gọi save (auto)
+  const saveCell = useCallback(
+    async (id: string, field: keyof ExchangeRateDisplay, value: string | number) => {
+      // Update local state
+      setExchangeRates((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      );
+      // Save to server nếu đủ thông tin
+      const row = exchangeRates.find((item) => item.id === id);
+      const isNew = !isNaN(Number(id));
+      // Merge updated field
+      const newRow = row ? { ...row, [field]: value } : undefined;
+      // Chỉ lưu khi có currencyID
+      if (!newRow || !newRow.currencyID) return;
+      try {
+        let updated: ExchangeRateDisplay | undefined = undefined;
+        if (isNew) {
+          // Thêm mới bản ghi
+          const { id, ...createData } = newRow;
+          updated = await exchangeRateService.create(createData);
+        } else {
+          updated = await exchangeRateService.update(id, { [field]: value, ...newRow });
         }
-        return item;
-      });
+        if (updated) {
+          setExchangeRates((prev) =>
+            prev.map((item) => (item.id === id ? updated : item))
+          );
+          toast({
+            title: "Saved",
+            description: "Đã lưu tỉ giá thành công",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: "Lưu tỉ giá thất bại",
+          variant: "destructive",
+        });
+      }
+    },
+    [exchangeRates, setExchangeRates, toast]
+  );
 
-      const results = await Promise.all(promises);
-      setExchangeRates(results.filter(Boolean));
-      toast({
-        title: "Saved",
-        description: "Exchange rate data saved successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save exchange rate data",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [exchangeRates, setExchangeRates, toast]);
+  // Xoá dòng
+  const deleteExchangeRate = useCallback(
+    async (id: string) => {
+      try {
+        const isNewItem = !isNaN(Number(id));
+        if (!isNewItem) {
+          await exchangeRateService.delete(id);
+        }
+        setExchangeRates((prev) => prev.filter((item) => item.id !== id));
+        toast({
+          title: "Đã xoá",
+          description: "Đã xoá tỉ giá thành công",
+        });
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: "Xoá tỉ giá thất bại",
+          variant: "destructive",
+        });
+      }
+    },
+    [setExchangeRates, toast]
+  );
+
+  // Chỉnh sửa cell
+  const handleEditCell = useCallback(
+    (id: string, field: keyof ExchangeRateDisplay) => {
+      setEditingCell({ id, field });
+    },
+    []
+  );
+
+  // Nhấn Enter/Escape ngoài cell: lưu/huỷ
+  const handleBlurCell = useCallback(() => setEditingCell(null), []);
 
   return (
     <Card className="bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Exchange Rate List</CardTitle>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={saveData} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-            <Button onClick={addNewExchangeRate}>
-              Add New
-            </Button>
-          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <Table>
-            <ExchangeRateTableHead addNewExchangeRate={addNewExchangeRate} />
-            <TableBody>
-              <ExchangeRateTableBody
-                paginatedData={paginatedData}
-                updateExchangeRate={updateExchangeRate}
-                handleExchangeRateChange={handleExchangeRateChange}
-                deleteExchangeRate={deleteExchangeRate}
-                currencies={currencies}
-                MONTHS={MONTHS}
-              />
-            </TableBody>
-          </Table>
+          <table className="w-full border-collapse text-sm">
+            <ExchangeRateTableHead />
+            <ExchangeRateTableBody
+              data={exchangeRates}
+              setEditingCell={setEditingCell}
+              editingCell={editingCell}
+              onEditCell={handleEditCell}
+              onBlurCell={handleBlurCell}
+              saveCell={saveCell}
+              deleteRow={deleteExchangeRate}
+              addRowBelow={addExchangeRateBelow}
+              currencies={currencies}
+              MONTHS={MONTHS}
+            />
+          </table>
         </div>
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={goToPage}
-          onNextPage={goToNextPage}
-          onPreviousPage={goToPreviousPage}
-          totalItems={totalItems}
-          startIndex={startIndex}
-          endIndex={endIndex}
-        />
       </CardContent>
     </Card>
   );
