@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
+import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 
 // Define month info for filtering & display
 const MONTHS = [
@@ -197,6 +198,7 @@ const CustomerReport = () => {
   // Không dùng usePagination nữa
 
   const exportToCSV = () => {
+    exportCustomerReportCSV(groupedData, bonusRate);
     toast({
       title: "Export Successful",
       description: "Customer report has been successfully exported as a CSV file.",
