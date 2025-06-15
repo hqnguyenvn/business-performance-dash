@@ -55,6 +55,16 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   // Dữ liệu đã được filter và mapping lại index cho "No."
   const filteredData = filterRows(data);
 
+  // Handler khi nhấn Enter tại dòng new-row: gọi handleSaveNewRow nếu valid
+  const handleNewRowKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (e.key === "Enter") {
+      handleSaveNewRow();
+    }
+    if (e.key === "Escape") {
+      onCancelNewRow();
+    }
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -125,7 +135,6 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
             </TableHeader>
             <TableBody>
               {filteredData.map((row, idx) => {
-                // Sau dòng mà user bấm Add, sẽ hiển thị dòng nhập mới
                 const isInsertBelow = addingBelowIdx === idx;
 
                 return (
@@ -143,7 +152,8 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                     />
                     {isInsertBelow && (
                       <TableRow>
-                        <TableCell />
+                        {/* Số thứ tự: idx+2 vì thêm dưới idx */}
+                        <TableCell className="text-center font-medium">{idx + 2}</TableCell>
                         <TableCell className="p-1 text-center">
                           <input
                             type="number"
@@ -151,6 +161,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                             value={newRowCache.year ?? thisYear}
                             onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
                             autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
+                            onKeyDown={handleNewRowKeyDown}
                           />
                         </TableCell>
                         <TableCell className="p-1 text-center">
@@ -158,6 +169,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                             className="h-8 w-full border rounded px-2"
                             value={newRowCache.division_id ?? ''}
                             onChange={e => onNewRowFieldChange("division_id", e.target.value)}
+                            onKeyDown={handleNewRowKeyDown}
                           >
                             <option value="">Select</option>
                             {divisions.map(d => (
@@ -166,12 +178,18 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                           </select>
                         </TableCell>
                         <TableCell className="p-1 text-right">
+                          {/* Định dạng số với dấu phẩy, có thể nhập Enter để lưu */}
                           <input
                             type="text"
                             inputMode="decimal"
                             className="h-8 w-full border rounded text-right px-2"
-                            value={newRowCache.bn_bmm ?? ""}
-                            onChange={e => onNewRowFieldChange("bn_bmm", Number(e.target.value.replace(/,/g, '')))}
+                            value={(newRowCache.bn_bmm ?? "")?.toLocaleString?.() ?? ""}
+                            onChange={e => {
+                              // Giữ số, bỏ dấu phẩy khi lưu vào cache
+                              const val = e.target.value.replace(/,/g, "");
+                              onNewRowFieldChange("bn_bmm", Number(val));
+                            }}
+                            onKeyDown={handleNewRowKeyDown}
                           />
                         </TableCell>
                         <TableCell className="p-1">
@@ -179,6 +197,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                             className="h-8 w-full border rounded px-2"
                             value={newRowCache.notes ?? ""}
                             onChange={e => onNewRowFieldChange("notes", e.target.value)}
+                            onKeyDown={handleNewRowKeyDown}
                           />
                         </TableCell>
                         <TableCell className="p-1 text-center">
@@ -199,7 +218,8 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
               })}
               {addingBelowIdx === -1 && (
                 <TableRow>
-                  <TableCell />
+                  {/* Số thứ tự: 1 */}
+                  <TableCell className="text-center font-medium">1</TableCell>
                   <TableCell className="p-1 text-center">
                     <input
                       type="number"
@@ -207,6 +227,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       value={newRowCache.year ?? thisYear}
                       onChange={e => onNewRowFieldChange("year", Number(e.target.value))}
                       autoFocus={editingCell?.id === "new" && editingCell.field === "year"}
+                      onKeyDown={handleNewRowKeyDown}
                     />
                   </TableCell>
                   <TableCell className="p-1 text-center">
@@ -214,6 +235,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       className="h-8 w-full border rounded px-2"
                       value={newRowCache.division_id ?? ''}
                       onChange={e => onNewRowFieldChange("division_id", e.target.value)}
+                      onKeyDown={handleNewRowKeyDown}
                     >
                       <option value="">Select</option>
                       {divisions.map(d => (
@@ -226,8 +248,12 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       type="text"
                       inputMode="decimal"
                       className="h-8 w-full border rounded text-right px-2"
-                      value={newRowCache.bn_bmm ?? ""}
-                      onChange={e => onNewRowFieldChange("bn_bmm", Number(e.target.value.replace(/,/g, '')))}
+                      value={(newRowCache.bn_bmm ?? "")?.toLocaleString?.() ?? ""}
+                      onChange={e => {
+                        const val = e.target.value.replace(/,/g, "");
+                        onNewRowFieldChange("bn_bmm", Number(val));
+                      }}
+                      onKeyDown={handleNewRowKeyDown}
                     />
                   </TableCell>
                   <TableCell className="p-1">
@@ -235,6 +261,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                       className="h-8 w-full border rounded px-2"
                       value={newRowCache.notes ?? ""}
                       onChange={e => onNewRowFieldChange("notes", e.target.value)}
+                      onKeyDown={handleNewRowKeyDown}
                     />
                   </TableCell>
                   <TableCell className="p-1 text-center">
@@ -259,3 +286,4 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 };
 
 export default BonusByDivisionTable;
+
