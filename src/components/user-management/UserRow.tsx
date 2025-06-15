@@ -22,9 +22,10 @@ interface UserRowProps {
   user: UserRowType;
   roleOptions: AppRole[];
   onChange: () => void;
+  index?: number; // thêm index option, mặc định là 0 nếu không có
 }
 
-export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
+export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserRowType>>({});
   const [saving, setSaving] = useState(false);
@@ -113,6 +114,7 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
 
   return (
     <tr key={user.id}>
+      <td className="p-2 border text-center">{index !== undefined ? index + 1 : ""}</td>
       <td className="p-2 border">{user.email}</td>
       <td className="p-2 border">
         {editing ? (

@@ -94,6 +94,7 @@ export function UserManagementTable() {
         <table className="min-w-full border border-gray-200">
           <thead>
             <tr className="bg-gray-100">
+              <th className="p-2 border w-12 text-center">No.</th>
               <th className="p-2 border">Email</th>
               <th className="p-2 border">Full name</th>
               <th className="p-2 border">Role</th>
@@ -104,19 +105,20 @@ export function UserManagementTable() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-4 text-center">Loading...</td>
+                <td colSpan={6} className="p-4 text-center">Loading...</td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-4 text-center text-gray-500">
+                <td colSpan={6} className="p-4 text-center text-gray-500">
                   No users found.
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
+              users.map((user, idx) => (
                 <UserRow
                   key={user.id}
                   user={user}
+                  index={idx}
                   roleOptions={roleOptions}
                   onChange={fetchUsers}
                 />
