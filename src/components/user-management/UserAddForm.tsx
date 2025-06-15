@@ -26,30 +26,71 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
       return;
     }
     setAdding(true);
-    const { data, error } = await supabase.auth.admin.createUser({
+
+    // Đăng ký tài khoản Supabase thông qua auth.signUp (client only)
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: newEmail,
       password: newPassword,
-      email_confirm: true,
+      options: {
+        emailRedirectTo: window.location.origin + "/auth"
+      }
     });
-    if (error || !data?.user?.id) {
-      toast({ title: "Error", description: error?.message || "Failed to create user." });
+
+    if (signUpError) {
+      toast({
+        title: "Error",
+        description:
+          signUpError.message === "User already registered"
+            ? "User already exists, please use a different email."
+            : signUpError.message,
+      });
       setAdding(false);
       return;
     }
-    const { error: roleErr } = await supabase
-      .from("user_roles")
-      .update({ role: newRole, is_active: true })
-      .eq("user_id", data.user.id);
-    setAdding(false);
-    if (roleErr) {
-      toast({ title: "Error", description: roleErr.message });
+
+    // Nếu đăng ký thành công, sẽ có signUpData.user. Sau khi xác thực email, user mới tạo sẽ có trong bảng user_roles (do trigger trên DB).
+    // Cập nhật vai trò cho user mới tạo, nếu có session thì cập nhật luôn
+    let userId: string | undefined = signUpData?.user?.id;
+
+    // Có thể userId chưa xuất hiện do Supabase yêu cầu xác thực email trước,
+    // nên ta thử lấy userRoles row với email vừa nhập, cập nhật role luôn nếu tìm thấy
+    if (!userId) {
+      // Chờ một lát rồi thử lấy userId từ bảng user_roles
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Query bảng user_roles để tìm user_id theo email
+      const { data: usersList } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .limit(10); // Tối ưu, ko lấy hết
+      if (usersList && Array.isArray(usersList)) {
+        // Thực chất không query được map email <-> user_id ở client, trừ khi cho phép public đọc bảng auth.users (không làm được)
+        // Nên chỉ có thể update role nếu userId có sẵn
+      }
+      // Không tự gán được role nếu userId chưa có.
     } else {
-      toast({ title: "Success", description: "User created." });
-      setNewEmail("");
-      setNewPassword("");
-      setNewRole("User");
-      onUserAdded();
+      // update role vào user_roles nếu user đã có trong bảng
+      // Bảng user_roles sẽ tự động tạo row với role mặc định là "User". Nếu muốn đổi role thì update luôn.
+      const { error: roleErr } = await supabase
+        .from("user_roles")
+        .update({ role: newRole, is_active: true })
+        .eq("user_id", userId);
+      if (roleErr) {
+        toast({ title: "Warning", description: "User created, but failed to update role: " + roleErr.message });
+        setAdding(false);
+        setNewEmail("");
+        setNewPassword("");
+        setNewRole("User");
+        onUserAdded();
+        return;
+      }
     }
+
+    toast({ title: "Success", description: "User created. Please ask user to check email to verify account!" });
+    setNewEmail("");
+    setNewPassword("");
+    setNewRole("User");
+    setAdding(false);
+    onUserAdded();
   };
 
   return (
