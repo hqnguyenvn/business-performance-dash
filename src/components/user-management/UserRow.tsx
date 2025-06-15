@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,8 +110,13 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
               setEditForm((ef) => ({ ...ef, is_active: v === "true" }))
             }
           >
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
+            <SelectTrigger className="w-24">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Active</SelectItem>
+              <SelectItem value="false">Inactive</SelectItem>
+            </SelectContent>
           </Select>
         ) : user.is_active ? (
           "Active"
