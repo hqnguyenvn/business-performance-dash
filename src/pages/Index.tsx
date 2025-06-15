@@ -1,4 +1,3 @@
-
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Home, DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
@@ -38,8 +37,7 @@ const Index = () => {
   ];
 
   // States for filter block
-  const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number>(2024);
   const [selectedMonths, setSelectedMonths] = useState<number[]>([1,2,3,4,5,6]);
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
@@ -67,8 +65,8 @@ const Index = () => {
     );
   };
 
-  // Generate years for dropdown
-  const years = Array.from({ length: 6 }, (_, idx) => currentYear - 2 + idx);
+  // Generate years for dropdown: from 2020 to 2035
+  const years = Array.from({ length: 2035 - 2020 + 1 }, (_, idx) => 2020 + idx);
 
   return (
     <div className="min-h-screen bg-gray-50">
