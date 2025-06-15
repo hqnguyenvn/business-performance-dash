@@ -22,65 +22,77 @@ interface BonusByDivisionEditRowProps {
 
 const BonusByDivisionEditRow: React.FC<BonusByDivisionEditRowProps> = ({
   idx, editCache, row, divisions, onFieldChange, onSave, onCancel, saving
-}) => (
-  <TableRow>
-    <TableCell className="text-center font-medium">{idx + 1}</TableCell>
-    <TableCell className="p-1 text-center">
-      <Input
-        type="number"
-        value={editCache.year ?? row.year}
-        min={2020}
-        onChange={e => onFieldChange("year", Number(e.target.value))}
-        className="h-8 text-center"
-        disabled={saving}
-      />
-    </TableCell>
-    <TableCell className="p-1 text-center">
-      <Select
-        value={editCache.division_id ?? row.division_id}
-        onValueChange={v => onFieldChange("division_id", v)}
-        disabled={saving}
-      >
-        <SelectTrigger className="h-8">
-          <SelectValue placeholder="Select Division" />
-        </SelectTrigger>
-        <SelectContent>
-          {divisions.map(d => (
-            <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </TableCell>
-    <TableCell className="p-1 text-right">
-      <FormattedNumberInput
-        value={editCache.bn_bmm ?? row.bn_bmm}
-        onChange={v => onFieldChange("bn_bmm", v)}
-        disabled={saving}
-        uniqueKey={row.id}
-      />
-    </TableCell>
-    <TableCell className="p-1">
-      <Input
-        value={editCache.notes ?? row.notes ?? ""}
-        onChange={e => onFieldChange("notes", e.target.value)}
-        className="h-8"
-        disabled={saving}
-      />
-    </TableCell>
-    <TableCell className="p-1 text-center">
-      <div className="flex items-center justify-center gap-2">
-        {saving ? (
-          <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        ) : null}
-        <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
-          <Trash size={18} />
-        </Button>
-      </div>
-    </TableCell>
-  </TableRow>
-);
+}) => {
+  // Quản lý state tạm cho BN_BMM, sync từ prop
+  const [localBnBmm, setLocalBnBmm] = React.useState<number>(editCache.bn_bmm ?? row.bn_bmm);
+
+  // Nếu chuyển sang edit row khác thì reset local
+  React.useEffect(() => {
+    setLocalBnBmm(editCache.bn_bmm ?? row.bn_bmm);
+    // eslint-disable-next-line
+  }, [row.id, editCache.bn_bmm]);
+
+  return (
+    <TableRow>
+      <TableCell className="text-center font-medium">{idx + 1}</TableCell>
+      <TableCell className="p-1 text-center">
+        <Input
+          type="number"
+          value={editCache.year ?? row.year}
+          min={2020}
+          onChange={e => onFieldChange("year", Number(e.target.value))}
+          className="h-8 text-center"
+          disabled={saving}
+        />
+      </TableCell>
+      <TableCell className="p-1 text-center">
+        <Select
+          value={editCache.division_id ?? row.division_id}
+          onValueChange={v => onFieldChange("division_id", v)}
+          disabled={saving}
+        >
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder="Select Division" />
+          </SelectTrigger>
+          <SelectContent>
+            {divisions.map(d => (
+              <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="p-1 text-right">
+        <FormattedNumberInput
+          value={localBnBmm}
+          onChange={v => setLocalBnBmm(v)} // chỉ update state local khi nhập
+          onBlur={v => onFieldChange("bn_bmm", v)} // chỉ lưu lên server khi BLUR cell
+          disabled={saving}
+          uniqueKey={row.id}
+        />
+      </TableCell>
+      <TableCell className="p-1">
+        <Input
+          value={editCache.notes ?? row.notes ?? ""}
+          onChange={e => onFieldChange("notes", e.target.value)}
+          className="h-8"
+          disabled={saving}
+        />
+      </TableCell>
+      <TableCell className="p-1 text-center">
+        <div className="flex items-center justify-center gap-2">
+          {saving ? (
+            <svg className="animate-spin h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : null}
+          <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
+            <Trash size={18} />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 export default BonusByDivisionEditRow;

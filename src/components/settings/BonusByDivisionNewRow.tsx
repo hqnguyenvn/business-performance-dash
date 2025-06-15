@@ -20,58 +20,69 @@ interface BonusByDivisionNewRowProps {
 
 const BonusByDivisionNewRow: React.FC<BonusByDivisionNewRowProps> = ({
   divisions, editCache, onFieldChange, onSave, onCancel, thisYear
-}) => (
-  <TableRow>
-    <TableCell />
-    <TableCell className="p-1 text-center">
-      <Input
-        type="number"
-        value={editCache.year ?? thisYear}
-        min={2020}
-        onChange={e => onFieldChange("year", Number(e.target.value))}
-        className="h-8 text-center"
-      />
-    </TableCell>
-    <TableCell className="p-1 text-center">
-      <Select
-        value={editCache.division_id ?? ""}
-        onValueChange={v => onFieldChange("division_id", v)}
-      >
-        <SelectTrigger className="h-8">
-          <SelectValue placeholder="Select Division" />
-        </SelectTrigger>
-        <SelectContent>
-          {divisions.map(d => (
-            <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </TableCell>
-    <TableCell className="p-1 text-right">
-      <FormattedNumberInput
-        value={editCache.bn_bmm ?? 0}
-        onChange={v => onFieldChange("bn_bmm", v)}
-        uniqueKey={"new-row"} // nhận biết dòng mới
-      />
-    </TableCell>
-    <TableCell className="p-1">
-      <Input
-        value={editCache.notes ?? ""}
-        onChange={e => onFieldChange("notes", e.target.value)}
-        className="h-8"
-      />
-    </TableCell>
-    <TableCell className="p-1 text-center">
-      <div className="flex items-center justify-center gap-2">
-        <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={onSave}>
-          <Plus size={18} />
-        </Button>
-        <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
-          <Trash size={18} />
-        </Button>
-      </div>
-    </TableCell>
-  </TableRow>
-);
+}) => {
+  // State tạm cho BN_BMM (dòng mới)
+  const [localBnBmm, setLocalBnBmm] = React.useState<number>(editCache.bn_bmm ?? 0);
+
+  React.useEffect(() => {
+    setLocalBnBmm(editCache.bn_bmm ?? 0);
+    // eslint-disable-next-line
+  }, [editCache.bn_bmm]);
+
+  return (
+    <TableRow>
+      <TableCell />
+      <TableCell className="p-1 text-center">
+        <Input
+          type="number"
+          value={editCache.year ?? thisYear}
+          min={2020}
+          onChange={e => onFieldChange("year", Number(e.target.value))}
+          className="h-8 text-center"
+        />
+      </TableCell>
+      <TableCell className="p-1 text-center">
+        <Select
+          value={editCache.division_id ?? ""}
+          onValueChange={v => onFieldChange("division_id", v)}
+        >
+          <SelectTrigger className="h-8">
+            <SelectValue placeholder="Select Division" />
+          </SelectTrigger>
+          <SelectContent>
+            {divisions.map(d => (
+              <SelectItem key={d.id} value={d.id}>{d.code}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="p-1 text-right">
+        <FormattedNumberInput
+          value={localBnBmm}
+          onChange={v => setLocalBnBmm(v)}
+          onBlur={v => onFieldChange("bn_bmm", v)}
+          uniqueKey={"new-row"}
+        />
+      </TableCell>
+      <TableCell className="p-1">
+        <Input
+          value={editCache.notes ?? ""}
+          onChange={e => onFieldChange("notes", e.target.value)}
+          className="h-8"
+        />
+      </TableCell>
+      <TableCell className="p-1 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <Button size="icon" variant="outline" className="h-8 w-8" title="Save" onClick={onSave}>
+            <Plus size={18} />
+          </Button>
+          <Button variant="destructive" size="icon" className="h-8 w-8" title="Cancel" onClick={onCancel}>
+            <Trash size={18} />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 export default BonusByDivisionNewRow;
