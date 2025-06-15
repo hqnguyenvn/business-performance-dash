@@ -48,10 +48,26 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   const handleSave = async () => {
     try {
       if (!form.id) {
-        // Create
-        const added = await bonusByDivisionService.add(form);
-        setter(prev => [added, ...prev]);
-        toast({ title: "Success", description: "Created new entry" });
+        // Ensure all required fields before submit
+        if (
+          typeof form.year === "number" &&
+          typeof form.month === "number" &&
+          typeof form.division_id === "string" &&
+          typeof form.bn_bmm === "number"
+        ) {
+          const added = await bonusByDivisionService.add({
+            year: form.year,
+            month: form.month,
+            division_id: form.division_id,
+            bn_bmm: form.bn_bmm,
+            notes: form.notes ?? "",
+          });
+          setter(prev => [added, ...prev]);
+          toast({ title: "Success", description: "Created new entry" });
+        } else {
+          toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
+          return;
+        }
       } else {
         // Update
         const updated = await bonusByDivisionService.update(form.id, form);
@@ -250,3 +266,4 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 };
 
 export default BonusByDivisionTable;
+
