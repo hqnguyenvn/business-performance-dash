@@ -25,20 +25,55 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
 }) => {
   const isEditing = (field: keyof BonusByDivision) => editingCell?.id === row.id && editingCell.field === field;
 
-  // State tạm cho từng cell editing
-  const [editYear, setEditYear] = React.useState(row.year);
-  const [editDivision, setEditDivision] = React.useState(row.division_id);
-  const [editBnm, setEditBnm] = React.useState(row.bn_bmm);
-  const [editNotes, setEditNotes] = React.useState(row.notes ?? "");
+  // State local mỗi khi bắt đầu edit một cell
+  const [tempValue, setTempValue] = React.useState<any>(null);
 
-  // Reset khi sang row khác
   React.useEffect(() => {
-    setEditYear(row.year);
-    setEditDivision(row.division_id);
-    setEditBnm(row.bn_bmm);
-    setEditNotes(row.notes ?? "");
-    // eslint-disable-next-line
-  }, [row.id]);
+    // Khi row id hoặc trường edit đổi, lấy lại giá trị gốc để show vào input
+    if (editingCell?.id === row.id) {
+      switch (editingCell.field) {
+        case "year":
+          setTempValue(row.year);
+          break;
+        case "division_id":
+          setTempValue(row.division_id);
+          break;
+        case "bn_bmm":
+          setTempValue(row.bn_bmm);
+          break;
+        case "notes":
+          setTempValue(row.notes ?? "");
+          break;
+        default:
+          setTempValue(null);
+      }
+    } else {
+      setTempValue(null);
+    }
+  }, [editingCell, row]);
+
+  // Handler chung cho sự kiện blur: save giá trị và thoát edit
+  const handleCellBlur = (field: keyof BonusByDivision) => {
+    if (editingCell?.id === row.id && editingCell.field === field) {
+      // BN_BMM cần parse về number nếu cần
+      let value = tempValue;
+      if (field === "bn_bmm") {
+        value = typeof value === "number" ? value : Number(value);
+      }
+      saveCell(row.id, field, value);
+      onBlurCell();
+    }
+  };
+
+  // Handler cho nhấn Enter để save (giống Exchange Rate)
+  const handleKeyDown = (event: React.KeyboardEvent, field: keyof BonusByDivision) => {
+    if (event.key === "Enter") {
+      handleCellBlur(field);
+    }
+    if (event.key === "Escape") {
+      onBlurCell();
+    }
+  };
 
   return (
     <TableRow className={`group`}>
@@ -48,9 +83,10 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
           <input
             type="number"
             className="h-8 w-full border rounded text-center px-2"
-            value={editYear}
-            onChange={e => setEditYear(Number(e.target.value))}
-            onBlur={() => { saveCell(row.id, "year", editYear); onBlurCell(); }}
+            value={tempValue ?? ""}
+            onChange={e => setTempValue(Number(e.target.value))}
+            onBlur={() => handleCellBlur("year")}
+            onKeyDown={e => handleKeyDown(e, "year")}
             autoFocus
           />
         ) : (
@@ -61,9 +97,10 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
         {isEditing("division_id") ? (
           <select
             className="h-8 w-full border rounded px-2"
-            value={editDivision}
-            onChange={e => setEditDivision(e.target.value)}
-            onBlur={() => { saveCell(row.id, "division_id", editDivision); onBlurCell(); }}
+            value={tempValue ?? ""}
+            onChange={e => setTempValue(e.target.value)}
+            onBlur={() => handleCellBlur("division_id")}
+            onKeyDown={e => handleKeyDown(e as any, "division_id")}
             autoFocus
           >
             {divisions.map(d => (
@@ -79,10 +116,13 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
       <TableCell className="text-right p-1">
         {isEditing("bn_bmm") ? (
           <FormattedNumberInput
-            value={editBnm}
-            onChange={v => setEditBnm(v)}
-            onBlur={v => { saveCell(row.id, "bn_bmm", v); onBlurCell(); }}
-            uniqueKey={row.id}
+            value={typeof tempValue === "number" ? tempValue : 0}
+            onChange={v => setTempValue(v)}
+            onBlur={v => {
+              setTempValue(v); // Sync lại nếu có thay đổi ở input
+              handleCellBlur("bn_bmm");
+            }}
+            uniqueKey={row.id + "-bn-bmm"}
           />
         ) : (
           <div className="cursor-pointer" tabIndex={0} onClick={() => onEditCell(row.id, "bn_bmm")}>
@@ -94,9 +134,10 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
         {isEditing("notes") ? (
           <input
             className="h-8 w-full border rounded px-2"
-            value={editNotes}
-            onChange={e => setEditNotes(e.target.value)}
-            onBlur={() => { saveCell(row.id, "notes", editNotes); onBlurCell(); }}
+            value={tempValue ?? ""}
+            onChange={e => setTempValue(e.target.value)}
+            onBlur={() => handleCellBlur("notes")}
+            onKeyDown={e => handleKeyDown(e, "notes")}
             autoFocus
           />
         ) : (
@@ -140,3 +181,4 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
 };
 
 export default BonusByDivisionRow;
+
