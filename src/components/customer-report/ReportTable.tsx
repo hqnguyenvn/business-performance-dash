@@ -1,4 +1,3 @@
-
 import PaginationControls from "@/components/PaginationControls";
 
 export interface GroupedCustomerData {
@@ -11,6 +10,7 @@ export interface GroupedCustomerData {
   bmm: number;
   revenue: number;
   salaryCost?: number;
+  overheadCost?: number;
 }
 
 interface ReportTableProps {
@@ -50,16 +50,17 @@ export function ReportTable({
             <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
             <th className="border border-gray-300 p-2 text-right font-medium">Salary Cost</th>
+            <th className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} className="p-8 text-center text-gray-500">Loading...</td>
+              <td colSpan={6} className="p-8 text-center text-gray-500">Loading...</td>
             </tr>
           ) : paginatedData.length === 0 ? (
             <tr>
-              <td colSpan={5} className="border border-gray-300 p-8 text-center text-gray-500">
+              <td colSpan={6} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </td>
             </tr>
@@ -71,6 +72,7 @@ export function ReportTable({
                 <td className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</td>
                 <td className="border border-gray-300 p-2 text-right">{data.revenue.toLocaleString()}</td>
                 <td className="border border-gray-300 p-2 text-right">{(data.salaryCost ?? 0).toLocaleString()}</td>
+                <td className="border border-gray-300 p-2 text-right">{(data.overheadCost ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
               </tr>
             ))
           )}

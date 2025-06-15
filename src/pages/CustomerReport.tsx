@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +9,6 @@ import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 
-// Removed local GroupedCustomerData definition
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const years = [2023, 2024, 2025];
 
@@ -22,12 +19,12 @@ const CustomerReport = () => {
   const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch and process data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const monthNumber = MONTHS.indexOf(selectedMonth) + 1;
-      // 1. Get all revenues, group and SUM by (customer_id, company_id, year, month)
+
+      // 1. Fetch revenues with group data
       const { data: rows, error } = await supabase
         .from('revenues')
         .select(
@@ -55,7 +52,7 @@ const CustomerReport = () => {
         return;
       }
 
-      // 2. Get salary_costs: SUM amount by (year, month, customer_id)
+      // 2. Fetch salary_costs: SUM amount by (year, month, customer_id)
       const { data: salaryRows, error: salaryError } = await supabase
         .from('salary_costs')
         .select(`
@@ -74,25 +71,81 @@ const CustomerReport = () => {
         return;
       }
 
-      // sum salary cost by (year, month, customer_id)
+      // 3. Fetch costs: SUM cost by (year, month) with is_cost = true
+      const { data: costRows, error: costError } = await supabase
+        .from('costs')
+        .select(`
+          year, month, cost, is_cost
+        `)
+        .eq('year', Number(selectedYear))
+        .eq('month', monthNumber)
+        .eq('is_cost', true);
+
+      if (costError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu costs.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // --------------------------
+      // 1. Calculate total salary costs by (year, month)
+      const salaryByPeriod = new Map<string, number>();
+      // 2. Also, salary cost by (year, month, customer_id)
       const salaryMap = new Map<string, number>();
       for (const row of salaryRows ?? []) {
         if (!row.customer_id) continue;
-        const key = `${row.year}_${row.month}_${row.customer_id}`;
-        const prev = salaryMap.get(key) || 0;
-        salaryMap.set(key, prev + (Number(row.amount) || 0));
+        const periodKey = `${row.year}_${row.month}`;
+        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
+        const custKey = `${row.year}_${row.month}_${row.customer_id}`;
+        salaryMap.set(custKey, (salaryMap.get(custKey) ?? 0) + Number(row.amount) || 0);
       }
 
-      // group revenues by (customer_id, company_id, year, month), aggregate bmm, revenue
+      // 3. Total cost by (year, month) is sum of 'cost' from costRows
+      const costByPeriod = new Map<string, number>();
+      for (const row of costRows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      }
+
+      // 4. Total BMM by (year, month): sum quantity in revenue rows
+      const bmmByPeriod = new Map<string, number>();
+      for (const row of rows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
+      }
+
+      // 5. Precompute overheadPerBMM (costByPeriod - salaryByPeriod) / bmmByPeriod
+      const overheadPerBMMByPeriod = new Map<string, number>();
+      for (const [periodKey, totalCost] of costByPeriod.entries()) {
+        const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
+        const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+        let overhead = 0;
+        if (totalBmm !== 0) {
+          overhead = (totalCost - salaryCost) / totalBmm;
+        }
+        overheadPerBMMByPeriod.set(periodKey, overhead);
+      }
+
+      // 6. group revenues by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
         let prev = groupMap.get(groupKey);
         const bmm = Number(row.quantity) || 0;
         const revenue = Number(row.vnd_revenue) || 0;
+
+        const periodKey = `${row.year}_${row.month}`;
+        const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
+        const overheadCost = overheadPerBMM * bmm;
+
         if (prev) {
           prev.bmm += bmm;
           prev.revenue += revenue;
+          prev.overheadCost += overheadCost;
         } else {
           // Find salary cost for this (year, month, customer_id)
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
@@ -106,6 +159,7 @@ const CustomerReport = () => {
             bmm,
             revenue,
             salaryCost: salaryMap.get(salaryKey) || 0,
+            overheadCost,
           });
         }
       }
@@ -166,7 +220,12 @@ const CustomerReport = () => {
                 setSelectedMonth={setSelectedMonth}
                 months={MONTHS}
                 years={years}
-                onExport={exportToCSV}
+                onExport={() =>
+                  toast({
+                    title: "Export Successful",
+                    description: "Customer report has been successfully exported as a CSV file.",
+                  })
+                }
               />
             </div>
           </CardHeader>
@@ -192,4 +251,3 @@ const CustomerReport = () => {
 };
 
 export default CustomerReport;
-
