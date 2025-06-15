@@ -1,54 +1,13 @@
-import React, { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button";
+
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
-  TableHeader,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell
+  TableBody
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useTableFilter } from "@/hooks/useTableFilter";
-import { usePagination } from "@/hooks/usePagination";
-import PaginationControls from "@/components/PaginationControls";
+import MasterDataTableHead from "./MasterDataTableHead";
 import MasterDataTableBody from "./MasterDataTableBody";
-
-interface MasterData {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  company_id?: string;
-  customer_id?: string;
-}
-
-interface MasterDataService {
-  create: (item: Omit<MasterData, 'id'>) => Promise<MasterData>;
-  update: (id: string, item: Partial<MasterData>) => Promise<MasterData>;
-  delete: (id: string) => Promise<void>;
-}
+import { useMasterDataTableLogic, MasterData, MasterDataService } from "./useMasterDataTableLogic";
 
 interface MasterDataTableProps {
   data: MasterData[];
@@ -61,148 +20,35 @@ interface MasterDataTableProps {
   service: MasterDataService;
 }
 
-const MasterDataTable: React.FC<MasterDataTableProps> = ({ 
-  data, 
-  setter, 
-  title, 
+const MasterDataTable: React.FC<MasterDataTableProps> = ({
+  data,
+  setter,
+  title,
   showCompanyColumn = false,
   showCustomerColumn = false,
   companies = [],
   customers = [],
-  service
+  service,
 }) => {
-  const { toast } = useToast();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  // Add table filtering
-  const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
-
-  // Add pagination
-  // const {
-  //   currentPage,
-  //   totalPages,
-  //   paginatedData,
-  //   goToPage,
-  //   goToNextPage,
-  //   goToPreviousPage,
-  //   totalItems,
-  //   startIndex,
-  //   endIndex,
-  // } = usePagination({ data: filteredData });
-
-  // Tạo state để giữ giá trị đang được chỉnh sửa tạm thời
-  const [editingCell, setEditingCell] = useState<{ id: string; field: keyof MasterData } | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
-
-  // Khi user thay đổi trường dữ liệu => tự động lưu
-  const handleCellEdit = useCallback(
-    async (id: string, field: keyof MasterData, value: string) => {
-      const oldItem: MasterData | undefined = data.find(item => item.id === id);
-      if (!oldItem) return;
-      // Update UI ngay lập tức
-      setter(prev => prev.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
-      ));
-
-      try {
-        const isTemporaryId = id.startsWith("tmp-"); // id tạm
-        if (!isTemporaryId) {
-          await service.update(id, { [field]: value });
-          toast({
-            title: "Saved",
-            description: "Data saved successfully.",
-          });
-        } else {
-          // Nếu là row mới => tạo mới. BỎ trường id ra khỏi payload!
-          const { id: _, ...toCreate } = { ...oldItem, [field]: value };
-          const created = await service.create(toCreate);
-          // Cập nhật lại id vừa được DB trả về
-          setter(prev =>
-            prev.map(item =>
-              item.id === id ? created : item
-            )
-          );
-          toast({
-            title: "Created",
-            description: "New item added and saved.",
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to save data.",
-          variant: "destructive"
-        });
-        // Rollback UI nếu lỗi:
-        setter(prev => prev.map(item =>
-          item.id === id ? { ...item, [field]: oldItem[field] } : item
-        ));
-      }
-    },
-    [data, service, setter, toast]
-  );
-
-  // Sửa lại hàm tạo row mới để id tránh trùng với UUID
-  const addNewItem = useCallback(() => {
-    const newItem: MasterData = {
-      id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
-      code: "",
-      name: "",
-      description: "",
-      ...(showCompanyColumn && { company_id: "" }),
-      ...(showCustomerColumn && { customer_id: "" }),
-    };
-    setter(prev => [...prev, newItem]);
-  }, [setter, showCompanyColumn, showCustomerColumn]);
-
-  const deleteItem = useCallback(async (id: string) => {
-    try {
-      const isNewItem = !isNaN(Number(id));
-      if (!isNewItem) {
-        await service.delete(id);
-      }
-      setter(prev => prev.filter(item => item.id !== id));
-      toast({
-        title: "Deleted",
-        description: "Item successfully deleted",
-      });
-      setDeleteId(null);
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete item",
-        variant: "destructive"
-      });
-    }
-  }, [setter, toast, service]);
-
-  const getCompanyName = (companyID: string) => {
-    const company = companies.find(c => c.id === companyID);
-    return company ? company.name : "";
-  };
-
-  const getCustomerName = (customerID: string) => {
-    const customer = customers.find(c => c.id === customerID);
-    return customer ? customer.name : "";
-  };
-
-  // Hàm chèn row mới ngay dưới dòng được chọn
-  const addRowBelow = useCallback((index: number) => {
-    const newItem: MasterData = {
-      id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
-      code: "",
-      name: "",
-      description: "",
-      ...(showCompanyColumn && { company_id: "" }),
-      ...(showCustomerColumn && { customer_id: "" }),
-    };
-    setter(prev => {
-      const next = [...prev];
-      next.splice(index + 1, 0, newItem);
-      return next;
-    });
-  }, [setter, showCompanyColumn, showCustomerColumn]);
+  const {
+    filteredData,
+    setFilter,
+    getActiveFilters,
+    handleCellEdit,
+    deleteItem,
+    addRowBelow,
+    addNewItem,
+    deleteId,
+    setDeleteId,
+  } = useMasterDataTableLogic({
+    data,
+    setter,
+    companies,
+    customers,
+    showCompanyColumn,
+    showCustomerColumn,
+    service,
+  });
 
   return (
     <Card className="bg-white">
@@ -214,70 +60,13 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="border border-gray-300 w-12 text-center">
-                  No.
-                </TableHead>
-                {showCompanyColumn && (
-                  <TableHead 
-                    className="border border-gray-300"
-                    showFilter={true}
-                    filterData={data}
-                    filterField="company_id"
-                    onFilter={setFilter}
-                    activeFilters={getActiveFilters("company_id")}
-                  >
-                    Company
-                  </TableHead>
-                )}
-                {showCustomerColumn && (
-                  <TableHead 
-                    className="border border-gray-300"
-                    showFilter={true}
-                    filterData={data}
-                    filterField="customer_id"
-                    onFilter={setFilter}
-                    activeFilters={getActiveFilters("customer_id")}
-                  >
-                    Customer
-                  </TableHead>
-                )}
-                <TableHead 
-                  className="border border-gray-300"
-                  showFilter={true}
-                  filterData={data}
-                  filterField="code"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters("code")}
-                >
-                  Code
-                </TableHead>
-                <TableHead 
-                  className="border border-gray-300"
-                  showFilter={true}
-                  filterData={data}
-                  filterField="name"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters("name")}
-                >
-                  Name
-                </TableHead>
-                <TableHead 
-                  className="border border-gray-300"
-                  showFilter={true}
-                  filterData={data}
-                  filterField="description"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters("description")}
-                >
-                  Description
-                </TableHead>
-                <TableHead className="border border-gray-300 text-center">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+            <MasterDataTableHead
+              showCompanyColumn={showCompanyColumn}
+              showCustomerColumn={showCustomerColumn}
+              data={data}
+              setFilter={setFilter}
+              getActiveFilters={getActiveFilters}
+            />
             <TableBody>
               <MasterDataTableBody
                 data={filteredData}
