@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatNumber } from "@/lib/format";
+import { formatNumberWithDecimals } from "@/lib/format";
 
 interface MasterData {
   id: string;
@@ -156,7 +156,7 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
                 }}
               />
             ) : (
-              <span>{formatNumber(rate.exchangeRate)}</span>
+              <span>{formatNumberWithDecimals(rate.exchangeRate, 2)}</span>
             )}
           </td>
           {/* Actions */}
