@@ -1,5 +1,5 @@
 
-import { Home, DollarSign, Receipt, Users, BarChart3, Settings, TrendingUp, Building } from "lucide-react";
+import { Home, DollarSign, Receipt, Users, BarChart3, Settings, TrendingUp, Building, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,6 +43,11 @@ const menuItems = [
     title: "Customer Report",
     url: "/customer-report",
     icon: TrendingUp,
+  },
+  {
+    title: "User Management",
+    url: "/user-management",
+    icon: Shield,
   },
   {
     title: "Settings",
