@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useMonthlyRevenueStats } from "@/hooks/useMonthlyRevenueStats";
 import { useTopCustomers } from "@/hooks/useTopCustomers";
 import { useState } from "react";
+import { formatNumber } from "@/lib/format";
 
 // Lấy context filter từ trang Index
 // -> Truyền props: selectedYear, selectedMonths từ Index xuống DashboardWidgets
@@ -86,7 +87,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
                       {index + 1}. {customer.customer_name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {Math.round(customer.totalRevenue / 1_000_000)}M VND
+                      {formatNumber(Math.round(customer.totalRevenue))} VND
                     </p>
                   </div>
                 </div>
