@@ -26,11 +26,11 @@ const CustomerReport = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("Jan");
 
-  // Mock data for demonstration
+  // Sample Data
   const customerData: CustomerData[] = [
     {
       customerID: "CUST001",
-      company: "Công ty ABC Technology",
+      company: "ABC Technology Co.",
       bmm: 12.5,
       revenue: 500000000,
       cost: 300000000,
@@ -89,8 +89,8 @@ const CustomerReport = () => {
 
   const exportToCSV = () => {
     toast({
-      title: "Xuất báo cáo",
-      description: "Đã xuất báo cáo khách hàng ra file CSV thành công",
+      title: "Export Successful",
+      description: "Customer report has been successfully exported as a CSV file.",
     });
   };
 
@@ -101,15 +101,9 @@ const CustomerReport = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
-        title="Báo cáo Khách hàng"
-        description="Báo cáo kết quả kinh doanh theo khách hàng"
+        title="Customer Report"
+        description="Business performance report by customer"
         icon={TrendingUp}
-        actions={
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Xuất CSV
-          </Button>
-        }
       />
 
       <div className="p-6">
@@ -119,7 +113,7 @@ const CustomerReport = () => {
               <div className="text-2xl font-bold text-blue-600">
                 {totalRevenue.toLocaleString()} VND
               </div>
-              <p className="text-sm text-gray-600">Tổng Doanh thu</p>
+              <p className="text-sm text-gray-600">Total Revenue</p>
             </CardContent>
           </Card>
           <Card className="bg-white">
@@ -127,7 +121,7 @@ const CustomerReport = () => {
               <div className="text-2xl font-bold text-green-600">
                 {totalProfit.toLocaleString()} VND
               </div>
-              <p className="text-sm text-gray-600">Tổng Lợi nhuận</p>
+              <p className="text-sm text-gray-600">Total Profit</p>
             </CardContent>
           </Card>
           <Card className="bg-white">
@@ -135,19 +129,19 @@ const CustomerReport = () => {
               <div className="text-2xl font-bold text-purple-600">
                 {totalBMM.toFixed(1)} BMM
               </div>
-              <p className="text-sm text-gray-600">Tổng BMM</p>
+              <p className="text-sm text-gray-600">Total BMM</p>
             </CardContent>
           </Card>
         </div>
 
         <Card className="bg-white">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Báo cáo theo Khách hàng</CardTitle>
-              <div className="flex gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle>Customer Report</CardTitle>
+              <div className="flex gap-4 items-center">
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Năm" />
+                    <SelectValue placeholder="Year" />
                   </SelectTrigger>
                   <SelectContent>
                     {[2023, 2024, 2025].map(year => (
@@ -157,7 +151,7 @@ const CustomerReport = () => {
                 </Select>
                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Tháng" />
+                    <SelectValue placeholder="Month" />
                   </SelectTrigger>
                   <SelectContent>
                     {MONTHS.map(month => (
@@ -165,6 +159,10 @@ const CustomerReport = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -173,35 +171,43 @@ const CustomerReport = () => {
               <table className="w-full border-collapse border border-gray-300">
                 <thead>
                   <tr className="bg-green-50">
-                    <th className="border border-gray-300 p-2 text-left font-medium">Mã KH</th>
-                    <th className="border border-gray-300 p-2 text-left font-medium">Công ty</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Customer ID</th>
+                    <th className="border border-gray-300 p-2 text-left font-medium">Company</th>
                     <th className="border border-gray-300 p-2 text-right font-medium">BMM</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Doanh thu</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Chi phí</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">Lợi nhuận</th>
-                    <th className="border border-gray-300 p-2 text-right font-medium">% Lợi nhuận</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Revenue</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Cost</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">Profit</th>
+                    <th className="border border-gray-300 p-2 text-right font-medium">% Profit</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedData.map((data) => (
-                    <tr key={data.customerID} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2 font-medium">{data.customerID}</td>
-                      <td className="border border-gray-300 p-2">{data.company}</td>
-                      <td className="border border-gray-300 p-2 text-right">{data.bmm}</td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {data.revenue.toLocaleString()}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {data.cost.toLocaleString()}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right text-green-600 font-medium">
-                        {data.profit.toLocaleString()}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {data.profitMargin.toFixed(1)}%
+                  {paginatedData.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
+                        No data matches the selected filters. Try adjusting the year or month selection.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedData.map((data) => (
+                      <tr key={data.customerID} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2 font-medium">{data.customerID}</td>
+                        <td className="border border-gray-300 p-2">{data.company}</td>
+                        <td className="border border-gray-300 p-2 text-right">{data.bmm}</td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {data.revenue.toLocaleString()}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {data.cost.toLocaleString()}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right text-green-600 font-medium">
+                          {data.profit.toLocaleString()}
+                        </td>
+                        <td className="border border-gray-300 p-2 text-right">
+                          {data.profitMargin.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -223,3 +229,4 @@ const CustomerReport = () => {
 };
 
 export default CustomerReport;
+
