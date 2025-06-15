@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MasterDataTable from "@/components/MasterDataTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
@@ -56,7 +57,7 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
         <TabsTrigger value="currencies">Currencies</TabsTrigger>
         <TabsTrigger value="costTypes">Cost Types</TabsTrigger>
         <TabsTrigger value="exchangeRates">Exchange Rates</TabsTrigger>
-        <TabsTrigger value="bonusByDivision">Bonus by Division</TabsTrigger>
+        <TabsTrigger value="bonusByDivision">Bonus by D</TabsTrigger>
       </TabsList>
 
       <TabsContent value="customers">
@@ -152,3 +153,4 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
     </Tabs>
   );
 };
+
