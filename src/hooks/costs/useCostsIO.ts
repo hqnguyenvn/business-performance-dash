@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { costService, NewCost } from "@/services/costService";
@@ -72,14 +71,6 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
       };
 
     const exportToCSV = () => {
-        if (!filteredCosts || filteredCosts.length === 0) {
-            toast({
-                title: "No Data to Export",
-                description: "There are no costs matching the current filters.",
-                variant: "destructive",
-            });
-            return;
-        }
         exportCSVUtil({
           costs: filteredCosts,
           costTypes,
@@ -87,7 +78,9 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
         });
         toast({
           title: "Export Initiated",
-          description: `An export of ${filteredCosts.length} cost records has started.`,
+          description: filteredCosts.length > 0
+            ? `An export of ${filteredCosts.length} cost records has started.`
+            : "Exported empty cost list with headers only.",
         });
     };
 
