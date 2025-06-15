@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { formatNumber } from "@/lib/format";
 
 interface MasterData {
   id: string;
@@ -156,7 +156,7 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
                 }}
               />
             ) : (
-              <span>{Number(rate.exchangeRate).toFixed(1)}</span>
+              <span>{formatNumber(rate.exchangeRate)}</span>
             )}
           </td>
           {/* Actions */}
