@@ -26,8 +26,15 @@ const DivisionReport = () => {
     selectedMonths
   });
 
+  // Map dữ liệu sang format ReportTable mong muốn: company_code => division_code
+  const mappedData = groupedData.map((row) => ({
+    ...row,
+    company_code: row.division_code, // Gắn division_code vào field company_code để tận dụng component hiện tại
+    company_id: row.division_id      // Trường company_id dùng cho key và filter
+  }));
+
   const exportToCSV = () => {
-    exportCustomerReportCSV(groupedData as any, bonusRate);
+    exportCustomerReportCSV(mappedData as any, bonusRate);
     toast({
       title: "Export Successful",
       description: "Division report has been successfully exported as a CSV file.",
@@ -81,18 +88,19 @@ const DivisionReport = () => {
           </CardHeader>
           <CardContent>
             <ReportTable
-              data={groupedData as any}
+              data={mappedData as any}
               loading={loading}
-              paginatedData={groupedData as any}
+              paginatedData={mappedData as any}
               currentPage={1}
               totalPages={1}
               goToPage={() => {}}
               goToNextPage={() => {}}
               goToPreviousPage={() => {}}
-              totalItems={groupedData.length}
+              totalItems={mappedData.length}
               startIndex={1}
-              endIndex={groupedData.length}
+              endIndex={mappedData.length}
               bonusRate={bonusRate}
+              // Không cần sửa thêm vì company_code bây giờ là division_code
             />
           </CardContent>
         </Card>
@@ -102,3 +110,4 @@ const DivisionReport = () => {
 };
 
 export default DivisionReport;
+

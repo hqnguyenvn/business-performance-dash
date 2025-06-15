@@ -71,6 +71,9 @@ export function ReportTable({
     clearAllFilters
   } = useTableFilter(data);
 
+  // Detect DivisionReport context by checking if company_code === division_code for 1st row
+  const isDivisionReport = data.length > 0 && data[0].company_code === data[0].division_code;
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -97,7 +100,7 @@ export function ReportTable({
               onFilter={setFilter}
               activeFilters={getActiveFilters("company_code")}
             >
-              Company
+              {isDivisionReport ? "Division" : "Company"}
             </TableHead>
             <TableHead
               className="border border-gray-300 p-2 text-left font-medium"
@@ -139,11 +142,10 @@ export function ReportTable({
               const revenue = data.revenue ?? 0;
               const profit = revenue - totalCost;
               const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
-              // Determine highlight if negative
               const negativeProfit = profit < 0;
               return (
                 <TableRow
-                  key={`${data.year}_${data.month}_${data.customer_id}_${data.company_id}`}
+                  key={`${data.year}_${data.month}_${data.customer_id ?? ""}_${data.company_id ?? ""}`}
                   className="hover:bg-gray-50"
                 >
                   <TableCell className="border border-gray-300 p-2 text-center">{idx + 1}</TableCell>
