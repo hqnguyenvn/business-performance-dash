@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { Input } from "@/components/ui/input";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -43,19 +44,41 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
     setEditForm((ef) => ({ ...ef, role }));
   };
 
+  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditForm((ef) => ({ ...ef, full_name: e.target.value }));
+  };
+
   const handleSave = async () => {
     if (!editForm) return;
     setSaving(true);
-    const { role, is_active } = editForm;
-    const { error } = await supabase
+    const { role, is_active, full_name } = editForm;
+
+    // Cập nhật user_roles
+    const { error: roleError } = await supabase
       .from("user_roles")
       .update({ role, is_active })
       .eq("id", user.id);
+
+    // Cập nhật profiles (cột full_name)
+    let profileError;
+    if (full_name !== undefined) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name })
+        .eq("id", user.user_id);
+      profileError = error;
+    }
+
     setSaving(false);
-    if (error) {
-      toast({ title: "Error", description: error.message });
+
+    if (roleError || profileError) {
+      toast({
+        title: "Error",
+        description: (roleError?.message || '') + (profileError ? " / " + profileError.message : ''),
+      });
       return;
     }
+
     toast({ title: "Success", description: "User updated." });
     setEditing(false);
     setEditForm({});
@@ -79,7 +102,19 @@ export function UserRow({ user, roleOptions, onChange }: UserRowProps) {
   return (
     <tr key={user.id}>
       <td className="p-2 border">{user.email}</td>
-      <td className="p-2 border">{user.full_name || ""}</td>
+      <td className="p-2 border">
+        {editing ? (
+          <Input
+            value={editForm.full_name ?? ""}
+            onChange={handleFullNameChange}
+            className="w-40"
+            disabled={saving}
+            placeholder="Enter full name"
+          />
+        ) : (
+          user.full_name || ""
+        )}
+      </td>
       <td className="p-2 border">
         {editing ? (
           <div className="flex gap-2">

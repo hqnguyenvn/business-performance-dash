@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,7 +95,7 @@ export function UserManagementTable() {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 border">Email</th>
-              <th className="p-2 border">User name</th>
+              <th className="p-2 border">Full name</th>
               <th className="p-2 border">Role</th>
               <th className="p-2 border">Active</th>
               <th className="p-2 border">Actions</th>
