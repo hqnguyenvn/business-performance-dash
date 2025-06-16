@@ -4,7 +4,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { MasterData } from "@/services/masterDataService";
-import { formatNumber } from "@/lib/format";
+import { formatNumberWithDecimals } from "@/lib/format";
 import { FormattedNumberInput } from "./FormattedNumberInput";
 import { Plus } from "lucide-react";
 
@@ -109,10 +109,12 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
             }}
             uniqueKey={`${row.id}-bn-bmm`}
             className="w-full"
+            allowDecimals={true}
+            decimals={2}
           />
         ) : (
           <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("bn_bmm")}>
-            {formatNumber(row.bn_bmm)}
+            {formatNumberWithDecimals(row.bn_bmm, 2)}
           </div>
         )}
       </TableCell>

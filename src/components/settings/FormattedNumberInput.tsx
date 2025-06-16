@@ -1,6 +1,6 @@
 
 import React from "react";
-import { formatNumber } from "@/lib/format";
+import { formatNumberWithDecimals } from "@/lib/format";
 
 interface FormattedNumberInputProps {
   value: number;
@@ -12,6 +12,8 @@ interface FormattedNumberInputProps {
   min?: number;
   step?: number;
   uniqueKey?: string | number;
+  allowDecimals?: boolean;
+  decimals?: number;
 }
 
 export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
@@ -24,6 +26,8 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   min,
   step,
   uniqueKey,
+  allowDecimals = false,
+  decimals = 2,
 }) => {
   const lastKeyRef = React.useRef<string | number | undefined>(uniqueKey);
   // rawValue là giá trị đang nhập, chỉ reset khi chuyển row
@@ -60,14 +64,15 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
       onChange && onChange(0);
       return;
     }
-    // Cho phép tối đa 2 số thập phân
-    if (
-      /^\d{1,3}(,\d{3})*(\.\d{0,2})?$|^\d*(\.\d{0,2})?$/.test(
-        v.replace(/,/g, "")
-      )
-    ) {
+    
+    // Pattern cho phép số có hoặc không có phần thập phân
+    const pattern = allowDecimals 
+      ? new RegExp(`^\\d{1,3}(,\\d{3})*(\\.\\d{0,${decimals}})?$|^\\d*(\\.\\d{0,${decimals}})?$`)
+      : /^\d{1,3}(,\d{3})*$|^\d*$/;
+    
+    if (pattern.test(v.replace(/,/g, ""))) {
       setRawValue(v);
-      // Gọi onChange để container/parent state có thể biết value tạm (nếu cần) – mặc định KHÔNG lưu lên server
+      // Gọi onChange để container/parent state có thể biết value tạm (nếu cần) – mặc định KHÔNG lưu lên server
       if (onChange) {
         const num = parseFloat(v.replace(/,/g, ""));
         if (!isNaN(num)) {
@@ -81,7 +86,11 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   const handleBlur = () => {
     if (rawValue !== "") {
       const num = parseFloat(rawValue.replace(/,/g, ""));
-      setRawValue(isNaN(num) ? "" : formatNumber(num));
+      if (allowDecimals) {
+        setRawValue(isNaN(num) ? "" : formatNumberWithDecimals(num, decimals));
+      } else {
+        setRawValue(isNaN(num) ? "" : Math.round(num).toLocaleString('en-US'));
+      }
       if (onBlur) {
         onBlur(isNaN(num) ? 0 : num);
       }
@@ -107,4 +116,3 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
     />
   );
 };
-
