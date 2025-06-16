@@ -14,6 +14,7 @@ import {
 } from "@/services/masterDataService";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
+import { bonusByCompanyService, BonusByCompany } from "@/services/bonusByCompanyService";
 
 export const useSettingsData = () => {
   const { toast } = useToast();
@@ -27,6 +28,7 @@ export const useSettingsData = () => {
   const [costTypes, setCostTypes] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [bonusByDivision, setBonusByDivision] = useState<BonusByDivision[]>([]);
+  const [bonusByCompany, setBonusByCompany] = useState<BonusByCompany[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAllData = useCallback(async () => {
@@ -42,7 +44,8 @@ export const useSettingsData = () => {
         currenciesData,
         costTypesData,
         exchangeRatesData,
-        bonusByDivisionData
+        bonusByDivisionData,
+        bonusByCompanyData
       ] = await Promise.all([
         customersService.getAll(),
         companiesService.getAll(),
@@ -53,7 +56,8 @@ export const useSettingsData = () => {
         currenciesService.getAll(),
         costTypesService.getAll(),
         exchangeRateService.getAll(),
-        bonusByDivisionService.getAll()
+        bonusByDivisionService.getAll(),
+        bonusByCompanyService.getAll()
       ]);
 
       setCustomers(customersData);
@@ -66,6 +70,7 @@ export const useSettingsData = () => {
       setCostTypes(costTypesData);
       setExchangeRates(exchangeRatesData);
       setBonusByDivision(bonusByDivisionData);
+      setBonusByCompany(bonusByCompanyData);
 
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
@@ -95,6 +100,7 @@ export const useSettingsData = () => {
       costTypes,
       exchangeRates,
       bonusByDivision,
+      bonusByCompany,
     },
     setters: {
       setCustomers,
@@ -107,6 +113,7 @@ export const useSettingsData = () => {
       setCostTypes,
       setExchangeRates,
       setBonusByDivision,
+      setBonusByCompany,
     },
     loading,
     setLoading,
