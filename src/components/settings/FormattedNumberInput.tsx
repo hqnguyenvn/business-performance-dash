@@ -59,25 +59,27 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   // Chỉ update local state khi gõ phím, KHÔNG gọi onChange lên trên!
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value;
+    
+    // Cho phép input rỗng
     if (v === "") {
       setRawValue("");
-      onChange && onChange(0);
       return;
     }
     
-    // Pattern cho phép số có hoặc không có phần thập phân
-    const pattern = allowDecimals 
-      ? new RegExp(`^\\d{1,3}(,\\d{3})*(\\.\\d{0,${decimals}})?$|^\\d*(\\.\\d{0,${decimals}})?$`)
-      : /^\d{1,3}(,\d{3})*$|^\d*$/;
-    
-    if (pattern.test(v.replace(/,/g, ""))) {
-      setRawValue(v);
-      // Gọi onChange để container/parent state có thể biết value tạm (nếu cần) – mặc định KHÔNG lưu lên server
-      if (onChange) {
-        const num = parseFloat(v.replace(/,/g, ""));
-        if (!isNaN(num)) {
-          onChange(num);
-        }
+    // Nếu cho phép decimal, kiểm tra pattern khác
+    if (allowDecimals) {
+      // Cho phép: số nguyên, số có dấu chấm, số có dấu chấm và các chữ số sau
+      // Ví dụ: 1, 1., 1.2, 1.23
+      const decimalPattern = new RegExp(`^\\d*\\.?\\d{0,${decimals}}$`);
+      if (decimalPattern.test(v)) {
+        setRawValue(v);
+        return;
+      }
+    } else {
+      // Chỉ cho phép số nguyên
+      if (/^\d*$/.test(v)) {
+        setRawValue(v);
+        return;
       }
     }
   };
@@ -85,18 +87,36 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   // Khi BLUR: luôn gọi onBlur để lưu thực sự lên server
   const handleBlur = () => {
     if (rawValue !== "") {
-      const num = parseFloat(rawValue.replace(/,/g, ""));
-      if (allowDecimals) {
-        setRawValue(isNaN(num) ? "" : formatNumberWithDecimals(num, decimals));
+      const num = parseFloat(rawValue);
+      if (!isNaN(num)) {
+        // Format lại display value
+        if (allowDecimals) {
+          setRawValue(formatNumberWithDecimals(num, decimals));
+        } else {
+          setRawValue(Math.round(num).toLocaleString('en-US'));
+        }
+        
+        if (onBlur) {
+          onBlur(num);
+        }
+        if (onChange) {
+          onChange(num);
+        }
       } else {
-        setRawValue(isNaN(num) ? "" : Math.round(num).toLocaleString('en-US'));
-      }
-      if (onBlur) {
-        onBlur(isNaN(num) ? 0 : num);
+        setRawValue("");
+        if (onBlur) {
+          onBlur(0);
+        }
+        if (onChange) {
+          onChange(0);
+        }
       }
     } else {
       if (onBlur) {
         onBlur(0);
+      }
+      if (onChange) {
+        onChange(0);
       }
     }
   };
