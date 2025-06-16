@@ -6,6 +6,8 @@ interface FormattedNumberInputProps {
   value: number;
   onChange?: (value: number) => void;
   onBlur?: (value: number) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onPaste?: (event: React.ClipboardEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   className?: string;
   placeholder?: string;
@@ -20,6 +22,8 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   value,
   onChange,
   onBlur,
+  onKeyDown,
+  onPaste,
   disabled = false,
   className = "",
   placeholder,
@@ -121,6 +125,29 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (onKeyDown) {
+      onKeyDown(e);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    if (onPaste) {
+      onPaste(e);
+    } else {
+      // Default paste behavior for numbers
+      e.preventDefault();
+      const pasteData = e.clipboardData.getData('text');
+      const num = parseFloat(pasteData.replace(/[^\d.-]/g, ''));
+      if (!isNaN(num)) {
+        setRawValue(num.toString());
+        if (onChange) {
+          onChange(num);
+        }
+      }
+    }
+  };
+
   return (
     <input
       type="text"
@@ -129,10 +156,13 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
       value={rawValue}
       onChange={handleChange}
       onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onPaste={handlePaste}
       placeholder={placeholder}
       disabled={disabled}
       min={min}
       step={step}
+      autoFocus
     />
   );
 };
