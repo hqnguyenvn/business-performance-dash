@@ -29,6 +29,7 @@ export type GroupedCompanyData = {
   revenue: number;
   salaryCost: number;
   overheadCost: number;
+  bonusValue: number; // Thêm field này để lưu giá trị bonus được tính toán
 };
 
 interface UseCompanyReportDataProps {
@@ -110,6 +111,24 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
+      // 4. Lấy bonus_by_c cho năm đã chọn
+      const { data: bonusRows, error: bonusError } = await supabase
+        .from('bonus_by_c')
+        .select(`
+          year, company_id, bn_bmm
+        `)
+        .eq('year', Number(selectedYear));
+
+      if (bonusError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu bonus_by_c.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Tạo các bảng tổng hợp lương, chi phí, bmm
       const salaryByPeriod = new Map<string, number>();
       const salaryMap = new Map<string, number>();
@@ -144,6 +163,12 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
 
+      // Tạo map bonus theo company_id
+      const bonusMap = new Map<string, number>();
+      for (const row of bonusRows ?? []) {
+        bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
+      }
+
       // --- Group by company ---
       const groupMap = new Map<string, GroupedCompanyData>();
       for (const row of rows ?? []) {
@@ -156,10 +181,15 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
         const overheadCost = overheadPerBMM * bmm;
 
+        // Tính bonus = BMM * bn_bmm từ bảng bonus_by_c
+        const bnBmm = bonusMap.get(row.company_id) ?? 0;
+        const bonusValue = bmm * bnBmm;
+
         if (prev) {
           prev.bmm += bmm;
           prev.revenue += revenue;
           prev.overheadCost += overheadCost;
+          prev.bonusValue += bonusValue;
         } else {
           // Lấy salary cost cho (year, month, company_id)
           const salaryKey = `${row.year}_${row.month}_${row.company_id}`;
@@ -172,6 +202,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             revenue,
             salaryCost: salaryMap.get(salaryKey) || 0,
             overheadCost,
+            bonusValue,
           });
         }
       }

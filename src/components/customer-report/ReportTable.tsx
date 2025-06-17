@@ -15,6 +15,7 @@ export interface GroupedCustomerData {
   revenue: number;
   salaryCost?: number;
   overheadCost?: number;
+  bonusValue?: number; // Thêm field này cho Company Report
 }
 
 const MONTH_MAP = {
@@ -35,7 +36,7 @@ interface ReportTableProps {
   startIndex: number;
   endIndex: number;
   bonusRate: number;
-  companyLabel?: string; // Add this line
+  companyLabel?: string;
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -65,8 +66,6 @@ export function ReportTable({
   data,
   bonusRate,
   companyLabel,
-  // ... rest of props
-  // (use ...props if desired for future extensibility)
 }: ReportTableProps) {
   // Sử dụng useTableFilter để filter cột
   const {
@@ -76,7 +75,8 @@ export function ReportTable({
     clearAllFilters
   } = useTableFilter(data);
 
-  // Remove: checking data[0].company_code === data[0].division_code
+  // Check if this is Company Report (no customer_code field) 
+  const isCompanyReport = !data[0]?.customer_code;
 
   return (
     <div className="overflow-x-auto">
@@ -106,16 +106,18 @@ export function ReportTable({
             >
               {companyLabel || "Company"}
             </TableHead>
-            <TableHead
-              className="border border-gray-300 p-2 text-left font-medium"
-              showFilter
-              filterData={getFilterData(data, "customer_code")}
-              filterField="customer_code"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters("customer_code")}
-            >
-              Customer
-            </TableHead>
+            {!isCompanyReport && (
+              <TableHead
+                className="border border-gray-300 p-2 text-left font-medium"
+                showFilter
+                filterData={getFilterData(data, "customer_code")}
+                filterField="customer_code"
+                onFilter={setFilter}
+                activeFilters={getActiveFilters("customer_code")}
+              >
+                Customer
+              </TableHead>
+            )}
             <TableHead className="border border-gray-300 p-2 text-right font-medium">BMM</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Revenue</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Salary Cost</TableHead>
@@ -129,18 +131,19 @@ export function ReportTable({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={12} className="p-8 text-center text-gray-500">Loading...</TableCell>
+              <TableCell colSpan={isCompanyReport ? 11 : 12} className="p-8 text-center text-gray-500">Loading...</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
+              <TableCell colSpan={isCompanyReport ? 11 : 12} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </TableCell>
             </TableRow>
           ) : (
             filteredData.map((data, idx) => {
               const salaryCost = data.salaryCost ?? 0;
-              const bonusValue = (salaryCost * bonusRate) / 100;
+              // Sử dụng bonusValue nếu có (Company Report), nếu không thì tính theo bonusRate (Customer Report)
+              const bonusValue = data.bonusValue !== undefined ? data.bonusValue : (salaryCost * bonusRate) / 100;
               const overheadCost = data.overheadCost ?? 0;
               const totalCost = salaryCost + bonusValue + overheadCost;
               const revenue = data.revenue ?? 0;
@@ -155,7 +158,9 @@ export function ReportTable({
                   <TableCell className="border border-gray-300 p-2 text-center">{idx + 1}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</TableCell>
                   <TableCell className="border border-gray-300 p-2">{data.company_code}</TableCell>
-                  <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
+                  {!isCompanyReport && (
+                    <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
+                  )}
                   <TableCell className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{revenue.toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{salaryCost.toLocaleString()}</TableCell>

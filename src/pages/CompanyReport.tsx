@@ -34,12 +34,13 @@ const CompanyReport = () => {
     });
   };
 
-  // Tính tổng
+  // Tính tổng - sử dụng bonusValue từ data thay vì tính theo bonusRate
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
+  const totalBonus = groupedData.reduce((sum, d) => sum + d.bonusValue, 0);
   const totalCost = groupedData.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
-    const bonus = (salary * bonusRate) / 100;
+    const bonus = d.bonusValue ?? 0; // Sử dụng bonusValue thay vì tính theo rate
     const oh = d.overheadCost ?? 0;
     return sum + salary + bonus + oh;
   }, 0);
@@ -93,6 +94,7 @@ const CompanyReport = () => {
               startIndex={1}
               endIndex={groupedData.length}
               bonusRate={bonusRate}
+              companyLabel="Company"
             />
           </CardContent>
         </Card>
