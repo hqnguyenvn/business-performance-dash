@@ -50,7 +50,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
       handleCellSave(field, tempValue);
       
       // Navigate to next cell
-      const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'notes'];
+      const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'percent_bn', 'notes'];
       const currentIndex = fields.indexOf(field);
       if (currentIndex < fields.length - 1) {
         const nextField = fields[currentIndex + 1];
@@ -70,7 +70,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
 
   const handlePaste = (event: React.ClipboardEvent, field: keyof BonusByCompany) => {
     const pasteData = event.clipboardData.getData('text');
-    if (field === 'bn_bmm') {
+    if (field === 'bn_bmm' || field === 'percent_bn') {
       const num = parseFloat(pasteData.replace(/[^\d.-]/g, ''));
       if (!isNaN(num)) {
         setTempValue(num);
@@ -143,6 +143,28 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
         ) : (
           <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("bn_bmm")}>
             {formatNumberWithDecimals(row.bn_bmm, 2)}
+          </div>
+        )}
+      </TableCell>
+
+      <TableCell className="text-right p-1 border border-gray-300">
+        {isEditing("percent_bn") ? (
+          <FormattedNumberInput
+            value={typeof tempValue === "number" ? tempValue : 0}
+            onChange={v => setTempValue(v)}
+            onBlur={v => {
+              handleCellSave("percent_bn", v);
+            }}
+            onKeyDown={e => handleKeyDown(e as any, "percent_bn")}
+            onPaste={e => handlePaste(e, "percent_bn")}
+            uniqueKey={`${row.id}-percent-bn`}
+            className="w-full"
+            allowDecimals={true}
+            decimals={2}
+          />
+        ) : (
+          <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("percent_bn")}>
+            {formatNumberWithDecimals(row.percent_bn, 2)}%
           </div>
         )}
       </TableCell>
