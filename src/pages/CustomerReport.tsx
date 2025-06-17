@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,7 +72,7 @@ const CustomerReport = () => {
       const { data: salaryRows, error: salaryError } = await supabase
         .from('salary_costs')
         .select(`
-          year, month, customer_id, amount
+          year, month, customer_id, company_id, amount
         `)
         .eq('year', Number(selectedYear))
         .in('month', selectedMonths);
@@ -130,12 +129,21 @@ const CustomerReport = () => {
 
       const salaryByPeriod = new Map<string, number>();
       const salaryMap = new Map<string, number>();
+      const salaryWithoutCustomerMap = new Map<string, number>(); // New: salary costs without customer_id
+      
       for (const row of salaryRows ?? []) {
-        if (!row.customer_id) continue;
         const periodKey = `${row.year}_${row.month}`;
         salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
-        const custKey = `${row.year}_${row.month}_${row.customer_id}`;
-        salaryMap.set(custKey, (salaryMap.get(custKey) ?? 0) + Number(row.amount) || 0);
+        
+        if (row.customer_id) {
+          // Salary costs with customer_id
+          const custKey = `${row.year}_${row.month}_${row.customer_id}`;
+          salaryMap.set(custKey, (salaryMap.get(custKey) ?? 0) + Number(row.amount) || 0);
+        } else {
+          // Salary costs without customer_id (to be allocated)
+          const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+          salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
+        }
       }
 
       const costByPeriod = new Map<string, number>();
@@ -145,9 +153,12 @@ const CustomerReport = () => {
       }
 
       const bmmByPeriod = new Map<string, number>();
+      const bmmByPeriodCompany = new Map<string, number>(); // New: BMM by period and company
       for (const row of rows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
+        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
+        bmmByPeriodCompany.set(periodCompanyKey, (bmmByPeriodCompany.get(periodCompanyKey) ?? 0) + Number(row.quantity) || 0);
       }
 
       const overheadPerBMMByPeriod = new Map<string, number>();
@@ -191,6 +202,20 @@ const CustomerReport = () => {
         } else {
           // Find salary cost for this (year, month, customer_id)
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
+          const baseSalaryCost = salaryMap.get(salaryKey) || 0;
+          
+          // Calculate allocated salary cost from unassigned salary costs
+          const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+          const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
+          const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
+          
+          let allocatedSalaryCost = 0;
+          if (totalCompanyBMM > 0) {
+            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * bmm;
+          }
+          
+          const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+
           groupMap.set(groupKey, {
             year: row.year,
             month: row.month, // integer 1-12
@@ -200,7 +225,7 @@ const CustomerReport = () => {
             company_code: row.companies?.code || 'N/A',
             bmm,
             revenue,
-            salaryCost: salaryMap.get(salaryKey) || 0,
+            salaryCost: totalSalaryCost,
             overheadCost,
             bonusValue,
           });
