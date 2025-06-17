@@ -171,12 +171,12 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
             onPaste={e => handlePaste(e, "percent_bn")}
             uniqueKey={`${row.id}-percent-bn`}
             className="w-full"
-            allowDecimals={true}
-            decimals={2}
+            allowDecimals={false}
+            decimals={0}
           />
         ) : (
           <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("percent_bn")}>
-            {(row.percent_bn * 100).toFixed(2)}%
+            {Math.round(row.percent_bn * 100)}%
           </div>
         )}
       </TableCell>
