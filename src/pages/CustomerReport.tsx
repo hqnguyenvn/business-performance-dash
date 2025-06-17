@@ -135,7 +135,7 @@ const CustomerReport = () => {
           `)
           .eq('year', Number(selectedYear))
           .in('month', selectedMonths)
-          .eq('cost_type_id', salaryTypeId);
+          .eq('cost_type', salaryTypeId);
 
         if (salaryFromCostsError) {
           toast({
