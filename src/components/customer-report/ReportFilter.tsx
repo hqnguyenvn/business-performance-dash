@@ -11,8 +11,8 @@ interface ReportFilterProps {
   months: { value: number; label: string; short: string }[];
   years: number[];
   onExport: () => void;
-  bonusRate: number;
-  setBonusRate: (rate: number) => void;
+  bonusRate?: number;
+  setBonusRate?: (rate: number) => void;
 }
 
 export function ReportFilter({
@@ -23,8 +23,6 @@ export function ReportFilter({
   months,
   years,
   onExport,
-  bonusRate,
-  setBonusRate,
 }: ReportFilterProps) {
   const handleMonthChange = (value: number) => {
     setSelectedMonths(
@@ -63,22 +61,9 @@ export function ReportFilter({
             </label>
           ))}
         </div>
-      </div>
 
-      {/* Bottom - Bonus */}
-      <div className="flex items-center space-x-2 mt-4">
-        <label className="text-base font-medium">Bonus Rate:</label>
-        <input
-          type="number"
-          className="border border-gray-300 rounded px-3 py-1 w-20 text-right text-base"
-          value={bonusRate}
-          min={0}
-          max={100}
-          step={0.1}
-          onChange={e => setBonusRate(Number(e.target.value))}
-        />
-        <span className="font-medium text-base">%</span>
-        <Button variant="outline" className="ml-4" onClick={onExport}>
+        {/* Export button */}
+        <Button variant="outline" onClick={onExport}>
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>

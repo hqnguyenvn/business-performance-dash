@@ -19,7 +19,6 @@ const CompanyReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
-  const [bonusRate, setBonusRate] = useState<number>(15);
 
   const { groupedData, loading } = useCompanyReportData({
     selectedYear,
@@ -27,20 +26,20 @@ const CompanyReport = () => {
   });
 
   const exportToCSV = () => {
-    exportCustomerReportCSV(groupedData as any, bonusRate);
+    exportCustomerReportCSV(groupedData as any, 0); // Pass 0 since we're not using bonusRate anymore
     toast({
       title: "Export Successful",
       description: "Company report has been successfully exported as a CSV file.",
     });
   };
 
-  // Tính tổng - sử dụng bonusValue từ data thay vì tính theo bonusRate
+  // Calculate totals - using bonusValue from data instead of bonusRate
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
   const totalBonus = groupedData.reduce((sum, d) => sum + d.bonusValue, 0);
   const totalCost = groupedData.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
-    const bonus = d.bonusValue ?? 0; // Sử dụng bonusValue thay vì tính theo rate
+    const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating with rate
     const oh = d.overheadCost ?? 0;
     return sum + salary + bonus + oh;
   }, 0);
@@ -75,8 +74,6 @@ const CompanyReport = () => {
                 months={MONTHS}
                 years={YEARS}
                 onExport={exportToCSV}
-                bonusRate={bonusRate}
-                setBonusRate={setBonusRate}
               />
             </div>
           </CardHeader>
@@ -93,7 +90,7 @@ const CompanyReport = () => {
               totalItems={groupedData.length}
               startIndex={1}
               endIndex={groupedData.length}
-              bonusRate={bonusRate}
+              bonusRate={0}
               companyLabel="Company"
             />
           </CardContent>

@@ -1,9 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { usePagination } from "@/hooks/usePagination";
 import { supabase } from "@/integrations/supabase/client";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
@@ -36,7 +36,6 @@ const CustomerReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [bonusRate, setBonusRate] = useState<number>(15);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,6 +108,24 @@ const CustomerReport = () => {
         return;
       }
 
+      // 4. Fetch bonus_by_c for the selected year
+      const { data: bonusRows, error: bonusError } = await supabase
+        .from('bonus_by_c')
+        .select(`
+          year, company_id, bn_bmm
+        `)
+        .eq('year', Number(selectedYear));
+
+      if (bonusError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu bonus_by_c.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Aggregation per filter
 
       const salaryByPeriod = new Map<string, number>();
@@ -144,6 +161,12 @@ const CustomerReport = () => {
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
 
+      // Create bonus map by company_id
+      const bonusMap = new Map<string, number>();
+      for (const row of bonusRows ?? []) {
+        bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
+      }
+
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
       for (const row of rows ?? []) {
@@ -156,10 +179,15 @@ const CustomerReport = () => {
         const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
         const overheadCost = overheadPerBMM * bmm;
 
+        // Calculate bonus = BMM * bn_bmm from bonus_by_c table
+        const bnBmm = bonusMap.get(row.company_id) ?? 0;
+        const bonusValue = bmm * bnBmm;
+
         if (prev) {
           prev.bmm += bmm;
           prev.revenue += revenue;
           prev.overheadCost += overheadCost;
+          prev.bonusValue += bonusValue;
         } else {
           // Find salary cost for this (year, month, customer_id)
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
@@ -174,6 +202,7 @@ const CustomerReport = () => {
             revenue,
             salaryCost: salaryMap.get(salaryKey) || 0,
             overheadCost,
+            bonusValue,
           });
         }
       }
@@ -192,32 +221,28 @@ const CustomerReport = () => {
     fetchData();
   }, [selectedYear, selectedMonths]);
 
-  // XÓA hoàn toàn paging
-  // Pagination logic đã bị loại bỏ
-  // Sử dụng toàn bộ groupedData cho bảng
-  // Không dùng usePagination nữa
-
   const exportToCSV = () => {
-    exportCustomerReportCSV(groupedData, bonusRate);
+    exportCustomerReportCSV(groupedData, 0); // Pass 0 as bonusRate since we're not using it anymore
     toast({
       title: "Export Successful",
       description: "Customer report has been successfully exported as a CSV file.",
     });
   };
 
-  // Card totals
+  // Card totals - using bonusValue from data instead of calculated bonus
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
+  const totalBonus = groupedData.reduce((sum, d) => sum + (d.bonusValue ?? 0), 0);
 
-  // Tính tổng Total Cost (salaryCost + bonus + overhead)
+  // Calculate total cost using bonusValue instead of bonusRate
   const totalCost = groupedData.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
-    const bonus = (salary * bonusRate) / 100;
+    const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating
     const oh = d.overheadCost ?? 0;
     return sum + salary + bonus + oh;
   }, 0);
 
-  // Tổng profit, %profit
+  // Total profit, %profit
   const totalProfit = totalRevenue - totalCost;
   const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
@@ -230,7 +255,6 @@ const CustomerReport = () => {
       />
 
       <div className="p-6">
-        {/* Sửa lại, truyền đủ các props mới */}
         <ReportSummary
           totalRevenue={totalRevenue}
           totalBMM={totalBMM}
@@ -251,8 +275,6 @@ const CustomerReport = () => {
                 months={MONTHS}
                 years={years}
                 onExport={exportToCSV}
-                bonusRate={bonusRate}
-                setBonusRate={setBonusRate}
               />
             </div>
           </CardHeader>
@@ -269,7 +291,7 @@ const CustomerReport = () => {
               totalItems={groupedData.length}
               startIndex={1}
               endIndex={groupedData.length}
-              bonusRate={bonusRate}
+              bonusRate={0}
             />
           </CardContent>
         </Card>
