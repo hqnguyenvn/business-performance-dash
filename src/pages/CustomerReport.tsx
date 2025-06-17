@@ -107,11 +107,53 @@ const CustomerReport = () => {
         return;
       }
 
+      // 3.1. Fetch cost_types to get the ID for "Salary" cost type
+      const { data: costTypes, error: costTypesError } = await supabase
+        .from('cost_types')
+        .select('id, name')
+        .eq('name', 'Salary');
+
+      if (costTypesError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu cost_types.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const salaryTypeId = costTypes?.[0]?.id;
+
+      // 3.2. Fetch salary costs from costs table with cost_type = "Salary"
+      let salaryCostRows = [];
+      if (salaryTypeId) {
+        const { data: salaryFromCosts, error: salaryFromCostsError } = await supabase
+          .from('costs')
+          .select(`
+            year, month, cost
+          `)
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths)
+          .eq('cost_type_id', salaryTypeId);
+
+        if (salaryFromCostsError) {
+          toast({
+            variant: "destructive",
+            title: "Lỗi lấy dữ liệu",
+            description: "Không lấy được dữ liệu salary costs từ bảng costs.",
+          });
+          setLoading(false);
+          return;
+        }
+        salaryCostRows = salaryFromCosts || [];
+      }
+
       // 4. Fetch bonus_by_c for the selected year
       const { data: bonusRows, error: bonusError } = await supabase
         .from('bonus_by_c')
         .select(`
-          year, company_id, bn_bmm
+          year, company_id, bn_bmm, percent_bn
         `)
         .eq('year', Number(selectedYear));
 
@@ -152,6 +194,13 @@ const CustomerReport = () => {
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
       }
 
+      // Aggregate salary costs from costs table by period
+      const salaryCostByPeriod = new Map<string, number>();
+      for (const row of salaryCostRows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        salaryCostByPeriod.set(periodKey, (salaryCostByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      }
+
       const bmmByPeriod = new Map<string, number>();
       const bmmByPeriodCompany = new Map<string, number>(); // New: BMM by period and company
       for (const row of rows ?? []) {
@@ -174,8 +223,10 @@ const CustomerReport = () => {
 
       // Create bonus map by company_id
       const bonusMap = new Map<string, number>();
+      const percentBnMap = new Map<string, number>();
       for (const row of bonusRows ?? []) {
         bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
+        percentBnMap.set(row.company_id, Number(row.percent_bn) || 0);
       }
 
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
@@ -188,7 +239,20 @@ const CustomerReport = () => {
 
         const periodKey = `${row.year}_${row.month}`;
         const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
-        const overheadCost = overheadPerBMM * bmm;
+        const baseOverheadCost = overheadPerBMM * bmm;
+
+        // Calculate salary bonus: (salaryCost * percent_bn) / totalBMM * bmm
+        const salaryCostForPeriod = salaryCostByPeriod.get(periodKey) ?? 0;
+        const percentBn = percentBnMap.get(row.company_id) ?? 0;
+        const totalBmmForPeriod = bmmByPeriod.get(periodKey) ?? 0;
+        
+        let salaryBonus = 0;
+        if (totalBmmForPeriod > 0) {
+          salaryBonus = (salaryCostForPeriod * percentBn) / totalBmmForPeriod * bmm;
+        }
+        
+        // Total overhead cost = base overhead + salary bonus
+        const overheadCost = baseOverheadCost + salaryBonus;
 
         // Calculate bonus = BMM * bn_bmm from bonus_by_c table
         const bnBmm = bonusMap.get(row.company_id) ?? 0;
