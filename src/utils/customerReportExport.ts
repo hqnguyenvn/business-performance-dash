@@ -25,7 +25,8 @@ export function exportCustomerReportCSV(data: GroupedCustomerData[], bonusRate: 
 
   const rows = data.map((d, i) => {
     const salaryCost = d.salaryCost ?? 0;
-    const bonus = (salaryCost * bonusRate) / 100;
+    // Use bonusValue from data instead of calculating with bonusRate
+    const bonus = d.bonusValue ?? 0;
     const overhead = d.overheadCost ?? 0;
     const totalCost = salaryCost + bonus + overhead;
     const revenue = d.revenue ?? 0;
