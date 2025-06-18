@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { NumberInput } from "@/components/ui/number-input";
 import { SalaryCost, MONTHS } from "@/hooks/useSalaryCosts";
 import { MasterData } from "@/services/masterDataService";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface SalaryCostsTableProps {
   costs: SalaryCost[];
@@ -39,6 +40,44 @@ export const SalaryCostsTable = ({
   customers
 }: SalaryCostsTableProps) => {
   const currentYear = new Date().getFullYear();
+  
+  const { filteredData: tableFilteredCosts, setFilter, getActiveFilters } = useTableFilter(costs);
+
+  // Get unique values for filtering
+  const getFilterData = (field: string) => {
+    const uniqueValues = new Set();
+    const filterData: any[] = [];
+    
+    costs.forEach(cost => {
+      const value = cost[field as keyof SalaryCost];
+      let displayValue = value;
+      
+      if (field === 'company_id') {
+        const company = companies.find(c => c.id === value);
+        displayValue = company?.code || '';
+      } else if (field === 'division_id') {
+        const division = divisions.find(d => d.id === value);
+        displayValue = division?.code || '';
+      } else if (field === 'customer_id') {
+        const customer = customers.find(c => c.id === value);
+        displayValue = customer?.code || '';
+      } else if (field === 'month') {
+        const monthObj = MONTHS.find(m => m.id === value);
+        displayValue = monthObj?.name || '';
+      }
+      
+      const filterValue = String(value || '');
+      if (!uniqueValues.has(filterValue)) {
+        uniqueValues.add(filterValue);
+        filterData.push({ 
+          [field]: filterValue,
+          displayValue: displayValue || filterValue || '(Empty)'
+        });
+      }
+    });
+    
+    return filterData;
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -46,25 +85,91 @@ export const SalaryCostsTable = ({
         <TableHeader>
           <TableRow className="bg-red-50">
             <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
-            <TableHead className="border border-gray-300 text-center">Year</TableHead>
-            <TableHead className="border border-gray-300 text-center">Month</TableHead>
-            <TableHead className="border border-gray-300">Company</TableHead>
-            <TableHead className="border border-gray-300">Division</TableHead>
-            <TableHead className="border border-gray-300">Customer</TableHead>
-            <TableHead className="border border-gray-300 text-right">Amount</TableHead>
-            <TableHead className="border border-gray-300">Notes</TableHead>
+            <TableHead 
+              className="border border-gray-300 text-center"
+              showFilter={true}
+              filterData={getFilterData('year')}
+              filterField="year"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('year')}
+            >
+              Year
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-center"
+              showFilter={true}
+              filterData={getFilterData('month')}
+              filterField="month"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('month')}
+            >
+              Month
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('company_id')}
+              filterField="company_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('company_id')}
+            >
+              Company
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('division_id')}
+              filterField="division_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('division_id')}
+            >
+              Division
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('customer_id')}
+              filterField="customer_id"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('customer_id')}
+            >
+              Customer
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-right"
+              showFilter={true}
+              filterData={getFilterData('amount')}
+              filterField="amount"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('amount')}
+            >
+              Amount
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('notes')}
+              filterField="notes"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('notes')}
+            >
+              Notes
+            </TableHead>
             <TableHead className="border border-gray-300 text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {costs.length === 0 ? (
+          {tableFilteredCosts.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="border border-gray-300 text-center py-8 text-gray-500">
-                No data available.
+                {costs.length === 0
+                  ? "No data available. Click \"Add Row\" to start entering data."
+                  : "No data matches the selected filters. Try adjusting the year or month selection."
+                }
               </TableCell>
             </TableRow>
           ) : (
-            costs.map((cost, index) => (
+            tableFilteredCosts.map((cost, index) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
                 <TableCell className="border border-gray-300 text-center p-1">{index + 1}</TableCell>
                 <TableCell className="border border-gray-300 p-1">
@@ -130,4 +235,3 @@ export const SalaryCostsTable = ({
     </div>
   );
 };
-
