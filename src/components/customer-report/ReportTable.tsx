@@ -2,7 +2,7 @@ import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
 import { useTableFilter } from "@/hooks/useTableFilter";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 
 export interface GroupedCustomerData {
   year: number;
