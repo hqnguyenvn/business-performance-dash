@@ -373,24 +373,48 @@ const CustomerReport = () => {
 
           const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
 
-          console.log('💰 HYPREX SALARY COST BREAKDOWN - JANUARY 2025');
-          console.log('===============================================');
-          console.log(`🏢 Company: ${row.companies?.code || 'N/A'}`);
-          console.log(`📊 Customer BMM: ${Math.round(customerBMM).toLocaleString()}`);
-          console.log(`📊 Total Company BMM: ${Math.round(totalCompanyBMM).toLocaleString()}`);
-          console.log('');
-          console.log('📋 SALARY COST COMPONENTS:');
-          console.log(`   💵 Base Salary Cost (directly assigned): ${Math.round(baseSalaryCost).toLocaleString()}`);
-          console.log(`   💵 Unassigned Salary Cost (company total): ${Math.round(unassignedSalaryCost).toLocaleString()}`);
-          console.log(`   💵 Allocated Salary Cost (proportional): ${Math.round(allocatedSalaryCost).toLocaleString()}`);
-          console.log(`   💵 TOTAL Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()}`);
-          console.log('');
-          console.log('🔢 CALCULATION DETAILS:');
-          console.log(`   - Allocation Ratio: ${totalCompanyBMM > 0 ? (customerBMM / totalCompanyBMM * 100).toFixed(2) : 0}%`);
-          console.log(`   - Formula: allocatedSalaryCost = (${Math.round(unassignedSalaryCost).toLocaleString()} / ${Math.round(totalCompanyBMM).toLocaleString()}) × ${Math.round(customerBMM).toLocaleString()}`);
+          console.log(`🔍 Customer ${row.customers?.code || 'Unknown'} (BMM: ${customerBMM.toLocaleString()})`);
+          console.log(`   - Base Salary Cost: ${Math.round(baseSalaryCost).toLocaleString()}`);
+          console.log(`   - Unassigned Salary Cost: ${Math.round(unassignedSalaryCost).toLocaleString()}`);
+          console.log(`   - Total Company BMM: ${totalCompanyBMM.toLocaleString()}`);
+          console.log(`   - Calculation: (${Math.round(unassignedSalaryCost).toLocaleString()} / ${totalCompanyBMM.toLocaleString()}) × ${customerBMM.toLocaleString()}`);
           console.log(`   - Result: ${Math.round(allocatedSalaryCost).toLocaleString()}`);
           console.log('===============================================');
         });
+
+        // DEBUG: Console log all Allocated Salary Cost components for January 2025
+        console.log('📊 ALLOCATED SALARY COST FORMULA COMPONENTS (January 2025)');
+        console.log('============================================================');
+
+        const jan2025Rows = rows.filter(r => r.year === 2025 && r.month === 1);
+        const uniqueCustomers = new Map();
+
+        jan2025Rows.forEach(row => {
+          if (!uniqueCustomers.has(row.customer_id)) {
+            const customerBMM = Number(row.quantity) || 0;
+            const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+            const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
+            const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
+
+            let allocatedSalaryCost = 0;
+            if (totalCompanyBMM > 0) {
+              allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * customerBMM;
+            }
+
+            console.log(`🏢 Customer: ${row.customers?.code || 'Unknown'}`);
+            console.log(`   📋 Formula: Allocated Salary Cost = (Unassigned Salary Cost / Total Company BMM) × Customer BMM`);
+            console.log(`   💰 Unassigned Salary Cost: ${Math.round(unassignedSalaryCost).toLocaleString()} VND`);
+            console.log(`   📊 Total Company BMM: ${totalCompanyBMM.toLocaleString()}`);
+            console.log(`   👤 Customer BMM: ${customerBMM.toLocaleString()}`);
+            console.log(`   🧮 Calculation: (${Math.round(unassignedSalaryCost).toLocaleString()} ÷ ${totalCompanyBMM.toLocaleString()}) × ${customerBMM.toLocaleString()}`);
+            console.log(`   ✅ Allocated Salary Cost: ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
+            console.log('   ────────────────────────────────────────────────────────');
+
+            uniqueCustomers.set(row.customer_id, true);
+          }
+        });
+
+        console.log('============================================================');
       };
 
       // Call debug function
