@@ -162,8 +162,8 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
       <TableCell className="text-right p-1 border border-gray-300">
         {isEditing("percent_bn") ? (
           <FormattedNumberInput
-            value={typeof tempValue === "number" ? tempValue * 100 : 0}
-            onChange={v => setTempValue(v / 100)}
+            value={typeof tempValue === "number" ? tempValue : 0}
+            onChange={v => setTempValue(v)}
             onBlur={v => {
               handleCellSave("percent_bn", v / 100);
             }}
