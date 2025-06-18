@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { formatNumber } from "@/lib/format";
 import { Cost, MONTHS } from "@/hooks/useCosts";
 import { MasterData } from "@/services/masterDataService";
 import { Plus, Edit, Eye, Trash2, Copy } from "lucide-react";
+import { useTableFilter } from "@/hooks/useTableFilter";
 
 interface CostsTableProps {
   costs: Cost[];
@@ -33,22 +35,137 @@ export const CostsTable = ({
   cloneRow
 }: CostsTableProps) => {
   const currentYear = new Date().getFullYear();
+  
+  const { filteredData: tableFilteredCosts, setFilter, getActiveFilters } = useTableFilter(filteredCosts);
+
+  // Get unique values for filtering - return original data with both display and filter values
+  const getFilterData = (field: string) => {
+    const uniqueValues = new Set();
+    const filterData: any[] = [];
+    
+    filteredCosts.forEach(cost => {
+      const value = cost[field as keyof Cost];
+      let displayValue = value;
+      
+      if (field === 'cost_type') {
+        const costType = costTypes.find(ct => ct.id === value);
+        displayValue = costType?.code || '';
+      } else if (field === 'month') {
+        const monthObj = MONTHS.find(m => m.value === value);
+        displayValue = monthObj?.label || '';
+      } else if (field === 'is_cost' || field === 'is_checked') {
+        displayValue = value ? 'Yes' : 'No';
+      }
+      
+      const filterValue = String(value || '');
+      if (!uniqueValues.has(filterValue)) {
+        uniqueValues.add(filterValue);
+        filterData.push({ 
+          [field]: filterValue,
+          displayValue: displayValue || filterValue || '(Empty)'
+        });
+      }
+    });
+    
+    return filterData;
+  };
 
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-red-50">
-            <TableHead className="border border-gray-300">Year</TableHead>
-            <TableHead className="border border-gray-300">Month</TableHead>
-            <TableHead className="border border-gray-300">Description</TableHead>
-            <TableHead className="border border-gray-300 text-right">Unit Price</TableHead>
-            <TableHead className="border border-gray-300 text-right">Volume</TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('year')}
+              filterField="year"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('year')}
+            >
+              Year
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('month')}
+              filterField="month"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('month')}
+            >
+              Month
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('description')}
+              filterField="description"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('description')}
+            >
+              Description
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-right"
+              showFilter={true}
+              filterData={getFilterData('price')}
+              filterField="price"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('price')}
+            >
+              Unit Price
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-right"
+              showFilter={true}
+              filterData={getFilterData('volume')}
+              filterField="volume"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('volume')}
+            >
+              Volume
+            </TableHead>
             <TableHead className="border border-gray-300 text-right">Cost</TableHead>
-            <TableHead className="border border-gray-300">Category</TableHead>
-            <TableHead className="border border-gray-300 text-center">Is Cost</TableHead>
-            <TableHead className="border border-gray-300 text-center">Checked</TableHead>
-            <TableHead className="border border-gray-300">Notes</TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('cost_type')}
+              filterField="cost_type"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('cost_type')}
+            >
+              Category
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-center"
+              showFilter={true}
+              filterData={getFilterData('is_cost')}
+              filterField="is_cost"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('is_cost')}
+            >
+              Is Cost
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300 text-center"
+              showFilter={true}
+              filterData={getFilterData('is_checked')}
+              filterField="is_checked"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('is_checked')}
+            >
+              Checked
+            </TableHead>
+            <TableHead 
+              className="border border-gray-300"
+              showFilter={true}
+              filterData={getFilterData('notes')}
+              filterField="notes"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters('notes')}
+            >
+              Notes
+            </TableHead>
             <TableHead className="border border-gray-300 text-center">
               Actions
               <Button
@@ -64,7 +181,7 @@ export const CostsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredCosts.length === 0 ? (
+          {tableFilteredCosts.length === 0 ? (
             <TableRow>
               <TableCell colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
                 {costs.length === 0
@@ -74,7 +191,7 @@ export const CostsTable = ({
               </TableCell>
             </TableRow>
           ) : (
-            filteredCosts.map((cost) => (
+            tableFilteredCosts.map((cost) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
                 <TableCell className="border border-gray-300 p-1">
                   <Input

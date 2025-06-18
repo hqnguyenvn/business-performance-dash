@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { costService, Cost as DbCost } from "@/services/costService";
 import { costTypesService, MasterData } from "@/services/masterDataService";
-import { useTableFilter } from "@/hooks/useTableFilter";
 
 export type Cost = DbCost;
 
@@ -43,15 +42,13 @@ export const useCostsState = () => {
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
   }, []);
 
-  const baseCosts = useMemo(() => {
+  const filteredCosts = useMemo(() => {
     return costs.filter(cost => {
       const yearMatch = cost.year === parseInt(selectedYear);
       const monthMatch = selectedMonths.includes(cost.month);
       return yearMatch && monthMatch;
     });
   }, [costs, selectedYear, selectedMonths]);
-
-  const { filteredData: filteredCosts } = useTableFilter(baseCosts);
   
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
@@ -108,4 +105,3 @@ export const useCostsState = () => {
     getCostTypeId,
   };
 };
-

@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          percent_bn: number | null
           updated_at: string
           year: number
         }
@@ -25,6 +26,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          percent_bn?: number | null
           updated_at?: string
           year: number
         }
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          percent_bn?: number | null
           updated_at?: string
           year?: number
         }
@@ -154,7 +157,7 @@ export type Database = {
         Insert: {
           company_id?: string | null
           cost: number
-          cost_type: string
+          cost_type?: string
           created_at?: string | null
           description?: string | null
           division_id?: string | null
