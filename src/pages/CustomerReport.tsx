@@ -107,11 +107,18 @@ const CustomerReport = () => {
         return;
       }
 
-      // 3.1. Fetch cost_types to get the ID for "Salary" cost type
+      // 3.1. Fetch ALL cost_types first to debug
+      const { data: allCostTypes, error: allCostTypesError } = await supabase
+        .from('cost_types')
+        .select('id, name, code');
+
+      console.log('🔍 ALL COST TYPES:', allCostTypes);
+
+      // 3.1. Fetch cost_types to get the ID for "Salary" cost type by CODE
       const { data: costTypes, error: costTypesError } = await supabase
         .from('cost_types')
-        .select('id, name')
-        .eq('name', 'Salary');
+        .select('id, name, code')
+        .eq('code', 'Salary');
 
       if (costTypesError) {
         toast({
@@ -187,11 +194,11 @@ const CustomerReport = () => {
       const salaryByPeriod = new Map<string, number>();
       const salaryMap = new Map<string, number>();
       const salaryWithoutCustomerMap = new Map<string, number>(); // New: salary costs without customer_id
-      
+
       for (const row of salaryRows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
-        
+
         if (row.customer_id) {
           // Salary costs with customer_id
           const custKey = `${row.year}_${row.month}_${row.customer_id}`;
@@ -251,29 +258,29 @@ const CustomerReport = () => {
           console.log('❌ Hyprex customer not found');
           return;
         }
-        
+
         console.log('🔍 HYPREX OVERHEAD COST CALCULATION DEBUG');
         console.log('==========================================');
-        
+
         const hyprexRows = rows.filter(r => r.customer_id === hyprexCustomer.id);
         console.log(`📊 Hyprex rows found: ${hyprexRows.length}`);
-        
+
         hyprexRows.forEach(row => {
           const periodKey = `${row.year}_${row.month}`;
           const bmm = Number(row.quantity) || 0;
-          
+
           // Part 1: Base overhead calculation
           const totalCost = costByPeriod.get(periodKey) ?? 0;
           const salaryCostFromSalaryTable = salaryByPeriod.get(periodKey) ?? 0;
           const totalBMM = bmmByPeriod.get(periodKey) ?? 0;
           const overheadPerBMM = totalBMM !== 0 ? (totalCost - salaryCostFromSalaryTable) / totalBMM : 0;
           const baseOverheadCost = overheadPerBMM * bmm;
-          
+
           // Part 2: Salary bonus calculation
           const salaryCostFromCostsTable = salaryCostByPeriod.get(periodKey) ?? 0;
           const percentBn = percentBnMap.get(row.company_id) ?? 0;
           const salaryBonus = totalBMM > 0 ? (salaryCostFromCostsTable * percentBn) / totalBMM * bmm : 0;
-          
+
           console.log(`\n📅 Period: ${row.year}/${row.month} | Company: ${row.company_id}`);
           console.log(`📦 BMM của dòng này: ${bmm}`);
           console.log(`\n🔢 PART 1: [(totalCost - salaryCostFromSalaryTable) / totalBMM * BMM]`);
@@ -282,13 +289,13 @@ const CustomerReport = () => {
           console.log(`   - totalBMM for period: ${totalBMM}`);
           console.log(`   - overheadPerBMM: (${totalCost} - ${salaryCostFromSalaryTable}) / ${totalBMM} = ${overheadPerBMM}`);
           console.log(`   - baseOverheadCost: ${overheadPerBMM} * ${bmm} = ${baseOverheadCost}`);
-          
+
           console.log(`\n💰 PART 2: [(salaryCostFromCostsTable * percent_bn) / totalBMM * BMM]`);
           console.log(`   - salaryCostFromCostsTable: ${salaryCostFromCostsTable}`);
           console.log(`   - percent_bn for company: ${percentBn}`);
           console.log(`   - totalBMM for period: ${totalBMM}`);
           console.log(`   - salaryBonus: (${salaryCostFromCostsTable} * ${percentBn}) / ${totalBMM} * ${bmm} = ${salaryBonus}`);
-          
+
           console.log(`\n🎯 TOTAL OVERHEAD COST: ${baseOverheadCost} + ${salaryBonus} = ${baseOverheadCost + salaryBonus}`);
           console.log('----------------------------------------');
         });
@@ -313,12 +320,12 @@ const CustomerReport = () => {
         const salaryCostForPeriod = salaryCostByPeriod.get(periodKey) ?? 0;
         const percentBn = percentBnMap.get(row.company_id) ?? 0;
         const totalBmmForPeriod = bmmByPeriod.get(periodKey) ?? 0;
-        
+
         let salaryBonus = 0;
         if (totalBmmForPeriod > 0) {
           salaryBonus = (salaryCostForPeriod * percentBn) / totalBmmForPeriod * bmm;
         }
-        
+
         // Total overhead cost = base overhead + salary bonus
         const overheadCost = baseOverheadCost + salaryBonus;
 
@@ -335,17 +342,17 @@ const CustomerReport = () => {
           // Find salary cost for this (year, month, customer_id)
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
           const baseSalaryCost = salaryMap.get(salaryKey) || 0;
-          
+
           // Calculate allocated salary cost from unassigned salary costs
           const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
           const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
           const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
-          
+
           let allocatedSalaryCost = 0;
           if (totalCompanyBMM > 0) {
             allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * bmm;
           }
-          
+
           const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
 
           groupMap.set(groupKey, {
