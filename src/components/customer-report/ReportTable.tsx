@@ -160,16 +160,16 @@ export function ReportTable({
                   {!isCompanyReport && (
                     <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
                   )}
-                  <TableCell className="border border-gray-300 p-2 text-right">{data.bmm.toLocaleString()}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{revenue.toLocaleString()}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{salaryCost.toLocaleString()}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{formatCurrency(data.bonusValue || 0)}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{overheadCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right font-semibold">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(data.bmm).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(revenue).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(salaryCost).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(data.bonusValue || 0).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(overheadCost).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right font-semibold">{Math.round(totalCost).toLocaleString()}</TableCell>
                   <TableCell
                     className={`border border-gray-300 p-2 text-right font-semibold ${negativeProfit ? "bg-yellow-200" : "text-green-700"}`}
                   >
-                    {profit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {Math.round(profit).toLocaleString()}
                   </TableCell>
                   <TableCell
                     className={`border border-gray-300 p-2 text-right ${negativeProfit ? "bg-yellow-200" : ""}`}

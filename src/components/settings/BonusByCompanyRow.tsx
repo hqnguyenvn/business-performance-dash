@@ -31,12 +31,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
 
   React.useEffect(() => {
     if (editingCell?.id === row.id) {
-      if (editingCell.field === 'percent_bn') {
-        // For percent_bn, display as percentage (multiply by 100)
-        setTempValue((row[editingCell.field] as number ?? 0) * 100);
-      } else {
-        setTempValue(row[editingCell.field] ?? '');
-      }
+      setTempValue(row[editingCell.field] ?? '');
     } else {
       setTempValue(null);
     }
@@ -52,13 +47,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent, field: keyof BonusByCompany) => {
     if (event.key === "Enter" || event.key === "Tab") {
       event.preventDefault();
-      
-      // Handle percent_bn differently for Enter/Tab
-      if (field === 'percent_bn') {
-        handleCellSave(field, tempValue / 100);
-      } else {
-        handleCellSave(field, tempValue);
-      }
+      handleCellSave(field, tempValue);
       
       // Navigate to next cell
       const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'percent_bn', 'notes'];
@@ -81,18 +70,12 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
 
   const handlePaste = (event: React.ClipboardEvent, field: keyof BonusByCompany) => {
     const pasteData = event.clipboardData.getData('text');
-    if (field === 'bn_bmm') {
+    if (field === 'bn_bmm' || field === 'percent_bn') {
       const num = parseFloat(pasteData.replace(/[^\d.-]/g, ''));
       if (!isNaN(num)) {
-        const roundedNum = Math.round(num);
-        setTempValue(roundedNum);
-        handleCellSave(field, roundedNum);
-      }
-    } else if (field === 'percent_bn') {
-      const num = parseFloat(pasteData.replace(/[^\d.-]/g, ''));
-      if (!isNaN(num)) {
-        setTempValue(num);
-        handleCellSave(field, num / 100);
+        const finalNum = field === 'bn_bmm' ? Math.round(num) : num;
+        setTempValue(finalNum);
+        handleCellSave(field, finalNum);
       }
     }
   };
@@ -171,7 +154,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
             value={typeof tempValue === "number" ? tempValue : 0}
             onChange={v => setTempValue(v)}
             onBlur={v => {
-              handleCellSave("percent_bn", v / 100);
+              handleCellSave("percent_bn", v);
             }}
             onKeyDown={e => handleKeyDown(e as any, "percent_bn")}
             onPaste={e => handlePaste(e, "percent_bn")}
@@ -182,7 +165,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
           />
         ) : (
           <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("percent_bn")}>
-            {Math.round(row.percent_bn * 100)}%
+            {Math.round(row.percent_bn)}
           </div>
         )}
       </TableCell>
