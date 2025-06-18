@@ -167,6 +167,21 @@ const CustomerReport = () => {
         return;
       }
 
+      // 5. Fetch customers data for debug function
+      const { data: customers, error: customersError } = await supabase
+        .from('customers')
+        .select('id, code, name');
+
+      if (customersError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu customers.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Aggregation per filter
 
       const salaryByPeriod = new Map<string, number>();
