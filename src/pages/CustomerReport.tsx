@@ -306,12 +306,12 @@ const CustomerReport = () => {
         // Calculate Bonus Cost = Total Salary (from costs with cost_type = "Salary") × percent_bn
         const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
 
-        // Calculate Tax Cost with condition: if (Total Revenue - Total Cost from costs) > 0
+        // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5% (if profit > 0)
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
 
-        // Calculate new Total Cost = Total Cost (from costs) + Bonus Cost (without Tax Cost)
-        const adjustedTotalCost = totalCostFromCosts + bonusCost;
+        // Calculate Adjusted Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
+        const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
 
         let overhead = 0;
         if (totalBmm !== 0) {

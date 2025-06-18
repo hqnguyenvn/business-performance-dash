@@ -127,9 +127,11 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
       }
 
+      const revenueByPeriod = new Map<string, number>();
       const bmmByPeriod = new Map<string, number>();
       for (const row of rows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
+        revenueByPeriod.set(periodKey, (revenueByPeriod.get(periodKey) ?? 0) + Number(row.vnd_revenue) || 0);
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
       }
 
@@ -165,12 +167,19 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCost] of costByPeriod.entries()) {
         const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
+        const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
         
-        // Calculate bonus cost and adjusted total cost
+        // Calculate bonus cost
         const bonusCost = salaryCost * (firstPercentBn / 100);
-        const adjustedTotalCost = totalCost + bonusCost;
+        
+        // Calculate tax cost = (Total Revenue - Total Cost) × 5% (if profit > 0)
+        const profitBeforeTax = totalRevenue - totalCost;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
+        
+        // Calculate adjusted total cost including tax cost
+        const adjustedTotalCost = totalCost + bonusCost + taxCost;
         
         let overhead = 0;
         if (totalBmm !== 0) {

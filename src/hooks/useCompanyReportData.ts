@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -129,7 +128,6 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
-      // Tạo các bảng tổng hợp lương, chi phí, bmm
       const salaryByPeriod = new Map<string, number>();
       const salaryMap = new Map<string, number>();
       for (const row of salaryRows ?? []) {
@@ -144,6 +142,12 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
       for (const row of costRows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      }
+
+      const revenueByPeriod = new Map<string, number>();
+      for (const row of rows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        revenueByPeriod.set(periodKey, (revenueByPeriod.get(periodKey) ?? 0) + Number(row.vnd_revenue) || 0);
       }
 
       const bmmByPeriod = new Map<string, number>();
@@ -168,11 +172,12 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
-        
+        const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         // Calculate bonus cost and adjusted total cost
         const bonusCost = salaryCost * (firstPercentBn / 100);
-        const adjustedTotalCost = totalCost + bonusCost;
-        
+        const taxCost = totalRevenue * 0.1; // Assuming 10% tax rate
+        const adjustedTotalCost = totalCost + bonusCost + taxCost;
+
         let overhead = 0;
         if (totalBmm !== 0) {
           // FIXED: Use correct formula including salaryBonus
