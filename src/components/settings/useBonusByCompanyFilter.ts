@@ -23,12 +23,14 @@ export const useBonusByCompanyFilter = (data: BonusByCompany[], companies: Maste
       return { value: id, label: company?.code || id };
     });
     const bnBmmValues = [...new Set(data.map(item => item.bn_bmm.toString()))].sort();
+    const percentBnValues = [...new Set(data.map(item => (item.percent_bn * 100).toString()))].sort();
     const notesValues = [...new Set(data.map(item => item.notes).filter(Boolean))].sort();
 
     return {
       year: years.map(year => ({ value: year, label: year })),
       company_id: companyOptions,
       bn_bmm: bnBmmValues.map(value => ({ value, label: value })),
+      percent_bn: percentBnValues.map(value => ({ value, label: value })),
       notes: notesValues.map(note => ({ value: note, label: note }))
     };
   }, [data, companies]);
@@ -38,10 +40,17 @@ export const useBonusByCompanyFilter = (data: BonusByCompany[], companies: Maste
       return Object.entries(filters).every(([field, values]) => {
         if (!values.length) return true;
         
-        const rowValue = row[field as keyof BonusByCompany];
+        let rowValue = row[field as keyof BonusByCompany];
         if (rowValue === null || rowValue === undefined) return false;
         
-        return values.includes(rowValue.toString());
+        // Special handling for percent_bn - convert to percentage for filtering
+        if (field === 'percent_bn') {
+          rowValue = ((rowValue as number) * 100).toString();
+        } else {
+          rowValue = rowValue.toString();
+        }
+        
+        return values.includes(rowValue);
       });
     });
   };
