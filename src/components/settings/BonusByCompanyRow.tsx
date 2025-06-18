@@ -52,7 +52,13 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent, field: keyof BonusByCompany) => {
     if (event.key === "Enter" || event.key === "Tab") {
       event.preventDefault();
-      handleCellSave(field, tempValue);
+      
+      // Handle percent_bn differently for Enter/Tab
+      if (field === 'percent_bn') {
+        handleCellSave(field, tempValue / 100);
+      } else {
+        handleCellSave(field, tempValue);
+      }
       
       // Navigate to next cell
       const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'percent_bn', 'notes'];
