@@ -384,34 +384,49 @@ const CustomerReport = () => {
 
         // DEBUG: Console log all Allocated Salary Cost components for January 2025
         console.log('📊 ALLOCATED SALARY COST FORMULA COMPONENTS (January 2025)');
-        console.log('============================================================');
+        console.log('===================================================');
 
         const jan2025Rows = rows.filter(r => r.year === 2025 && r.month === 1);
-        const uniqueCustomers = new Map();
+
+        // Group rows by customer_id and sum BMM for each customer
+        const customerBMMMap = new Map<string, { customer: any, totalBMM: number, company_id: string }>();
 
         jan2025Rows.forEach(row => {
-          if (!uniqueCustomers.has(row.customer_id)) {
-            const customerBMM = Number(row.quantity) || 0;
-            const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
-            const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
-            const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
+          const customerId = row.customer_id;
+          const bmm = Number(row.quantity) || 0;
 
-            let allocatedSalaryCost = 0;
-            if (totalCompanyBMM > 0) {
-              allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * customerBMM;
-            }
-
-            console.log(`🏢 Customer: ${row.customers?.code || 'Unknown'}`);
-            console.log(`   📋 Formula: Allocated Salary Cost = (Unassigned Salary Cost / Total Company BMM) × Customer BMM`);
-            console.log(`   💰 Unassigned Salary Cost: ${Math.round(unassignedSalaryCost).toLocaleString()} VND`);
-            console.log(`   📊 Total Company BMM: ${totalCompanyBMM.toLocaleString()}`);
-            console.log(`   👤 Customer BMM: ${customerBMM.toLocaleString()}`);
-            console.log(`   🧮 Calculation: (${Math.round(unassignedSalaryCost).toLocaleString()} ÷ ${totalCompanyBMM.toLocaleString()}) × ${customerBMM.toLocaleString()}`);
-            console.log(`   ✅ Allocated Salary Cost: ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
-            console.log('   ────────────────────────────────────────────────────────');
-
-            uniqueCustomers.set(row.customer_id, true);
+          if (customerBMMMap.has(customerId)) {
+            const existing = customerBMMMap.get(customerId)!;
+            existing.totalBMM += bmm;
+          } else {
+            customerBMMMap.set(customerId, {
+              customer: row.customers,
+              totalBMM: bmm,
+              company_id: row.company_id
+            });
           }
+        });
+
+        // Log debug information for each customer
+        customerBMMMap.forEach((customerData, customerId) => {
+          const customerBMM = customerData.totalBMM;
+          const periodCompanyKey = `2025_1_${customerData.company_id}`;
+          const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
+          const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
+
+          let allocatedSalaryCost = 0;
+          if (totalCompanyBMM > 0) {
+            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * customerBMM;
+          }
+
+          console.log(`🏢 Customer: ${customerData.customer?.code || 'Unknown'}`);
+          console.log(`   📋 Formula: Allocated Salary Cost = (Unassigned Salary Cost / Total Company BMM) × Customer BMM`);
+          console.log(`   💰 Unassigned Salary Cost: ${Math.round(unassignedSalaryCost).toLocaleString()} VND`);
+          console.log(`   📊 Total Company BMM: ${totalCompanyBMM.toLocaleString()}`);
+          console.log(`   👤 Customer BMM: ${customerBMM.toLocaleString()}`);
+          console.log(`   🧮 Calculation: (${Math.round(unassignedSalaryCost).toLocaleString()} ÷ ${totalCompanyBMM.toLocaleString()}) × ${customerBMM.toLocaleString()}`);
+          console.log(`   ✅ Allocated Salary Cost: ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
+          console.log('   ────────────────────────────────────────────────────────');
         });
 
         console.log('============================================================');
