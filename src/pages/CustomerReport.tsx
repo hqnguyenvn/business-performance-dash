@@ -269,34 +269,33 @@ const CustomerReport = () => {
           const periodKey = `${row.year}_${row.month}`;
           const bmm = Number(row.quantity) || 0;
 
-          // Part 1: Base overhead calculation
-          const totalCost = costByPeriod.get(periodKey) ?? 0;
-          const salaryCostFromSalaryTable = salaryByPeriod.get(periodKey) ?? 0;
-          const totalBMM = bmmByPeriod.get(periodKey) ?? 0;
-          const overheadPerBMM = totalBMM !== 0 ? (totalCost - salaryCostFromSalaryTable) / totalBMM : 0;
-          const baseOverheadCost = overheadPerBMM * bmm;
-
-          // Part 2: Salary bonus calculation
+          // Apply simplified formula
           const salaryCostFromCostsTable = salaryCostByPeriod.get(periodKey) ?? 0;
-          const percentBn = percentBnMap.get(row.company_id) ?? 0;
-          const salaryBonus = totalBMM > 0 ? (salaryCostFromCostsTable * percentBn) / totalBMM * bmm : 0;
+          const percentBn = percentBnMap.get(hyprexCustomer.id) ?? 0;
 
-          console.log(`\n📅 Period: ${row.year}/${row.month} | Company: ${row.company_id}`);
-          console.log(`📦 BMM của dòng này: ${bmm}`);
-          console.log(`\n🔢 PART 1: [(totalCost - salaryCostFromSalaryTable) / totalBMM * BMM]`);
-          console.log(`   - totalCost (from costs): ${totalCost}`);
-          console.log(`   - salaryCostFromSalaryTable: ${salaryCostFromSalaryTable}`);
-          console.log(`   - totalBMM for period: ${totalBMM}`);
-          console.log(`   - overheadPerBMM: (${totalCost} - ${salaryCostFromSalaryTable}) / ${totalBMM} = ${overheadPerBMM}`);
-          console.log(`   - baseOverheadCost: ${overheadPerBMM} * ${bmm} = ${baseOverheadCost}`);
+          let totalOverheadCost = 0;
+          if (totalBMM > 0) {
+            const totalCost = costByPeriod.get(periodKey) ?? 0;
+            const salaryCostFromSalaryTable = salaryByPeriod.get(periodKey) ?? 0;
+            const totalBMM = bmmByPeriod.get(periodKey) ?? 0;
+            const allocationRatio = bmm / totalBMM;
+            const baseCost = totalCost - salaryCostFromSalaryTable;
+            const salaryAdjustment = (salaryCostFromCostsTable - salaryCostFromCostsTable) * percentBn;
+            totalOverheadCost = allocationRatio * (baseCost + salaryAdjustment);
+          }
 
-          console.log(`\n💰 PART 2: [(salaryCostFromCostsTable * percent_bn) / totalBMM * BMM]`);
-          console.log(`   - salaryCostFromCostsTable: ${salaryCostFromCostsTable}`);
-          console.log(`   - percent_bn for company: ${percentBn}`);
-          console.log(`   - totalBMM for period: ${totalBMM}`);
-          console.log(`   - salaryBonus: (${salaryCostFromCostsTable} * ${percentBn}) / ${totalBMM} * ${bmm} = ${salaryBonus}`);
-
-          console.log(`\n🎯 TOTAL OVERHEAD COST: ${baseOverheadCost} + ${salaryBonus} = ${baseOverheadCost + salaryBonus}`);
+          console.log(`📊 Period: ${row.year}-${row.month}, BMM: ${bmm}`);
+          console.log(`📋 SIMPLIFIED FORMULA CALCULATION:`);
+          console.log(`   - totalCost: ${costByPeriod.get(periodKey) ?? 0}`);
+          console.log(`   - salaryCostFromSalaryTable: ${salaryByPeriod.get(periodKey) ?? 0}`);
+          console.log(`   - salaryCostFromCostsTable: ${salaryCostByPeriod.get(periodKey) ?? 0}`);
+          console.log(`   - percent_bn: ${(percentBn * 100).toFixed(1)}%`);
+          console.log(`   - totalBMM: ${bmmByPeriod.get(periodKey) ?? 0}`);
+          console.log(`   - bmm: ${bmm}`);
+          console.log(`   - allocationRatio: ${bmmByPeriod.get(periodKey) ?? 0 > 0 ? (bmm / (bmmByPeriod.get(periodKey) ?? 0)).toFixed(4) : 0}`);
+          console.log(`   - baseCost: ${costByPeriod.get(periodKey) ?? 0 - salaryByPeriod.get(periodKey) ?? 0}`);
+          console.log(`   - salaryAdjustment: ${((salaryCostFromCostsTable - salaryCostFromCostsTable) * percentBn).toFixed(2)}`);
+          console.log(`💡 Total Overhead Cost: ${totalOverheadCost.toFixed(2)}`);
           console.log('----------------------------------------');
         });
       };
