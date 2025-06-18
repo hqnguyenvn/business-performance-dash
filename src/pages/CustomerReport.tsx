@@ -168,6 +168,14 @@ const CustomerReport = () => {
           return;
         }
         salaryCostRows = salaryFromCosts || [];
+
+        // DEBUG: Total cost from costs table with cost_type = Salary (January 2025)
+        if (selectedYear === '2025' && selectedMonths.includes(1)) {
+          const jan2025SalaryFromCosts = salaryFromCosts
+            ?.filter(row => row.year === 2025 && row.month === 1)
+            ?.reduce((sum, row) => sum + Number(row.cost || 0), 0) || 0;
+          console.log('3️⃣ Total cost from costs table with cost_type = Salary (January 2025):', jan2025SalaryFromCosts);
+        }
       }
 
        // Fetch salary_costs without customer_id: SUM amount by (year, month, company_id)
@@ -444,6 +452,19 @@ const CustomerReport = () => {
       });
       setGroupedData(resultArr);
       setLoading(false);
+
+      // Added for debugging purposes
+      if (selectedYear === '2025' && selectedMonths.includes(1)) {
+          const totalSalaryCostFromSalaryCosts = salaryRows
+              ?.filter(row => row.year === 2025 && row.month === 1)
+              ?.reduce((sum, row) => sum + Number(row.amount || 0), 0) || 0;
+          console.log('2️⃣ Total salary cost from salary_costs (January 2025):', totalSalaryCostFromSalaryCosts);
+
+          const totalBMMFromRevenues = rows
+              ?.filter(row => row.year === 2025 && row.month === 1)
+              ?.reduce((sum, row) => sum + Number(row.quantity || 0), 0) || 0;
+          console.log('4️⃣ Total BMM from revenues (January 2025):', totalBMMFromRevenues);
+      }
     };
     fetchData();
   }, [selectedYear, selectedMonths]);
@@ -472,6 +493,12 @@ const CustomerReport = () => {
   // Total profit, %profit
   const totalProfit = totalRevenue - totalCost;
   const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+    useEffect(() => {
+        if (selectedYear === '2025' && selectedMonths.includes(1)) {
+            console.log('1️⃣ Adjusted Total Cost (January 2025):', totalCost);
+        }
+    }, [totalCost, selectedYear, selectedMonths]);
 
   return (
     <div className="min-h-screen bg-gray-50">
