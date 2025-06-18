@@ -133,13 +133,49 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
       }
 
+      // 4. Lấy bonus_by_d cho năm đã chọn để tính salaryBonus
+      const { data: bonusRows, error: bonusError } = await supabase
+        .from('bonus_by_d')
+        .select(`
+          year, division_id, bn_bmm, percent_bn
+        `)
+        .eq('year', Number(selectedYear));
+
+      if (bonusError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu bonus_by_d.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Get first percent_bn and bn_bmm values for calculations
+      const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+      const firstBnBmm = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].bn_bmm) || 0 : 0;
+
+      // Pre-calculate salaryBonus for all periods (avoiding loops)
+      const salaryBonusByPeriod = new Map<string, number>();
+      for (const [periodKey, totalBmm] of bmmByPeriod.entries()) {
+        const salaryBonus = totalBmm * firstBnBmm;
+        salaryBonusByPeriod.set(periodKey, salaryBonus);
+      }
+
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCost] of costByPeriod.entries()) {
         const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
+        
+        // Calculate bonus cost and adjusted total cost
+        const bonusCost = salaryCost * (firstPercentBn / 100);
+        const adjustedTotalCost = totalCost + bonusCost;
+        
         let overhead = 0;
         if (totalBmm !== 0) {
-          overhead = (totalCost - salaryCost) / totalBmm;
+          // FIXED: Use correct formula including salaryBonus
+          overhead = (adjustedTotalCost - salaryCost - salaryBonus) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }

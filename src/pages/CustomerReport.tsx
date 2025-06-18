@@ -286,6 +286,14 @@ const CustomerReport = () => {
 
       // Get first percent_bn value for bonus calculation
       const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+      const firstBnBmm = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].bn_bmm) || 0 : 0;
+
+      // Pre-calculate salaryBonus for all periods (avoiding loops)
+      const salaryBonusByPeriod = new Map<string, number>();
+      for (const [periodKey, totalBmm] of bmmByPeriod.entries()) {
+        const salaryBonus = totalBmm * firstBnBmm;
+        salaryBonusByPeriod.set(periodKey, salaryBonus);
+      }
 
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
@@ -293,6 +301,7 @@ const CustomerReport = () => {
         const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
 
         // Calculate Bonus Cost = Total Salary (from costs with cost_type = "Salary") × percent_bn
         const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
@@ -306,7 +315,8 @@ const CustomerReport = () => {
 
         let overhead = 0;
         if (totalBmm !== 0) {
-          overhead = (adjustedTotalCost - salaryCostFromSalaryCosts) / totalBmm;
+          // FIXED: Use correct formula including salaryBonus
+          overhead = (adjustedTotalCost - salaryCostFromSalaryCosts - salaryBonus) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
