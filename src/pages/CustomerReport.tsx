@@ -293,8 +293,8 @@ const CustomerReport = () => {
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
 
-        // Calculate new Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
-        const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
+        // Calculate new Total Cost = Total Cost (from costs) + Bonus Cost (without Tax Cost)
+        const adjustedTotalCost = totalCostFromCosts + bonusCost;
 
         let overhead = 0;
         if (totalBmm !== 0) {
