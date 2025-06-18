@@ -156,6 +156,26 @@ const CustomerReport = () => {
         salaryCostRows = salaryFromCosts || [];
       }
 
+       // Fetch salary_costs without customer_id: SUM amount by (year, month, company_id)
+       const { data: salaryWithoutCustomerRows, error: salaryWithoutCustomerError } = await supabase
+       .from('salary_costs')
+       .select(`
+         year, month, company_id, amount
+       `)
+       .eq('year', Number(selectedYear))
+       .in('month', selectedMonths)
+       .is('customer_id', null);
+
+     if (salaryWithoutCustomerError) {
+       toast({
+         variant: "destructive",
+         title: "Lỗi lấy dữ liệu",
+         description: "Không lấy được dữ liệu salary_costs without customer_id.",
+       });
+       setLoading(false);
+       return;
+     }
+
       // 4. Fetch bonus_by_c for the selected year
       const { data: bonusRows, error: bonusError } = await supabase
         .from('bonus_by_c')
@@ -191,36 +211,37 @@ const CustomerReport = () => {
 
       // Aggregation per filter
 
-      const salaryByPeriod = new Map<string, number>();
-      const salaryMap = new Map<string, number>();
-      const salaryWithoutCustomerMap = new Map<string, number>(); // New: salary costs without customer_id
-
-      for (const row of salaryRows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
-
-        if (row.customer_id) {
-          // Salary costs with customer_id
-          const custKey = `${row.year}_${row.month}_${row.customer_id}`;
-          salaryMap.set(custKey, (salaryMap.get(custKey) ?? 0) + Number(row.amount) || 0);
-        } else {
-          // Salary costs without customer_id (to be allocated)
-          const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
-          salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
-        }
-      }
-
       const costByPeriod = new Map<string, number>();
       for (const row of costRows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
       }
 
-      // Aggregate salary costs from costs table by period
+      const salaryByPeriod = new Map<string, number>();
+      for (const row of salaryRows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
+      }
+
+      // NEW: Salary costs without customer_id (unassigned)
+      const salaryWithoutCustomerMap = new Map<string, number>();
+      for (const row of salaryWithoutCustomerRows ?? []) {
+        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+        salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
+      }
+
+      // Salary costs từ bảng costs với cost_type = "Salary"
       const salaryCostByPeriod = new Map<string, number>();
       for (const row of salaryCostRows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
         salaryCostByPeriod.set(periodKey, (salaryCostByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      }
+
+      // Total revenue by period for tax calculation
+      const revenueByPeriod = new Map<string, number>();
+      for (const row of rows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        revenueByPeriod.set(periodKey, (revenueByPeriod.get(periodKey) ?? 0) + Number(row.vnd_revenue) || 0);
       }
 
       const bmmByPeriod = new Map<string, number>();
@@ -232,13 +253,28 @@ const CustomerReport = () => {
         bmmByPeriodCompany.set(periodCompanyKey, (bmmByPeriodCompany.get(periodCompanyKey) ?? 0) + Number(row.quantity) || 0);
       }
 
+      // Get first percent_bn value for bonus calculation
+      const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+
       const overheadPerBMMByPeriod = new Map<string, number>();
-      for (const [periodKey, totalCost] of costByPeriod.entries()) {
-        const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
+      for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
+        const salaryCostFromSalaryCosts = salaryByPeriod.get(periodKey) ?? 0;
+        const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
+        const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+
+        // Calculate Bonus Cost = Total Salary (from costs with cost_type = "Salary") × percent_bn
+        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
+
+        // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5%
+        const taxCost = (totalRevenue - totalCostFromCosts) * 0.05;
+
+        // Calculate new Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
+        const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
+
         let overhead = 0;
         if (totalBmm !== 0) {
-          overhead = (totalCost - salaryCost) / totalBmm;
+          overhead = (adjustedTotalCost - salaryCostFromSalaryCosts) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
@@ -278,7 +314,7 @@ const CustomerReport = () => {
 
         hyprexJan2025Rows.forEach(row => {
           const customerBMM = Number(row.quantity) || 0;
-          
+
           // 1. Calculate baseSalaryCost
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
           const baseSalaryCost = salaryMap.get(salaryKey) || 0;
