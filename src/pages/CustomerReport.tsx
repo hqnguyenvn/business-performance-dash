@@ -253,6 +253,15 @@ const CustomerReport = () => {
         bmmByPeriodCompany.set(periodCompanyKey, (bmmByPeriodCompany.get(periodCompanyKey) ?? 0) + Number(row.quantity) || 0);
       }
 
+      // Create salary map by (year, month, customer_id) - MOVED UP before debug function
+      const salaryMap = new Map<string, number>();
+      for (const row of salaryRows ?? []) {
+        if (row.customer_id) { // Only include rows with customer_id
+          const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
+          salaryMap.set(salaryKey, (salaryMap.get(salaryKey) ?? 0) + Number(row.amount) || 0);
+        }
+      }
+
       // Get first percent_bn value for bonus calculation
       const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
 
@@ -266,8 +275,9 @@ const CustomerReport = () => {
         // Calculate Bonus Cost = Total Salary (from costs with cost_type = "Salary") × percent_bn
         const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
 
-        // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5%
-        const taxCost = (totalRevenue - totalCostFromCosts) * 0.05;
+        // Calculate Tax Cost with condition: if (Total Revenue - Total Cost from costs) > 0
+        const profitBeforeTax = totalRevenue - totalCostFromCosts;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
 
         // Calculate new Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
         const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
