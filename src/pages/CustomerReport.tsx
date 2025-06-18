@@ -259,44 +259,59 @@ const CustomerReport = () => {
           return;
         }
 
-        console.log('🔍 HYPREX OVERHEAD COST CALCULATION DEBUG');
-        console.log('==========================================');
+        console.log('🔍 HYPREX SALARY COST BREAKDOWN DEBUG');
+        console.log('=====================================');
 
-        const hyprexRows = rows.filter(r => r.customer_id === hyprexCustomer.id);
-        console.log(`📊 Hyprex rows found: ${hyprexRows.length}`);
+        // Filter for Hyprex rows in January 2025
+        const hyprexJan2025Rows = rows.filter(r => 
+          r.customer_id === hyprexCustomer.id && 
+          r.year === 2025 && 
+          r.month === 1
+        );
 
-        hyprexRows.forEach(row => {
-          const periodKey = `${row.year}_${row.month}`;
-          const bmm = Number(row.quantity) || 0;
+        console.log(`📊 Hyprex January 2025 rows found: ${hyprexJan2025Rows.length}`);
 
-          // Apply simplified formula
-          const salaryCostFromCostsTable = salaryCostByPeriod.get(periodKey) ?? 0;
-          const percentBn = percentBnMap.get(hyprexCustomer.id) ?? 0;
+        if (hyprexJan2025Rows.length === 0) {
+          console.log('❌ No Hyprex data found for January 2025');
+          return;
+        }
 
-          let totalOverheadCost = 0;
-          if (totalBMM > 0) {
-            const totalCost = costByPeriod.get(periodKey) ?? 0;
-            const salaryCostFromSalaryTable = salaryByPeriod.get(periodKey) ?? 0;
-            const totalBMM = bmmByPeriod.get(periodKey) ?? 0;
-            const allocationRatio = bmm / totalBMM;
-            const baseCost = totalCost - salaryCostFromSalaryTable;
-            const salaryAdjustment = (salaryCostFromCostsTable - salaryCostFromCostsTable) * percentBn;
-            totalOverheadCost = allocationRatio * (baseCost + salaryAdjustment);
+        hyprexJan2025Rows.forEach(row => {
+          const customerBMM = Number(row.quantity) || 0;
+          
+          // 1. Calculate baseSalaryCost
+          const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
+          const baseSalaryCost = salaryMap.get(salaryKey) || 0;
+
+          // 2. Calculate allocatedSalaryCost
+          const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+          const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
+          const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
+
+          let allocatedSalaryCost = 0;
+          if (totalCompanyBMM > 0) {
+            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * customerBMM;
           }
 
-          console.log(`📊 Period: ${row.year}-${row.month}, BMM: ${bmm}`);
-          console.log(`📋 SIMPLIFIED FORMULA CALCULATION:`);
-          console.log(`   - totalCost: ${costByPeriod.get(periodKey) ?? 0}`);
-          console.log(`   - salaryCostFromSalaryTable: ${salaryByPeriod.get(periodKey) ?? 0}`);
-          console.log(`   - salaryCostFromCostsTable: ${salaryCostByPeriod.get(periodKey) ?? 0}`);
-          console.log(`   - percent_bn: ${(percentBn * 100).toFixed(1)}%`);
-          console.log(`   - totalBMM: ${bmmByPeriod.get(periodKey) ?? 0}`);
-          console.log(`   - bmm: ${bmm}`);
-          console.log(`   - allocationRatio: ${bmmByPeriod.get(periodKey) ?? 0 > 0 ? (bmm / (bmmByPeriod.get(periodKey) ?? 0)).toFixed(4) : 0}`);
-          console.log(`   - baseCost: ${costByPeriod.get(periodKey) ?? 0 - salaryByPeriod.get(periodKey) ?? 0}`);
-          console.log(`   - salaryAdjustment: ${((salaryCostFromCostsTable - salaryCostFromCostsTable) * percentBn).toFixed(2)}`);
-          console.log(`💡 Total Overhead Cost: ${totalOverheadCost.toFixed(2)}`);
-          console.log('----------------------------------------');
+          const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+
+          console.log('💰 HYPREX SALARY COST BREAKDOWN - JANUARY 2025');
+          console.log('===============================================');
+          console.log(`🏢 Company: ${row.companies?.code || 'N/A'}`);
+          console.log(`📊 Customer BMM: ${Math.round(customerBMM).toLocaleString()}`);
+          console.log(`📊 Total Company BMM: ${Math.round(totalCompanyBMM).toLocaleString()}`);
+          console.log('');
+          console.log('📋 SALARY COST COMPONENTS:');
+          console.log(`   💵 Base Salary Cost (directly assigned): ${Math.round(baseSalaryCost).toLocaleString()}`);
+          console.log(`   💵 Unassigned Salary Cost (company total): ${Math.round(unassignedSalaryCost).toLocaleString()}`);
+          console.log(`   💵 Allocated Salary Cost (proportional): ${Math.round(allocatedSalaryCost).toLocaleString()}`);
+          console.log(`   💵 TOTAL Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()}`);
+          console.log('');
+          console.log('🔢 CALCULATION DETAILS:');
+          console.log(`   - Allocation Ratio: ${totalCompanyBMM > 0 ? (customerBMM / totalCompanyBMM * 100).toFixed(2) : 0}%`);
+          console.log(`   - Formula: allocatedSalaryCost = (${Math.round(unassignedSalaryCost).toLocaleString()} / ${Math.round(totalCompanyBMM).toLocaleString()}) × ${Math.round(customerBMM).toLocaleString()}`);
+          console.log(`   - Result: ${Math.round(allocatedSalaryCost).toLocaleString()}`);
+          console.log('===============================================');
         });
       };
 
