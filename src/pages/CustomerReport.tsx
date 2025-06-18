@@ -26,6 +26,20 @@ const MONTHS = [
 ];
 const years = [2023, 2024, 2025];
 
+export type GroupedCustomerData = {
+  year: number;
+  month: number;
+  company_id: string;
+  customer_id: string;
+  company_code: string;
+  customer_code: string;
+  bmm: number;
+  revenue: number;
+  salaryCost: number;
+  overheadCost: number;
+  bonusValue: number; // Thêm field bonusValue
+};
+
 const CustomerReport = () => {
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
@@ -376,22 +390,11 @@ const CustomerReport = () => {
         const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
         const baseOverheadCost = overheadPerBMM * bmm;
 
-        // Calculate salary bonus: (salaryCost * percent_bn) / totalBMM * bmm
-        const salaryCostForPeriod = salaryCostByPeriod.get(periodKey) ?? 0;
-        const percentBn = percentBnMap.get(row.company_id) ?? 0;
-        const totalBmmForPeriod = bmmByPeriod.get(periodKey) ?? 0;
-
-        let salaryBonus = 0;
-        if (totalBmmForPeriod > 0) {
-          salaryBonus = (salaryCostForPeriod * percentBn) / totalBmmForPeriod * bmm;
-        }
-
-        // Total overhead cost = base overhead + salary bonus
-        const overheadCost = baseOverheadCost + salaryBonus;
-
-        // Calculate bonus = BMM * bn_bmm from bonus_by_c table
+        // Tính bonus theo công thức đơn giản: BMM × BN_BMM
         const bnBmm = bonusMap.get(row.company_id) ?? 0;
         const bonusValue = bmm * bnBmm;
+
+        const overheadCost = baseOverheadCost; // Chỉ overhead thuần túy, không cộng bonus
 
         if (prev) {
           prev.bmm += bmm;
