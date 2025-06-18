@@ -244,21 +244,21 @@ const CustomerReport = () => {
         percentBnMap.set(row.company_id, Number(row.percent_bn) || 0);
       }
 
-      // DEBUG: Log detailed calculation for Hyperex customer
-      const debugHyperexCalculation = (rows: any[]) => {
-        const hyperexCustomer = customers.find(c => c.code === 'Hyperex');
-        if (!hyperexCustomer) {
-          console.log('❌ Hyperex customer not found');
+      // DEBUG: Log detailed calculation for Hyprex customer
+      const debugHyprexCalculation = (rows: any[]) => {
+        const hyprexCustomer = customers.find(c => c.code === 'Hyprex');
+        if (!hyprexCustomer) {
+          console.log('❌ Hyprex customer not found');
           return;
         }
         
-        console.log('🔍 HYPEREX OVERHEAD COST CALCULATION DEBUG');
+        console.log('🔍 HYPREX OVERHEAD COST CALCULATION DEBUG');
         console.log('==========================================');
         
-        const hyperexRows = rows.filter(r => r.customer_id === hyperexCustomer.id);
-        console.log(`📊 Hyperex rows found: ${hyperexRows.length}`);
+        const hyprexRows = rows.filter(r => r.customer_id === hyprexCustomer.id);
+        console.log(`📊 Hyprex rows found: ${hyprexRows.length}`);
         
-        hyperexRows.forEach(row => {
+        hyprexRows.forEach(row => {
           const periodKey = `${row.year}_${row.month}`;
           const bmm = Number(row.quantity) || 0;
           
@@ -295,7 +295,7 @@ const CustomerReport = () => {
       };
 
       // Call debug function
-      debugHyperexCalculation(rows ?? []);
+      debugHyprexCalculation(rows ?? []);
 
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
