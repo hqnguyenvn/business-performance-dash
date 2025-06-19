@@ -162,7 +162,7 @@ export function ReportTable({
                     <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
                   )}
                   <TableCell className="border border-gray-300 p-2 text-right">
-                    {isCompanyReport ? data.bmm.toFixed(1) : Math.round(data.bmm).toLocaleString()}
+                    {data.bmm.toFixed(1)}
                   </TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(revenue).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(salaryCost).toLocaleString()}</TableCell>
