@@ -334,13 +334,13 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           prev.overheadCost += overheadCost;
           prev.bonusValue += bonusValue;
           
-          // Update salary cost for existing group
-          prev.salaryCost = totalSalaryCost;
+          // ✅ FIX: Don't overwrite salary cost - keep the original value
+          // Salary cost should only be calculated once per group, not per revenue row
           
           // DEBUG: Log update for January 2025
           if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
             console.log(`🔄 UPDATED EXISTING GROUP - ${row.companies?.code || 'Unknown'}:`);
-            console.log(`  🎯 Updated Total Salary Cost: ${Math.round(prev.salaryCost).toLocaleString()} VND`);
+            console.log(`  🎯 Kept Original Salary Cost: ${Math.round(prev.salaryCost).toLocaleString()} VND (NOT OVERWRITTEN)`);
             console.log(`  📦 Updated BMM: ${prev.bmm}`);
             console.log(`  💵 Updated Revenue: ${Math.round(prev.revenue).toLocaleString()} VND`);
             console.log('');
