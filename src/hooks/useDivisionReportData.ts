@@ -110,36 +110,66 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         return;
       }
 
-      // 4. Fetch salary costs từ bảng costs với cost_type="Salary"
-      const { data: salaryCostRows, error: salaryCostError } = await supabase
-        .from('costs')
-        .select(`
-          year, month, cost
-        `)
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths)
-        .eq('cost_type', 'Salary');
+      // 4. Fetch cost_types to get the ID for "Salary" cost type by CODE (2-step approach)
+      const { data: costTypes, error: costTypesError } = await supabase
+        .from('cost_types')
+        .select('id, name, code')
+        .eq('code', 'Salary');
 
-      if (salaryCostError) {
+      if (costTypesError) {
         toast({
           variant: "destructive",
           title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu salary costs from costs table.",
+          description: "Không lấy được dữ liệu cost_types.",
         });
         setLoading(false);
         return;
       }
 
-      // 5. Fetch costs by period (không phải Salary)
-      const { data: costRows, error: costError } = await supabase
+      const salaryTypeId = costTypes?.[0]?.id;
+
+      // 4.1. Fetch salary costs from costs table with cost_type = "Salary" ID
+      let salaryCostRows = [];
+      if (salaryTypeId) {
+        const { data: salaryFromCosts, error: salaryFromCostsError } = await supabase
+          .from('costs')
+          .select(`
+            year, month, cost
+          `)
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths)
+          .eq('cost_type', salaryTypeId)
+          .eq('is_cost', true);
+
+        if (salaryFromCostsError) {
+          toast({
+            variant: "destructive",
+            title: "Lỗi lấy dữ liệu",
+            description: "Không lấy được dữ liệu salary costs từ bảng costs.",
+          });
+          setLoading(false);
+          return;
+        }
+        salaryCostRows = salaryFromCosts || [];
+      }
+
+      // 5. Fetch costs by period (excluding Salary type using salaryTypeId)
+      let costRows = [];
+      const { data: allCostRows, error: costError } = await supabase
         .from('costs')
         .select(`
-          year, month, cost, is_cost
+          year, month, cost, is_cost, cost_type
         `)
         .eq('year', Number(selectedYear))
         .in('month', selectedMonths)
-        .eq('is_cost', true)
-        .neq('cost_type', 'Salary');
+        .eq('is_cost', true);
+
+      if (!costError && allCostRows) {
+        // Filter out salary costs if salaryTypeId exists
+        costRows = salaryTypeId 
+          ? allCostRows.filter(row => row.cost_type !== salaryTypeId)
+          : allCostRows;
+      }
 
       if (costError) {
         toast({
