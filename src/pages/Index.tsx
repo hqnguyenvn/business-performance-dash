@@ -107,25 +107,28 @@ const Index = () => {
         icon={DollarSign}
       />
 
-      <div className="mx-3 md:mx-6 mt-6">
-        <DashboardFilter
-          selectedYear={selectedYear}
-          setSelectedYear={setSelectedYear}
-          years={years}
-          months={months}
-          selectedMonths={selectedMonths}
-          setSelectedMonths={setSelectedMonths}
-          onMonthToggle={handleMonthToggle}
-          incomeTaxRate={incomeTaxRate}
-          setIncomeTaxRate={setIncomeTaxRate}
-          bonusRate={bonusRate}
-          setBonusRate={setBonusRate}
-        />
-      </div>
-
       <div className="p-6">
         <StatCards stats={statCardsData} />
-        <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
+
+        <div className="mx-0 mt-6">
+          <DashboardFilter
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            years={years}
+            months={months}
+            selectedMonths={selectedMonths}
+            setSelectedMonths={setSelectedMonths}
+            onMonthToggle={handleMonthToggle}
+            incomeTaxRate={incomeTaxRate}
+            setIncomeTaxRate={setIncomeTaxRate}
+            bonusRate={bonusRate}
+            setBonusRate={setBonusRate}
+          />
+        </div>
+
+        <div className="mt-6">
+          <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
-import { ReportTable, GroupedCustomerData } from "@/components/customer-report/ReportTable";
+import { ReportTable } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 
@@ -26,7 +26,7 @@ const MONTHS = [
 ];
 const years = [2023, 2024, 2025];
 
-export type GroupedCustomerData = {
+interface CustomerReportData {
   year: number;
   month: number;
   company_id: string;
@@ -38,7 +38,7 @@ export type GroupedCustomerData = {
   salaryCost: number;
   overheadCost: number;
   bonusValue: number; // Thêm field bonusValue
-};
+}
 
 const CustomerReport = () => {
   const { toast } = useToast();
@@ -47,7 +47,7 @@ const CustomerReport = () => {
   // --- Year, months state (multi-checkbox)
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
-  const [groupedData, setGroupedData] = useState<GroupedCustomerData[]>([]);
+  const [groupedData, setGroupedData] = useState<CustomerReportData[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -557,7 +557,7 @@ const CustomerReport = () => {
       debugJanuary2025Stats();
 
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
-      const groupMap = new Map<string, GroupedCustomerData>();
+      const groupMap = new Map<string, CustomerReportData>();
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
         let prev = groupMap.get(groupKey);
