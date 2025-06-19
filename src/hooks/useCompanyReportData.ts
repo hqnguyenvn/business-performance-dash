@@ -168,6 +168,41 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
       }
 
+      // 🔍 DEBUG: Company Report Salary Cost Calculation
+      console.log('');
+      console.log('🏢 COMPANY REPORT - SALARY COST DEBUG');
+      console.log('====================================');
+      console.log('📊 Selected Year:', selectedYear);
+      console.log('📅 Selected Months:', selectedMonths);
+      console.log('');
+      
+      // DEBUG: Raw data counts
+      console.log('📋 RAW DATA COUNTS:');
+      console.log('  - Salary costs with customer_id:', (salaryRows ?? []).length, 'records');
+      console.log('  - Salary costs without customer_id:', (salaryWithoutCustomerRows ?? []).length, 'records');
+      console.log('');
+
+      // DEBUG: Base Salary Cost by Company (January 2025)
+      if (selectedYear === '2025' && selectedMonths.includes(1)) {
+        console.log('💰 BASE SALARY COST BY COMPANY (January 2025):');
+        for (const [companyKey, amount] of baseSalaryByCompany.entries()) {
+          if (companyKey.startsWith('2025_1_')) {
+            const companyId = companyKey.replace('2025_1_', '');
+            console.log(`  🏭 Company ID ${companyId}: ${Math.round(amount).toLocaleString()} VND`);
+          }
+        }
+        console.log('');
+
+        console.log('📊 ALLOCATED SALARY COST BY COMPANY (January 2025):');
+        for (const [periodCompanyKey, amount] of salaryWithoutCustomerMap.entries()) {
+          if (periodCompanyKey.startsWith('2025_1_')) {
+            const companyId = periodCompanyKey.replace('2025_1_', '');
+            console.log(`  🏭 Company ID ${companyId}: ${Math.round(amount).toLocaleString()} VND`);
+          }
+        }
+        console.log('');
+      }
+
       // Total salary by period (for overhead calculation)
       const salaryByPeriod = new Map<string, number>();
       for (const [periodKey, amount] of baseSalaryByPeriod.entries()) {
@@ -251,6 +286,8 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
 
       // --- Group by company ---
       const groupMap = new Map<string, GroupedCompanyData>();
+      let debugCompanyCount = 0;
+      
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.company_id}`;
         let prev = groupMap.get(groupKey);
@@ -265,6 +302,32 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const bnBmm = bonusMap.get(row.company_id) ?? 0;
         const bonusValue = bmm * bnBmm;
 
+        // 🔍 DEBUG: Salary Cost Calculation for each company
+        const baseSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+        const baseSalaryCost = baseSalaryByCompany.get(baseSalaryKey) || 0;
+        const allocatedSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+        const allocatedSalaryCost = salaryWithoutCustomerMap.get(allocatedSalaryKey) || 0;
+        const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+
+        // DEBUG: Log detailed calculation for January 2025
+        if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
+          debugCompanyCount++;
+          console.log(`🔍 DEBUG COMPANY ${debugCompanyCount} - ${row.companies?.code || 'Unknown'}:`);
+          console.log(`  📋 Group Key: ${groupKey}`);
+          console.log(`  🏭 Company ID: ${row.company_id}`);
+          console.log(`  💰 Base Salary Key: ${baseSalaryKey}`);
+          console.log(`  💰 Base Salary Cost: ${Math.round(baseSalaryCost).toLocaleString()} VND`);
+          console.log(`  📊 Allocated Salary Key: ${allocatedSalaryKey}`);
+          console.log(`  📊 Allocated Salary Cost: ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
+          console.log(`  🎯 Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
+          console.log(`  📦 BMM: ${bmm}`);
+          console.log(`  💵 Revenue: ${Math.round(revenue).toLocaleString()} VND`);
+          console.log(`  🎁 Bonus Value: ${Math.round(bonusValue).toLocaleString()} VND`);
+          console.log(`  📈 Overhead Cost: ${Math.round(overheadCost).toLocaleString()} VND`);
+          console.log(`  ❓ Is Existing Group: ${prev ? 'YES' : 'NO'}`);
+          console.log('');
+        }
+
         if (prev) {
           prev.bmm += bmm;
           prev.revenue += revenue;
@@ -272,22 +335,17 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           prev.bonusValue += bonusValue;
           
           // Update salary cost for existing group
-          const baseSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
-          const baseSalaryCost = baseSalaryByCompany.get(baseSalaryKey) || 0;
-          const allocatedSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
-          const allocatedSalaryCost = salaryWithoutCustomerMap.get(allocatedSalaryKey) || 0;
-          prev.salaryCost = baseSalaryCost + allocatedSalaryCost;
+          prev.salaryCost = totalSalaryCost;
+          
+          // DEBUG: Log update for January 2025
+          if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
+            console.log(`🔄 UPDATED EXISTING GROUP - ${row.companies?.code || 'Unknown'}:`);
+            console.log(`  🎯 Updated Total Salary Cost: ${Math.round(prev.salaryCost).toLocaleString()} VND`);
+            console.log(`  📦 Updated BMM: ${prev.bmm}`);
+            console.log(`  💵 Updated Revenue: ${Math.round(prev.revenue).toLocaleString()} VND`);
+            console.log('');
+          }
         } else {
-          // Calculate Total Salary Cost = Base Salary + Allocated Salary
-          const baseSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
-          const baseSalaryCost = baseSalaryByCompany.get(baseSalaryKey) || 0;
-          
-          // Allocated Salary Cost từ salary_costs không có customer_id
-          const allocatedSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
-          const allocatedSalaryCost = salaryWithoutCustomerMap.get(allocatedSalaryKey) || 0;
-          
-          const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
-          
           groupMap.set(groupKey, {
             year: row.year,
             month: row.month,
@@ -299,6 +357,15 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             overheadCost,
             bonusValue,
           });
+          
+          // DEBUG: Log new group for January 2025
+          if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
+            console.log(`✨ CREATED NEW GROUP - ${row.companies?.code || 'Unknown'}:`);
+            console.log(`  🎯 Initial Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
+            console.log(`  📦 Initial BMM: ${bmm}`);
+            console.log(`  💵 Initial Revenue: ${Math.round(revenue).toLocaleString()} VND`);
+            console.log('');
+          }
         }
       }
 
@@ -308,6 +375,54 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         if (a.month !== b.month) return a.month - b.month;
         return a.company_code.localeCompare(b.company_code);
       });
+
+      // 🔍 DEBUG: Final Company Report Results
+      if (selectedYear === '2025' && selectedMonths.includes(1)) {
+        console.log('');
+        console.log('🎯 FINAL COMPANY REPORT RESULTS (January 2025):');
+        console.log('===============================================');
+        
+        const jan2025Results = resultArr.filter(r => r.year === 2025 && r.month === 1);
+        let totalSalaryCost = 0;
+        
+        jan2025Results.forEach(result => {
+          console.log(`🏭 Company: ${result.company_code}`);
+          console.log(`  📦 BMM: ${result.bmm}`);
+          console.log(`  💵 Revenue: ${Math.round(result.revenue).toLocaleString()} VND`);
+          console.log(`  🎯 Salary Cost: ${Math.round(result.salaryCost).toLocaleString()} VND`);
+          console.log(`  🎁 Bonus: ${Math.round(result.bonusValue).toLocaleString()} VND`);
+          console.log(`  📈 Overhead Cost: ${Math.round(result.overheadCost).toLocaleString()} VND`);
+          console.log('');
+          totalSalaryCost += result.salaryCost;
+        });
+        
+        console.log('📊 COMPANY REPORT TOTALS (January 2025):');
+        console.log(`  🎯 Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
+        console.log('');
+        console.log('🔎 COMPARISON WITH CUSTOMER REPORT:');
+        console.log('  Customer Report SKG Salary Cost: 448,562,470 VND');
+        console.log('  Customer Report SPLUS Salary Cost: 1,664,067,456 VND');
+        console.log('  Customer Report Total Salary Cost: 2,112,629,926 VND');
+        console.log('');
+        
+        const skgResult = jan2025Results.find(r => r.company_code === 'SKG');
+        const splusResult = jan2025Results.find(r => r.company_code === 'SPLUS');
+        
+        if (skgResult) {
+          const skgDiff = skgResult.salaryCost - 448562470;
+          console.log(`  SKG Difference: ${Math.round(skgDiff).toLocaleString()} VND`);
+        }
+        
+        if (splusResult) {
+          const splusDiff = splusResult.salaryCost - 1664067456;
+          console.log(`  SPLUS Difference: ${Math.round(splusDiff).toLocaleString()} VND`);
+        }
+        
+        const totalDiff = totalSalaryCost - 2112629926;
+        console.log(`  Total Difference: ${Math.round(totalDiff).toLocaleString()} VND`);
+        console.log('');
+      }
+
       setGroupedData(resultArr);
       setLoading(false);
     };
