@@ -197,7 +197,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
       console.log('📊 Selected Year:', selectedYear);
       console.log('📅 Selected Months:', selectedMonths);
       console.log('');
-      
+
       // DEBUG: Raw data counts
       console.log('📋 RAW DATA COUNTS:');
       console.log('  - Salary costs with customer_id:', (salaryRows ?? []).length, 'records');
@@ -275,7 +275,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
       const salaryBonusByPeriod = new Map<string, number>();
       for (const [periodKey] of bmmByPeriod.entries()) {
         let totalSalaryBonus = 0;
-        
+
         // Sum bonus for each company in this period
         for (const [periodCompanyKey, bmm] of bmmByPeriodCompany.entries()) {
           if (periodCompanyKey.startsWith(periodKey + '_')) {
@@ -284,7 +284,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             totalSalaryBonus += bmm * bnBmm;
           }
         }
-        
+
         salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
@@ -294,17 +294,17 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Sum(bnByBMM)
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
-        
+
         // Calculate Bonus Cost = (sum(cost) có cost_type = "salary") * percentBn
         const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
-        
+
         // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5% (if profit > 0)
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
-        
+
         // Calculate TotalOverhead = SUM(cost) + (sum(cost) có cost_type = "salary") * percentBn + taxCost - Sum(bnByBMM)
         const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus;
-        
+
         // Calculate overheadAvg = TotalOverhead / TotalBMM
         let overheadAvg = 0;
         if (totalBmm !== 0) {
@@ -322,7 +322,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
       // --- Group by company ---
       const groupMap = new Map<string, GroupedCompanyData>();
       let debugCompanyCount = 0;
-      
+
       for (const row of rows ?? []) {
         const groupKey = `${row.year}_${row.month}_${row.company_id}`;
         let prev = groupMap.get(groupKey);
@@ -368,10 +368,10 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           prev.revenue += revenue;
           prev.overheadCost += overheadCost;
           prev.bonusValue += bonusValue;
-          
+
           // ✅ FIX: Don't overwrite salary cost - keep the original value
           // Salary cost should only be calculated once per group, not per revenue row
-          
+
           // DEBUG: Log update for January 2025
           if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
             console.log(`🔄 UPDATED EXISTING GROUP - ${row.companies?.code || 'Unknown'}:`);
@@ -392,7 +392,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             overheadCost,
             bonusValue,
           });
-          
+
           // DEBUG: Log new group for January 2025
           if (selectedYear === '2025' && selectedMonths.includes(1) && row.year === 2025 && row.month === 1) {
             console.log(`✨ CREATED NEW GROUP - ${row.companies?.code || 'Unknown'}:`);
@@ -416,10 +416,10 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         console.log('');
         console.log('🎯 FINAL COMPANY REPORT RESULTS (January 2025):');
         console.log('===============================================');
-        
+
         const jan2025Results = resultArr.filter(r => r.year === 2025 && r.month === 1);
         let totalSalaryCost = 0;
-        
+
         jan2025Results.forEach(result => {
           console.log(`🏭 Company: ${result.company_code}`);
           console.log(`  📦 BMM: ${result.bmm}`);
@@ -430,7 +430,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log('');
           totalSalaryCost += result.salaryCost;
         });
-        
+
         console.log('📊 COMPANY REPORT TOTALS (January 2025):');
         console.log(`  🎯 Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
         console.log('');
@@ -439,20 +439,20 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         console.log('  Customer Report SPLUS Salary Cost: 1,664,067,456 VND');
         console.log('  Customer Report Total Salary Cost: 2,112,629,926 VND');
         console.log('');
-        
+
         const skgResult = jan2025Results.find(r => r.company_code === 'SKG');
         const splusResult = jan2025Results.find(r => r.company_code === 'SPLUS');
-        
+
         if (skgResult) {
           const skgDiff = skgResult.salaryCost - 448562470;
           console.log(`  SKG Difference: ${Math.round(skgDiff).toLocaleString()} VND`);
         }
-        
+
         if (splusResult) {
           const splusDiff = splusResult.salaryCost - 1664067456;
           console.log(`  SPLUS Difference: ${Math.round(splusDiff).toLocaleString()} VND`);
         }
-        
+
         const totalDiff = totalSalaryCost - 2112629926;
         console.log(`  Total Difference: ${Math.round(totalDiff).toLocaleString()} VND`);
         console.log('');
