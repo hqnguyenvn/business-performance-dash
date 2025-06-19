@@ -153,9 +153,8 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         salaryCostRows = salaryFromCosts || [];
       }
 
-      // 5. Fetch costs by period (excluding Salary type using salaryTypeId)
-      let costRows = [];
-      const { data: allCostRows, error: costError } = await supabase
+      // 5. Fetch ALL costs by period (including Salary type)
+      const { data: costRows, error: costError } = await supabase
         .from('costs')
         .select(`
           year, month, cost, is_cost, cost_type
@@ -163,13 +162,6 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         .eq('year', Number(selectedYear))
         .in('month', selectedMonths)
         .eq('is_cost', true);
-
-      if (!costError && allCostRows) {
-        // Filter out salary costs if salaryTypeId exists
-        costRows = salaryTypeId 
-          ? allCostRows.filter(row => row.cost_type !== salaryTypeId)
-          : allCostRows;
-      }
 
       if (costError) {
         toast({
@@ -316,7 +308,7 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
       // Tính percent_bn từ company để tính bonus cost
       const firstPercentBn = bonusByCompanyRows && bonusByCompanyRows.length > 0 ? Number(bonusByCompanyRows[0].percent_bn) || 0 : 0;
 
-      // Overhead calculation với đầy đủ các thành phần
+      // Overhead calculation với công thức đúng giống Company Report
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
         const salaryCostFromSalaryCosts = salaryByPeriod.get(periodKey) ?? 0;
@@ -325,20 +317,19 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
 
-        // Tính bonus cost từ percent_bn của company
-        const bonusCost = salaryCostFromSalaryCosts * (firstPercentBn / 100);
+        // Tính bonus cost từ salary costs từ bảng costs (không phải salary_costs)
+        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
 
-        // Tính tax cost = 5% profit nếu > 0
-        const totalCostBeforeTax = totalCostFromCosts + salaryCostFromSalaryCosts + salaryCostFromCosts + bonusCost;
-        const profitBeforeTax = totalRevenue - totalCostBeforeTax;
+        // Tính tax cost = 5% profit trước tax (chỉ từ totalCostFromCosts)
+        const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
 
-        // Tổng overhead
-        const totalOverhead = totalCostFromCosts + salaryCostFromCosts + bonusCost + taxCost;
+        // Tổng overhead theo công thức đúng
+        const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryCostFromSalaryCosts - salaryBonus;
         
         let overheadAvg = 0;
         if (totalBmm !== 0) {
-          overheadAvg = (totalOverhead - salaryCostFromSalaryCosts - salaryBonus) / totalBmm;
+          overheadAvg = totalOverhead / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overheadAvg);
       }
