@@ -435,6 +435,54 @@ const CustomerReport = () => {
       // Call debug function
       debugHyprexCalculation(rows ?? []);
 
+      // DEBUG: January 2025 breakdown function
+      const debugJanuary2025Stats = () => {
+        if (selectedYear !== '2025' || !selectedMonths.includes(1)) return;
+
+        // 1. Total Revenue từ bảng revenues
+        const totalRevenue = rows
+          ?.filter(r => r.year === 2025 && r.month === 1)
+          ?.reduce((sum, r) => sum + Number(r.vnd_revenue || 0), 0) || 0;
+
+        // 2. Cost từ bảng costs (is_cost = true)
+        const cost = costRows
+          ?.filter(r => r.year === 2025 && r.month === 1)
+          ?.reduce((sum, r) => sum + Number(r.cost || 0), 0) || 0;
+
+        // 3. Total Salary từ bảng costs với cost_type = "Salary"
+        const totalSalary = salaryCostRows
+          ?.filter(r => r.year === 2025 && r.month === 1)
+          ?.reduce((sum, r) => sum + Number(r.cost || 0), 0) || 0;
+
+        // 4. Bonus by Salary = Total Salary × 15%
+        const bonusBySalary = totalSalary * 0.15;
+
+        // 5. Total Cost = Cost + Bonus by Salary
+        const totalCost = cost + bonusBySalary;
+
+        // 6. Salary Cost từ bảng salary_costs
+        const salaryCost = salaryRows
+          ?.filter(r => r.year === 2025 && r.month === 1)
+          ?.reduce((sum, r) => sum + Number(r.amount || 0), 0) || 0;
+
+        // 7. Overhead Cost = Total Cost - Salary Cost
+        const overheadCost = totalCost - salaryCost;
+
+        console.log('🗓️ JANUARY 2025 BREAKDOWN');
+        console.log('=====================');
+        console.log('📊 Total Revenue (from revenues table):', totalRevenue.toLocaleString(), 'VND');
+        console.log('💰 Cost (from costs table):', cost.toLocaleString(), 'VND');
+        console.log('👥 Total Salary (from costs table with cost_type = "Salary"):', totalSalary.toLocaleString(), 'VND');
+        console.log('🎁 Bonus by Salary (15%):', bonusBySalary.toLocaleString(), 'VND');
+        console.log('💸 Total Cost (Cost + Bonus by Salary):', totalCost.toLocaleString(), 'VND');
+        console.log('💼 Salary Cost (from salary_costs table):', salaryCost.toLocaleString(), 'VND');
+        console.log('🏢 Overhead Cost (Total Cost - Salary Cost):', overheadCost.toLocaleString(), 'VND');
+        console.log('=====================');
+      };
+
+      // Call January 2025 debug function
+      debugJanuary2025Stats();
+
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, GroupedCustomerData>();
       for (const row of rows ?? []) {
