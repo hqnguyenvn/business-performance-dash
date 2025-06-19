@@ -457,16 +457,27 @@ const CustomerReport = () => {
         // 4. Bonus by Salary = Total Salary × 15%
         const bonusBySalary = totalSalary * 0.15;
 
-        // 5. Total Cost = Cost + Bonus by Salary
-        const totalCost = cost + bonusBySalary;
+        // 5. Tax = (Total Revenue - Cost) × 5%
+        const tax = (totalRevenue - cost) * 0.05;
 
-        // 6. Salary Cost từ bảng salary_costs
+        // 6. Total Cost = Cost + Bonus by Salary + Tax
+        const totalCost = cost + bonusBySalary + tax;
+
+        // 7. Salary Cost từ bảng salary_costs
         const salaryCost = salaryRows
           ?.filter(r => r.year === 2025 && r.month === 1)
           ?.reduce((sum, r) => sum + Number(r.amount || 0), 0) || 0;
 
-        // 7. Overhead Cost = Total Cost - Salary Cost
+        // 8. Overhead Cost = Total Cost - Salary Cost
         const overheadCost = totalCost - salaryCost;
+
+        // 9. Total BMM từ bảng revenues
+        const totalBMM = rows
+          ?.filter(r => r.year === 2025 && r.month === 1)
+          ?.reduce((sum, r) => sum + Number(r.quantity || 0), 0) || 0;
+
+        // 10. costAvOverhead = Overhead Cost / Total BMM
+        const costAvOverhead = totalBMM > 0 ? overheadCost / totalBMM : 0;
 
         console.log('🗓️ JANUARY 2025 BREAKDOWN');
         console.log('=====================');
@@ -474,9 +485,12 @@ const CustomerReport = () => {
         console.log('💰 Cost (from costs table):', cost.toLocaleString(), 'VND');
         console.log('👥 Total Salary (from costs table with cost_type = "Salary"):', totalSalary.toLocaleString(), 'VND');
         console.log('🎁 Bonus by Salary (15%):', bonusBySalary.toLocaleString(), 'VND');
-        console.log('💸 Total Cost (Cost + Bonus by Salary):', totalCost.toLocaleString(), 'VND');
+        console.log('💸 Tax ((Total Revenue - Cost) × 5%):', tax.toLocaleString(), 'VND');
+        console.log('💰 Total Cost (Cost + Bonus by Salary + Tax):', totalCost.toLocaleString(), 'VND');
         console.log('💼 Salary Cost (from salary_costs table):', salaryCost.toLocaleString(), 'VND');
         console.log('🏢 Overhead Cost (Total Cost - Salary Cost):', overheadCost.toLocaleString(), 'VND');
+        console.log('📋 Total BMM (from revenues table):', totalBMM.toLocaleString());
+        console.log('📈 costAvOverhead (Overhead Cost / Total BMM):', costAvOverhead.toLocaleString(), 'VND/BMM');
         console.log('=====================');
       };
 
