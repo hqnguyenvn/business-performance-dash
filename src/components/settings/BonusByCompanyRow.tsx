@@ -150,22 +150,20 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
 
       <TableCell className="text-right p-1 border border-gray-300">
         {isEditing("percent_bn") ? (
-          <FormattedNumberInput
-            value={typeof tempValue === "number" ? tempValue : 0}
-            onChange={v => setTempValue(v)}
-            onBlur={v => {
-              handleCellSave("percent_bn", v);
-            }}
-            onKeyDown={e => handleKeyDown(e as any, "percent_bn")}
+          <input
+            type="number"
+            step="0.1"
+            className="h-8 w-full border rounded text-right px-2"
+            value={tempValue ?? ""}
+            onChange={e => setTempValue(parseFloat(e.target.value) || 0)}
+            onBlur={() => handleCellSave("percent_bn", Number(tempValue))}
+            onKeyDown={e => handleKeyDown(e, "percent_bn")}
             onPaste={e => handlePaste(e, "percent_bn")}
-            uniqueKey={`${row.id}-percent-bn`}
-            className="w-full"
-            allowDecimals={false}
-            decimals={0}
+            autoFocus
           />
         ) : (
           <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("percent_bn")}>
-            {Math.round(row.percent_bn)}
+            {row.percent_bn.toFixed(1)}
           </div>
         )}
       </TableCell>

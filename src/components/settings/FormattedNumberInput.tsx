@@ -30,7 +30,7 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
   min,
   step,
   uniqueKey,
-  allowDecimals = false,
+  allowDecimals = true,
   decimals = 2,
 }) => {
   const lastKeyRef = React.useRef<string | number | undefined>(uniqueKey);
