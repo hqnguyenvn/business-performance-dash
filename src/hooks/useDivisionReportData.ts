@@ -139,7 +139,7 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
       const { data: bonusRows, error: bonusError } = await supabase
         .from('bonus_by_d')
         .select(`
-          year, division_id, bn_bmm, percent_bn
+          year, division_id, bn_bmm
         `)
         .eq('year', Number(selectedYear));
 
@@ -153,9 +153,10 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         return;
       }
 
-      // Get first percent_bn and bn_bmm values for calculations
-      const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+      // Get first bn_bmm value for calculations (since percent_bn doesn't exist in bonus_by_d)
       const firstBnBmm = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].bn_bmm) || 0 : 0;
+      // Use a default percent_bn value since it's not available in bonus_by_d
+      const defaultPercentBn = 15; // Default bonus percentage
 
       // Pre-calculate salaryBonus for all periods (avoiding loops)
       const salaryBonusByPeriod = new Map<string, number>();
@@ -169,10 +170,10 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
-        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
+        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
         
-        // Calculate bonus cost
-        const bonusCost = salaryCost * (firstPercentBn / 100);
+        // Calculate bonus cost using default percentage
+        const bonusCost = salaryCost * (defaultPercentBn / 100);
         
         // Calculate tax cost = (Total Revenue - Total Cost) × 5% (if profit > 0)
         const profitBeforeTax = totalRevenue - totalCost;
@@ -183,7 +184,7 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         
         let overhead = 0;
         if (totalBmm !== 0) {
-          // FIXED: Use correct formula including salaryBonus
+          // Use correct formula including salaryBonus
           overhead = (adjustedTotalCost - salaryCost - salaryBonus) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
