@@ -311,6 +311,40 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           overheadAvg = totalOverhead / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overheadAvg);
+
+        // 🔍 DEBUG: Overhead Cost Calculation cho tháng 1/2025
+        if (selectedYear === '2025' && selectedMonths.includes(1) && periodKey === '2025_1') {
+          console.log('');
+          console.log('🧮 OVERHEAD COST CALCULATION DEBUG (January 2025)');
+          console.log('=================================================');
+          console.log(`📅 Period Key: ${periodKey}`);
+          console.log('');
+          
+          console.log('📊 BƯỚC 1: DỮ LIỆU ĐẦU VÀO');
+          console.log(`  💰 Total Cost from costs table: ${Math.round(totalCostFromCosts).toLocaleString()} VND`);
+          console.log(`  🎯 Salary Cost from costs (cost_type='Salary'): ${Math.round(salaryCostFromCosts).toLocaleString()} VND`);
+          console.log(`  📦 Total BMM: ${totalBmm.toLocaleString()}`);
+          console.log(`  💵 Total Revenue: ${Math.round(totalRevenue).toLocaleString()} VND`);
+          console.log(`  🎁 Salary Bonus (Sum bnByBMM): ${Math.round(salaryBonus).toLocaleString()} VND`);
+          console.log(`  📊 Percent BN: ${firstPercentBn}%`);
+          console.log('');
+          
+          console.log('📊 BƯỚC 2: TÍNH TOÁN CÁC THÀNH PHẦN');
+          console.log(`  🎁 Bonus Cost = Salary Cost × ${firstPercentBn}% = ${Math.round(salaryCostFromCosts).toLocaleString()} × ${firstPercentBn}% = ${Math.round(bonusCost).toLocaleString()} VND`);
+          console.log(`  💼 Profit Before Tax = Revenue - Total Cost = ${Math.round(totalRevenue).toLocaleString()} - ${Math.round(totalCostFromCosts).toLocaleString()} = ${Math.round(profitBeforeTax).toLocaleString()} VND`);
+          console.log(`  🏛️ Tax Cost = ${profitBeforeTax > 0 ? 'Profit × 5%' : '0 (no profit)'} = ${Math.round(taxCost).toLocaleString()} VND`);
+          console.log('');
+          
+          console.log('📊 BƯỚC 3: TÍNH TOTAL OVERHEAD');
+          console.log(`  📈 TotalOverhead = Total Cost + Bonus Cost + Tax Cost - Salary Bonus`);
+          console.log(`  📈 TotalOverhead = ${Math.round(totalCostFromCosts).toLocaleString()} + ${Math.round(bonusCost).toLocaleString()} + ${Math.round(taxCost).toLocaleString()} - ${Math.round(salaryBonus).toLocaleString()}`);
+          console.log(`  📈 TotalOverhead = ${Math.round(totalOverhead).toLocaleString()} VND`);
+          console.log('');
+          
+          console.log('📊 BƯỚC 4: TÍNH OVERHEAD PER BMM');
+          console.log(`  📊 Overhead per BMM = TotalOverhead ÷ Total BMM = ${Math.round(totalOverhead).toLocaleString()} ÷ ${totalBmm.toLocaleString()} = ${Math.round(overheadAvg).toLocaleString()} VND/BMM`);
+          console.log('');
+        }
       }
 
       // Tạo map bonus theo company_id
@@ -357,8 +391,9 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log(`  🎯 Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
           console.log(`  📦 BMM: ${bmm}`);
           console.log(`  💵 Revenue: ${Math.round(revenue).toLocaleString()} VND`);
-          console.log(`  🎁 Bonus Value: ${Math.round(bonusValue).toLocaleString()} VND`);
-          console.log(`  📈 Overhead Cost: ${Math.round(overheadCost).toLocaleString()} VND`);
+          console.log(`  🎁 Bonus Value (BMM × bn_bmm): ${bmm} × ${bnBmm} = ${Math.round(bonusValue).toLocaleString()} VND`);
+          console.log(`  📊 Overhead per BMM: ${Math.round(overheadPerBMM).toLocaleString()} VND/BMM`);
+          console.log(`  📈 Overhead Cost (BMM × Overhead per BMM): ${bmm} × ${Math.round(overheadPerBMM).toLocaleString()} = ${Math.round(overheadCost).toLocaleString()} VND`);
           console.log(`  ❓ Is Existing Group: ${prev ? 'YES' : 'NO'}`);
           console.log('');
         }
