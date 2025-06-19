@@ -1,3 +1,4 @@
+
 import { useBusinessReport } from "@/hooks/useBusinessReport";
 import { BusinessReportHeader } from "@/components/business-report/BusinessReportHeader";
 import { BusinessReportFilters } from "@/components/business-report/BusinessReportFilters";
@@ -38,6 +39,16 @@ const BusinessReport = () => {
       <BusinessReportHeader />
 
       <div className="p-6">
+        <BusinessReportSummary
+          totalRevenue={totals.totalRevenue}
+          totalGrossProfit={totals.totalGrossProfit}
+          totalCost={totals.totalCost}
+          totalNetProfit={totals.totalNetProfit}
+          grossProfitPercent={totals.grossProfitPercent}
+          netProfitPercent={totals.netProfitPercent}
+          selectedYear={selectedYear}
+        />
+
         <BusinessReportFilters
           selectedYear={selectedYear}
           availableYears={availableYears}
@@ -49,16 +60,6 @@ const BusinessReport = () => {
           bonusRate={bonusRate}
           onBonusRateChange={setBonusRate}
           months={MONTHS}
-        />
-
-        <BusinessReportSummary
-          totalRevenue={totals.totalRevenue}
-          totalGrossProfit={totals.totalGrossProfit}
-          totalCost={totals.totalCost}
-          totalNetProfit={totals.totalNetProfit}
-          grossProfitPercent={totals.grossProfitPercent}
-          netProfitPercent={totals.netProfitPercent}
-          selectedYear={selectedYear}
         />
 
         <BusinessReportTable
