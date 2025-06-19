@@ -131,6 +131,27 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
+      // 3.1. Lấy salary cost từ costs có cost_type = "salary"
+      const { data: salaryCostRows, error: salaryCostError } = await supabase
+        .from('costs')
+        .select(`
+          year, month, cost
+        `)
+        .eq('year', Number(selectedYear))
+        .in('month', selectedMonths)
+        .eq('cost_type', 'salary')
+        .eq('is_cost', true);
+
+      if (salaryCostError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu salary costs từ bảng costs.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // 4. Lấy bonus_by_c cho năm đã chọn
       const { data: bonusRows, error: bonusError } = await supabase
         .from('bonus_by_c')
@@ -219,6 +240,13 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
       }
 
+      // Process salary cost từ bảng costs có cost_type = "salary"
+      const salaryCostByPeriod = new Map<string, number>();
+      for (const row of salaryCostRows ?? []) {
+        const periodKey = `${row.year}_${row.month}`;
+        salaryCostByPeriod.set(periodKey, (salaryCostByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      }
+
       const revenueByPeriod = new Map<string, number>();
       for (const row of rows ?? []) {
         const periodKey = `${row.year}_${row.month}`;
@@ -260,22 +288,28 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
       }
 
       const overheadPerBMMByPeriod = new Map<string, number>();
-      for (const [periodKey, totalCost] of costByPeriod.entries()) {
-        const salaryCost = salaryByPeriod.get(periodKey) ?? 0;
+      for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
+        const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0; // sum(cost) có cost_type = "salary"
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
-        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
+        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Sum(bnByBMM)
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
-        // Calculate bonus cost and adjusted total cost
-        const bonusCost = salaryCost * (firstPercentBn / 100);
-        const taxCost = totalRevenue * 0.1; // Assuming 10% tax rate
-        const adjustedTotalCost = totalCost + bonusCost + taxCost;
-
-        let overhead = 0;
+        
+        // Calculate Bonus Cost = (sum(cost) có cost_type = "salary") * percentBn
+        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
+        
+        // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5% (if profit > 0)
+        const profitBeforeTax = totalRevenue - totalCostFromCosts;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
+        
+        // Calculate TotalOverhead = SUM(cost) + (sum(cost) có cost_type = "salary") * percentBn + taxCost - Sum(bnByBMM)
+        const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus;
+        
+        // Calculate overheadAvg = TotalOverhead / TotalBMM
+        let overheadAvg = 0;
         if (totalBmm !== 0) {
-          // FIXED: Use correct formula including salaryBonus
-          overhead = (adjustedTotalCost - salaryCost - salaryBonus) / totalBmm;
+          overheadAvg = totalOverhead / totalBmm;
         }
-        overheadPerBMMByPeriod.set(periodKey, overhead);
+        overheadPerBMMByPeriod.set(periodKey, overheadAvg);
       }
 
       // Tạo map bonus theo company_id
