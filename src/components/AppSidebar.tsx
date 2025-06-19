@@ -20,21 +20,6 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Revenue Management",
-    url: "/revenues",
-    icon: DollarSign,
-  },
-  {
-    title: "Cost Management",
-    url: "/costs",
-    icon: Receipt,
-  },
-  {
-    title: "Salary Costs",
-    url: "/salary-costs",
-    icon: Users,
-  },
-  {
     title: "Business Report",
     url: "/business-report",
     icon: BarChart3,
@@ -53,6 +38,21 @@ const menuItems = [
     title: "Division Report",
     url: "/division-report",
     icon: BarChart3,
+  },
+  {
+    title: "Revenue Management",
+    url: "/revenues",
+    icon: DollarSign,
+  },
+  {
+    title: "Cost Management",
+    url: "/costs",
+    icon: Receipt,
+  },
+  {
+    title: "Salary Costs",
+    url: "/salary-costs",
+    icon: Users,
   },
   {
     title: "User Management",
