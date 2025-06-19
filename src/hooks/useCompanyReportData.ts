@@ -131,15 +131,16 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
-      // 3.1. Lấy salary cost từ costs có cost_type = "salary"
+      // 3.1. Lấy salary cost từ costs có cost_type code = "Salary" (sử dụng JOIN)
       const { data: salaryCostRows, error: salaryCostError } = await supabase
         .from('costs')
         .select(`
-          year, month, cost
+          year, month, cost,
+          cost_types!costs_cost_type_fkey(code)
         `)
         .eq('year', Number(selectedYear))
         .in('month', selectedMonths)
-        .eq('cost_type', 'salary')
+        .eq('cost_types.code', 'Salary')
         .eq('is_cost', true);
 
       if (salaryCostError) {
