@@ -231,6 +231,21 @@ const CustomerReport = () => {
         return;
       }
 
+      // 6. Fetch companies data for debug function
+      const { data: companies, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, code, name');
+
+      if (companiesError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu companies.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Aggregation per filter
 
       const costByPeriod = new Map<string, number>();
@@ -479,6 +494,34 @@ const CustomerReport = () => {
         // 10. costAvOverhead = Overhead Cost / Total BMM
         const costAvOverhead = totalBMM > 0 ? overheadCost / totalBMM : 0;
 
+        // 11. BMMSKG = Tổng BMM từ revenues có company = SKG
+        const skgCompanyId = companies?.find(c => c.code === 'SKG')?.id;
+        const BMMSKG = rows
+          ?.filter(r => r.year === 2025 && r.month === 1 && r.company_id === skgCompanyId)
+          ?.reduce((sum, r) => sum + Number(r.quantity || 0), 0) || 0;
+
+        // 12. bonusPerBMMSKG = bn_bmm từ bonus_by_c có company = SKG
+        const bonusPerBMMSKG = bonusRows?.find(b => b.company_id === skgCompanyId)?.bn_bmm || 0;
+
+        // 13. BonusSKG = BMMSKG × bonusPerBMMSKG
+        const BonusSKG = BMMSKG * bonusPerBMMSKG;
+
+        // 14. BMMSPLUS = Tổng BMM từ revenues có company = SPLUS
+        const splusCompanyId = companies?.find(c => c.code === 'SPLUS')?.id;
+        const BMMSPLUS = rows
+          ?.filter(r => r.year === 2025 && r.month === 1 && r.company_id === splusCompanyId)
+          ?.reduce((sum, r) => sum + Number(r.quantity || 0), 0) || 0;
+
+        // 15. bonusPerBMMSPLUS = bn_bmm từ bonus_by_c có company = SPLUS
+        const bonusPerBMMSPLUS = bonusRows?.find(b => b.company_id === splusCompanyId)?.bn_bmm || 0;
+
+        // 16. BonusSPLUS = BMMSPLUS × bonusPerBMMSPLUS
+        const BonusSPLUS = BMMSPLUS * bonusPerBMMSPLUS;
+
+        // 17. costAvOverheadAfterBN = (Overhead Cost - BonusSKG - BonusSPLUS) / Total BMM
+        const costAvOverheadAfterBN = totalBMM > 0 ? 
+          (overheadCost - BonusSKG - BonusSPLUS) / totalBMM : 0;
+
         console.log('🗓️ JANUARY 2025 BREAKDOWN');
         console.log('=====================');
         console.log('📊 Total Revenue (from revenues table):', totalRevenue.toLocaleString(), 'VND');
@@ -491,6 +534,13 @@ const CustomerReport = () => {
         console.log('🏢 Overhead Cost (Total Cost - Salary Cost):', overheadCost.toLocaleString(), 'VND');
         console.log('📋 Total BMM (from revenues table):', totalBMM.toLocaleString());
         console.log('📈 costAvOverhead (Overhead Cost / Total BMM):', costAvOverhead.toLocaleString(), 'VND/BMM');
+        console.log('🏭 BMMSKG (SKG company BMM):', BMMSKG.toLocaleString());
+        console.log('💰 bonusPerBMMSKG (SKG bonus per BMM):', bonusPerBMMSKG.toLocaleString(), 'VND/BMM');
+        console.log('🎁 BonusSKG (SKG total bonus):', BonusSKG.toLocaleString(), 'VND');
+        console.log('🏭 BMMSPLUS (SPLUS company BMM):', BMMSPLUS.toLocaleString());
+        console.log('💰 bonusPerBMMSPLUS (SPLUS bonus per BMM):', bonusPerBMMSPLUS.toLocaleString(), 'VND/BMM');
+        console.log('🎁 BonusSPLUS (SPLUS total bonus):', BonusSPLUS.toLocaleString(), 'VND');
+        console.log('📊 costAvOverheadAfterBN ((Overhead - BonusSKG - BonusSPLUS) / Total BMM):', costAvOverheadAfterBN.toLocaleString(), 'VND/BMM');
         console.log('=====================');
       };
 
