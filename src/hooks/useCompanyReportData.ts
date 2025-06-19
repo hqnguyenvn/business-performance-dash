@@ -156,15 +156,32 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
       }
 
-      // Get first percent_bn and bn_bmm values for calculations
+      // Get first percent_bn value for bonus calculation
       const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
-      const firstBnBmm = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].bn_bmm) || 0 : 0;
 
-      // Pre-calculate salaryBonus for all periods (avoiding loops)
+      // Create map for BMM by (period, company)
+      const bmmByPeriodCompany = new Map<string, number>();
+      for (const row of rows ?? []) {
+        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+        const bmm = Number(row.quantity) || 0;
+        bmmByPeriodCompany.set(periodCompanyKey, (bmmByPeriodCompany.get(periodCompanyKey) ?? 0) + bmm);
+      }
+
+      // Calculate salaryBonus correctly for each period by summing up bonus for each company
       const salaryBonusByPeriod = new Map<string, number>();
-      for (const [periodKey, totalBmm] of bmmByPeriod.entries()) {
-        const salaryBonus = totalBmm * firstBnBmm;
-        salaryBonusByPeriod.set(periodKey, salaryBonus);
+      for (const [periodKey] of bmmByPeriod.entries()) {
+        let totalSalaryBonus = 0;
+        
+        // Sum bonus for each company in this period
+        for (const [periodCompanyKey, bmm] of bmmByPeriodCompany.entries()) {
+          if (periodCompanyKey.startsWith(periodKey + '_')) {
+            const companyId = periodCompanyKey.replace(periodKey + '_', '');
+            const bnBmm = bonusRows?.find(b => b.company_id === companyId)?.bn_bmm || 0;
+            totalSalaryBonus += bmm * bnBmm;
+          }
+        }
+        
+        salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
       const overheadPerBMMByPeriod = new Map<string, number>();
