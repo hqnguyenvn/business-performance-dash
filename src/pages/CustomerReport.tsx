@@ -550,6 +550,47 @@ const CustomerReport = () => {
         console.log('💰 bonusPerBMMSPLUS (SPLUS bonus per BMM):', bonusPerBMMSPLUS.toLocaleString(), 'VND/BMM');
         console.log('🎁 BonusSPLUS (SPLUS total bonus):', BonusSPLUS.toLocaleString(), 'VND');
         console.log('📊 costAvOverheadAfterBN ((Overhead - BonusSKG - BonusSPLUS) / Total BMM):', costAvOverheadAfterBN.toLocaleString(), 'VND/BMM');
+        
+        // DEBUG: Base Salary Cost và Allocated Salary Cost theo công ty
+        console.log('');
+        console.log('🏢 COMPANY SALARY COST BREAKDOWN (January 2025)');
+        console.log('===========================================');
+        
+        // Tính Base Salary Cost theo company
+        const baseSalaryCostByCompany = new Map<string, number>();
+        for (const row of salaryRows ?? []) {
+          if (row.year === 2025 && row.month === 1 && row.customer_id && row.company_id) {
+            const currentAmount = baseSalaryCostByCompany.get(row.company_id) || 0;
+            baseSalaryCostByCompany.set(row.company_id, currentAmount + Number(row.amount || 0));
+          }
+        }
+        
+        // Tính Allocated Salary Cost theo company
+        const allocatedSalaryCostByCompany = new Map<string, number>();
+        for (const [periodCompanyKey, unassignedAmount] of salaryWithoutCustomerMap.entries()) {
+          if (periodCompanyKey.startsWith('2025_1_')) {
+            const companyId = periodCompanyKey.replace('2025_1_', '');
+            allocatedSalaryCostByCompany.set(companyId, unassignedAmount);
+          }
+        }
+        
+        // Log cho SPLUS và SKG
+        const targetCompanies = ['SPLUS', 'SKG'];
+        targetCompanies.forEach(companyCode => {
+          const company = companies?.find(c => c.code === companyCode);
+          if (company) {
+            const baseSalaryCost = baseSalaryCostByCompany.get(company.id) || 0;
+            const allocatedSalaryCost = allocatedSalaryCostByCompany.get(company.id) || 0;
+            const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+            
+            console.log(`🏭 Company: ${companyCode}`);
+            console.log(`   💰 Base Salary Cost (from salary_costs with customer_id): ${Math.round(baseSalaryCost).toLocaleString()} VND`);
+            console.log(`   📊 Allocated Salary Cost (from salary_costs without customer_id): ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
+            console.log(`   ✅ Total Salary Cost: ${Math.round(totalSalaryCost).toLocaleString()} VND`);
+            console.log('   ────────────────────────────────────────────────────────');
+          }
+        });
+        
         console.log('=====================');
       };
 
