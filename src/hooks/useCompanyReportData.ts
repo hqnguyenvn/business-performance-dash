@@ -246,7 +246,17 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         console.log('');
       }
 
-      // Total salary by period (for overhead calculation)
+      // Total salary by period (for overhead calculation) - Tổng tất cả salary_costs
+      const totalSalaryByPeriod = new Map<string, number>();
+      for (const [periodKey, amount] of baseSalaryByPeriod.entries()) {
+        totalSalaryByPeriod.set(periodKey, amount);
+      }
+      for (const [periodCompanyKey, amount] of salaryWithoutCustomerMap.entries()) {
+        const periodKey = periodCompanyKey.split('_').slice(0, 2).join('_');
+        totalSalaryByPeriod.set(periodKey, (totalSalaryByPeriod.get(periodKey) ?? 0) + amount);
+      }
+
+      // Keep salaryByPeriod for backward compatibility with other calculations
       const salaryByPeriod = new Map<string, number>();
       for (const [periodKey, amount] of baseSalaryByPeriod.entries()) {
         salaryByPeriod.set(periodKey, amount);
@@ -323,8 +333,11 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
 
-        // Calculate TotalOverhead = SUM(cost) + (sum(cost) có cost_type = "salary") * percentBn + taxCost - Sum(bnByBMM)
-        const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus;
+        // Get Total Salary từ bảng salary_costs (bao gồm cả có và không có customer_id)
+        const totalSalary = totalSalaryByPeriod.get(periodKey) ?? 0;
+
+        // Calculate TotalOverhead = Total Cost + Bonus Cost + Tax Cost - Salary Bonus - Total Salary
+        const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus - totalSalary;
 
         // Calculate overheadAvg = TotalOverhead / TotalBMM
         let overheadAvg = 0;
@@ -347,6 +360,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log(`  📦 Total BMM: ${totalBmm.toLocaleString()}`);
           console.log(`  💵 Total Revenue: ${Math.round(totalRevenue).toLocaleString()} VND`);
           console.log(`  🎁 Salary Bonus (Sum bnByBMM): ${Math.round(salaryBonus).toLocaleString()} VND`);
+          console.log(`  💰 Total Salary from salary_costs: ${Math.round(totalSalary).toLocaleString()} VND`);
           console.log(`  📊 Percent BN: ${firstPercentBn}%`);
           console.log('');
 
@@ -357,8 +371,8 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log('');
 
           console.log('📊 BƯỚC 3: TÍNH TOTAL OVERHEAD');
-          console.log(`  📈 TotalOverhead = Total Cost + Bonus Cost + Tax Cost - Salary Bonus`);
-          console.log(`  📈 TotalOverhead = ${Math.round(totalCostFromCosts).toLocaleString()} + ${Math.round(bonusCost).toLocaleString()} + ${Math.round(taxCost).toLocaleString()} - ${Math.round(salaryBonus).toLocaleString()}`);
+          console.log(`  📈 TotalOverhead = Total Cost + Bonus Cost + Tax Cost - Salary Bonus - Total Salary`);
+          console.log(`  📈 TotalOverhead = ${Math.round(totalCostFromCosts).toLocaleString()} + ${Math.round(bonusCost).toLocaleString()} + ${Math.round(taxCost).toLocaleString()} - ${Math.round(salaryBonus).toLocaleString()} - ${Math.round(totalSalary).toLocaleString()}`);
           console.log(`  📈 TotalOverhead = ${Math.round(totalOverhead).toLocaleString()} VND`);
           console.log('');
 
