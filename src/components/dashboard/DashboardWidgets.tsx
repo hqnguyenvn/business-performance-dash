@@ -43,11 +43,11 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-gray-500">
+          <div className="h-80 flex items-center justify-center text-gray-500">
             {loading ? (
               <div>Loading chart...</div>
             ) : (
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
