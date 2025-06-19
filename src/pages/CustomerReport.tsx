@@ -597,6 +597,14 @@ const CustomerReport = () => {
       // Call January 2025 debug function
       debugJanuary2025Stats();
 
+      // BƯỚC 1: Tính tổng BMM theo customer trước khi group
+      const customerBMMMap = new Map<string, number>(); // key: ${year}_${month}_${customer_id}_${company_id}
+      for (const row of rows ?? []) {
+        const customerKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
+        const bmm = Number(row.quantity) || 0;
+        customerBMMMap.set(customerKey, (customerBMMMap.get(customerKey) || 0) + bmm);
+      }
+
       // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
       const groupMap = new Map<string, CustomerReportData>();
       for (const row of rows ?? []) {
@@ -616,6 +624,7 @@ const CustomerReport = () => {
         const overheadCost = baseOverheadCost; // Chỉ overhead thuần túy, không cộng bonus
 
         if (prev) {
+          // ✅ Chỉ cộng dồn BMM, revenue, overhead, bonus - KHÔNG tính lại allocated salary cost
           prev.bmm += bmm;
           prev.revenue += revenue;
           prev.overheadCost += overheadCost;
@@ -625,14 +634,18 @@ const CustomerReport = () => {
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
           const baseSalaryCost = salaryMap.get(salaryKey) || 0;
 
-          // Calculate allocated salary cost from unassigned salary costs
+          // BƯỚC 2: Tính allocated salary cost với TỔNG BMM của customer
+          const customerKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
+          const totalCustomerBMM = customerBMMMap.get(customerKey) || 0; // SỬ DỤNG TỔNG BMM
+
           const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
           const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
           const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
 
           let allocatedSalaryCost = 0;
           if (totalCompanyBMM > 0) {
-            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * bmm;
+            // ✅ Dùng totalCustomerBMM thay vì bmm từ row hiện tại
+            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * totalCustomerBMM;
           }
 
           const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
