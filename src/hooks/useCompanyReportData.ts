@@ -71,20 +71,41 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
-      // 2. Lấy salary_costs: SUM amount by (year, month, company_id)
+      // 2. Lấy salary_costs có customer_id (Base Salary Cost)
       const { data: salaryRows, error: salaryError } = await supabase
         .from('salary_costs')
         .select(`
-          year, month, company_id, amount
+          year, month, company_id, customer_id, amount
         `)
         .eq('year', Number(selectedYear))
-        .in('month', selectedMonths);
+        .in('month', selectedMonths)
+        .not('customer_id', 'is', null);
 
       if (salaryError) {
         toast({
           variant: "destructive",
           title: "Lỗi lấy dữ liệu",
           description: "Không lấy được dữ liệu salary_costs.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 2.1. Lấy salary_costs không có customer_id (Allocated Salary Cost)
+      const { data: salaryWithoutCustomerRows, error: salaryWithoutCustomerError } = await supabase
+        .from('salary_costs')
+        .select(`
+          year, month, company_id, amount
+        `)
+        .eq('year', Number(selectedYear))
+        .in('month', selectedMonths)
+        .is('customer_id', null);
+
+      if (salaryWithoutCustomerError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu salary_costs without customer.",
         });
         setLoading(false);
         return;
@@ -128,14 +149,33 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         return;
       }
 
-      const salaryByPeriod = new Map<string, number>();
-      const salaryMap = new Map<string, number>();
+      // Process Base Salary Cost (có customer_id)
+      const baseSalaryByPeriod = new Map<string, number>();
+      const baseSalaryByCompany = new Map<string, number>();
       for (const row of salaryRows ?? []) {
         if (!row.company_id) continue;
         const periodKey = `${row.year}_${row.month}`;
-        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
-        const key = `${row.year}_${row.month}_${row.company_id}`;
-        salaryMap.set(key, (salaryMap.get(key) ?? 0) + Number(row.amount) || 0);
+        baseSalaryByPeriod.set(periodKey, (baseSalaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
+        const companyKey = `${row.year}_${row.month}_${row.company_id}`;
+        baseSalaryByCompany.set(companyKey, (baseSalaryByCompany.get(companyKey) ?? 0) + Number(row.amount) || 0);
+      }
+
+      // Process Allocated Salary Cost (không có customer_id)
+      const salaryWithoutCustomerMap = new Map<string, number>();
+      for (const row of salaryWithoutCustomerRows ?? []) {
+        if (!row.company_id) continue;
+        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
+        salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
+      }
+
+      // Total salary by period (for overhead calculation)
+      const salaryByPeriod = new Map<string, number>();
+      for (const [periodKey, amount] of baseSalaryByPeriod.entries()) {
+        salaryByPeriod.set(periodKey, amount);
+      }
+      for (const [periodCompanyKey, amount] of salaryWithoutCustomerMap.entries()) {
+        const periodKey = periodCompanyKey.split('_').slice(0, 2).join('_');
+        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + amount);
       }
 
       const costByPeriod = new Map<string, number>();
@@ -230,9 +270,24 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           prev.revenue += revenue;
           prev.overheadCost += overheadCost;
           prev.bonusValue += bonusValue;
+          
+          // Update salary cost for existing group
+          const baseSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+          const baseSalaryCost = baseSalaryByCompany.get(baseSalaryKey) || 0;
+          const allocatedSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+          const allocatedSalaryCost = salaryWithoutCustomerMap.get(allocatedSalaryKey) || 0;
+          prev.salaryCost = baseSalaryCost + allocatedSalaryCost;
         } else {
-          // Lấy salary cost cho (year, month, company_id)
-          const salaryKey = `${row.year}_${row.month}_${row.company_id}`;
+          // Calculate Total Salary Cost = Base Salary + Allocated Salary
+          const baseSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+          const baseSalaryCost = baseSalaryByCompany.get(baseSalaryKey) || 0;
+          
+          // Allocated Salary Cost từ salary_costs không có customer_id
+          const allocatedSalaryKey = `${row.year}_${row.month}_${row.company_id}`;
+          const allocatedSalaryCost = salaryWithoutCustomerMap.get(allocatedSalaryKey) || 0;
+          
+          const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+          
           groupMap.set(groupKey, {
             year: row.year,
             month: row.month,
@@ -240,7 +295,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             company_code: row.companies?.code || "N/A",
             bmm,
             revenue,
-            salaryCost: salaryMap.get(salaryKey) || 0,
+            salaryCost: totalSalaryCost,
             overheadCost,
             bonusValue,
           });
