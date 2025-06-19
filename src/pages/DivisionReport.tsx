@@ -18,7 +18,6 @@ const DivisionReport = () => {
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
-  const [bonusRate, setBonusRate] = useState<number>(15);
 
   const { groupedData, loading } = useDivisionReportData({
     selectedYear,
@@ -33,19 +32,20 @@ const DivisionReport = () => {
   }));
 
   const exportToCSV = () => {
-    exportCustomerReportCSV(mappedData as any, bonusRate);
+    exportCustomerReportCSV(mappedData as any, 0); // Pass 0 since we're not using bonusRate anymore
     toast({
       title: "Export Successful",
       description: "Division report has been successfully exported as a CSV file.",
     });
   };
 
-  // aggregate totals
+  // Calculate totals - using bonusValue from data instead of bonusRate
   const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
+  const totalBonus = groupedData.reduce((sum, d) => sum + d.bonusValue, 0);
   const totalCost = groupedData.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
-    const bonus = (salary * bonusRate) / 100;
+    const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating with rate
     const oh = d.overheadCost ?? 0;
     return sum + salary + bonus + oh;
   }, 0);
@@ -60,7 +60,14 @@ const DivisionReport = () => {
         icon={BarChart3}
       />
       <div className="p-6">
-        {/* Bỏ block tổng hợp ReportSummary */}
+        <ReportSummary
+          totalRevenue={totalRevenue}
+          totalBMM={totalBMM}
+          totalCost={totalCost}
+          totalProfit={totalProfit}
+          totalProfitPercent={totalProfitPercent}
+        />
+
         <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -73,8 +80,6 @@ const DivisionReport = () => {
                 months={MONTHS}
                 years={YEARS}
                 onExport={exportToCSV}
-                bonusRate={bonusRate}
-                setBonusRate={setBonusRate}
               />
             </div>
           </CardHeader>
@@ -91,7 +96,7 @@ const DivisionReport = () => {
               totalItems={mappedData.length}
               startIndex={1}
               endIndex={mappedData.length}
-              bonusRate={bonusRate}
+              bonusRate={0}
               companyLabel="Division"
             />
           </CardContent>
