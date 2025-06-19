@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
@@ -160,7 +161,9 @@ export function ReportTable({
                   {!isCompanyReport && (
                     <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
                   )}
-                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(data.bmm).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">
+                    {isCompanyReport ? data.bmm.toFixed(1) : Math.round(data.bmm).toLocaleString()}
+                  </TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(revenue).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(salaryCost).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(data.bonusValue || 0).toLocaleString()}</TableCell>
@@ -185,3 +188,4 @@ export function ReportTable({
     </div>
   );
 }
+```
