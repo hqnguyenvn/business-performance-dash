@@ -22,9 +22,11 @@ export const useParameterValues = (year?: number): ParameterValues => {
         
         const currentYear = year || new Date().getFullYear();
         
-        console.log('🔍 QUERYING PARAMETERS:');
-        console.log('   📅 Year:', currentYear);
-        console.log('   🎯 Codes:', ['Tax', 'Bonus']);
+        console.log('');
+        console.log('🔍 PARAMETER VALUES HOOK DEBUG - START');
+        console.log('===========================================');
+        console.log('📅 Query Year:', currentYear);
+        console.log('🎯 Query Codes:', ['Tax', 'Bonus']);
         
         const { data, error } = await supabase
           .from('parameter')
@@ -32,9 +34,11 @@ export const useParameterValues = (year?: number): ParameterValues => {
           .eq('year', currentYear)
           .in('code', ['Tax', 'Bonus']);
           
-        console.log('📊 QUERY RESULT:');
-        console.log('   ✅ Data:', data);
+        console.log('');
+        console.log('📊 RAW QUERY RESULT:');
+        console.log('   ✅ Data:', JSON.stringify(data, null, 2));
         console.log('   ❌ Error:', error);
+        console.log('   📏 Data length:', data?.length || 0);
 
         if (error) {
           console.error('Error fetching parameters:', error);
@@ -50,26 +54,50 @@ export const useParameterValues = (year?: number): ParameterValues => {
         }
 
         if (data && data.length > 0) {
-          console.log('🔍 PARAMETER HOOK DEBUG:');
-          console.log('   📅 Year:', currentYear);
-          console.log('   📊 Raw parameter data:', data);
+          console.log('');
+          console.log('🔍 PROCESSING PARAMETERS:');
+          console.log('========================');
+          
+          let foundTax = false;
+          let foundBonus = false;
           
           data.forEach(param => {
-            console.log(`   ⚙️ Processing parameter: ${param.code} = ${param.value}`);
+            console.log(`⚙️ Processing: ${param.code} = ${param.value} (type: ${typeof param.value})`);
+            
             if (param.code === 'Tax') {
-              // Keep as decimal (0.05)
               setTaxRate(param.value);
-              console.log(`   💸 Tax Rate set to: ${param.value}`);
+              foundTax = true;
+              console.log(`   💸 ✅ Tax Rate SET to: ${param.value} (${param.value * 100}%)`);
             } else if (param.code === 'Bonus') {
-              // Keep as decimal (0.15)
               setBonusRate(param.value);
-              console.log(`   🎁 Bonus Rate set to: ${param.value} (${param.value * 100}%)`);
+              foundBonus = true;
+              console.log(`   🎁 ✅ Bonus Rate SET to: ${param.value} (${param.value * 100}%)`);
             }
           });
+          
+          console.log('');
+          console.log('📋 PARAMETER FOUND STATUS:');
+          console.log(`   💸 Tax found: ${foundTax}`);
+          console.log(`   🎁 Bonus found: ${foundBonus}`);
+          
+          // Set fallbacks for missing parameters
+          if (!foundTax) {
+            console.log('   ⚠️ Tax not found, using fallback: 0.05');
+            setTaxRate(0.05);
+          }
+          if (!foundBonus) {
+            console.log('   ⚠️ Bonus not found, using fallback: 0.15');
+            setBonusRate(0.15);
+          }
         } else {
-          console.log('⚠️ No parameter data found, using fallback defaults');
-          setTaxRate(0.05); // 5% fallback
-          setBonusRate(0.15); // 15% fallback
+          console.log('');
+          console.log('⚠️ NO PARAMETER DATA FOUND');
+          console.log('=========================');
+          console.log('Using fallback defaults:');
+          console.log('   💸 Tax Rate: 0.05 (5%)');
+          console.log('   🎁 Bonus Rate: 0.15 (15%)');
+          setTaxRate(0.05);
+          setBonusRate(0.15);
         }
       } catch (error) {
         console.error('Error in fetchParameterValues:', error);
@@ -86,9 +114,25 @@ export const useParameterValues = (year?: number): ParameterValues => {
     fetchParameterValues();
   }, [year, toast]);
 
+  // Final state logging
+  const finalTaxRate = taxRate ?? 0.05;
+  const finalBonusRate = bonusRate ?? 0.15;
+  
+  if (!loading) {
+    console.log('');
+    console.log('🎯 FINAL PARAMETER VALUES RETURNED:');
+    console.log('==================================');
+    console.log(`   💸 Final Tax Rate: ${finalTaxRate} (${finalTaxRate * 100}%)`);
+    console.log(`   🎁 Final Bonus Rate: ${finalBonusRate} (${finalBonusRate * 100}%)`);
+    console.log('   📊 Loading:', loading);
+    console.log('🔍 PARAMETER VALUES HOOK DEBUG - END');
+    console.log('=========================================');
+    console.log('');
+  }
+
   return {
-    taxRate: taxRate ?? 0.05, // Use 5% as final fallback
-    bonusRate: bonusRate ?? 0.15, // Use 15% as final fallback
+    taxRate: finalTaxRate,
+    bonusRate: finalBonusRate,
     loading
   };
 };
