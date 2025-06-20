@@ -26,13 +26,10 @@ const CompanyReport = () => {
     selectedMonths
   });
 
-  // Initialize filteredData with groupedData when it loads
-  // Use groupedData.length as dependency to avoid resetting filteredData on filter changes
+  // Initialize filteredData when groupedData is first loaded or completely changed
   useEffect(() => {
-    if (groupedData.length > 0) {
-      setFilteredData(groupedData);
-    }
-  }, [groupedData.length]);
+    setFilteredData(groupedData);
+  }, [groupedData]);
 
   // Callback để nhận filteredData từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {

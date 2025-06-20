@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 export interface FilterState {
   [field: string]: string[];
@@ -7,6 +7,12 @@ export interface FilterState {
 
 export const useTableFilter = <T extends Record<string, any>>(data: T[]) => {
   const [filters, setFilters] = useState<FilterState>({});
+
+  // Reset filters when data changes (new data from parent)
+  useEffect(() => {
+    // Only clear filters if data actually changed (not just re-render)
+    setFilters({});
+  }, [data.length]); // Use data.length to avoid unnecessary resets
 
   const filteredData = useMemo(() => {
     if (Object.keys(filters).length === 0) return data;
