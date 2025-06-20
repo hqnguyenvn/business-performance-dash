@@ -22,11 +22,19 @@ export const useParameterValues = (year?: number): ParameterValues => {
         
         const currentYear = year || new Date().getFullYear();
         
+        console.log('🔍 QUERYING PARAMETERS:');
+        console.log('   📅 Year:', currentYear);
+        console.log('   🎯 Codes:', ['Tax', 'Bonus']);
+        
         const { data, error } = await supabase
           .from('parameter')
           .select('code, value')
           .eq('year', currentYear)
           .in('code', ['Tax', 'Bonus']);
+          
+        console.log('📊 QUERY RESULT:');
+        console.log('   ✅ Data:', data);
+        console.log('   ❌ Error:', error);
 
         if (error) {
           console.error('Error fetching parameters:', error);
@@ -39,15 +47,24 @@ export const useParameterValues = (year?: number): ParameterValues => {
         }
 
         if (data && data.length > 0) {
+          console.log('🔍 PARAMETER HOOK DEBUG:');
+          console.log('   📅 Year:', currentYear);
+          console.log('   📊 Raw parameter data:', data);
+          
           data.forEach(param => {
+            console.log(`   ⚙️ Processing parameter: ${param.code} = ${param.value}`);
             if (param.code === 'Tax') {
               // Keep as decimal (0.05)
               setTaxRate(param.value);
+              console.log(`   💸 Tax Rate set to: ${param.value}`);
             } else if (param.code === 'Bonus') {
               // Keep as decimal (0.15)
               setBonusRate(param.value);
+              console.log(`   🎁 Bonus Rate set to: ${param.value} (${param.value * 100}%)`);
             }
           });
+        } else {
+          console.log('⚠️ No parameter data found, using defaults');
         }
       } catch (error) {
         console.error('Error in fetchParameterValues:', error);

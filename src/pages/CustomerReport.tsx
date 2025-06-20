@@ -53,6 +53,15 @@ const CustomerReport = () => {
   
   // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
+  
+  // DEBUG: Log parameter values
+  useEffect(() => {
+    console.log('🔍 PARAMETER VALUES DEBUG:');
+    console.log('   📅 Selected Year:', selectedYear);
+    console.log('   💰 Tax Rate:', taxRate);
+    console.log('   🎁 Bonus Rate:', bonusRate);
+    console.log('   🎯 Bonus Rate as %:', (bonusRate * 100) + '%');
+  }, [selectedYear, taxRate, bonusRate]);
 
   useEffect(() => {
     const fetchData = async () => {
