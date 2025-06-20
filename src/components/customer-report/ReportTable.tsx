@@ -38,7 +38,7 @@ interface ReportTableProps {
   endIndex: number;
   bonusRate: number;
   companyLabel?: string;
-  onFilteredDataChange?: (filteredData: GroupedCustomerData[]) => void;
+  onFilteredDataChange?: (filteredData: any[]) => void;
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -84,7 +84,8 @@ export function ReportTable({
   // Notify parent component when filtered data changes
   useEffect(() => {
     if (onFilteredDataChange) {
-      onFilteredDataChange(filteredData);
+      // Cast to any[] to handle both Customer and Company report data types
+      onFilteredDataChange(filteredData as any[]);
     }
   }, [filteredData, onFilteredDataChange]);
 

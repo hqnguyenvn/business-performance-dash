@@ -27,8 +27,9 @@ const CompanyReport = () => {
   });
 
   // Callback để nhận filteredData từ ReportTable
-  const handleFilteredDataChange = (filtered: GroupedCompanyData[]) => {
-    setFilteredData(filtered);
+  const handleFilteredDataChange = (filtered: any[]) => {
+    // Cast to GroupedCompanyData[] since we know the structure matches
+    setFilteredData(filtered as GroupedCompanyData[]);
   };
 
   const exportToCSV = () => {
