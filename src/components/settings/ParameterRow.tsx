@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
 
   const handleCellSave = (field: keyof Parameter, value: any) => {
     let processedValue = value;
-    
+
     // Đảm bảo giá trị số được xử lý đúng kiểu
     if (field === 'value') {
       processedValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -50,7 +49,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
         processedValue = new Date().getFullYear();
       }
     }
-    
+
     if (processedValue !== row[field]) {
       saveCell(row.id, field, processedValue);
     }
@@ -60,8 +59,22 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent, field: keyof Parameter) => {
     if (event.key === "Enter" || event.key === "Tab") {
       event.preventDefault();
-      handleCellSave(field, tempValue);
-      
+
+      // Lấy giá trị trực tiếp từ input thay vì dùng tempValue
+      const inputElement = event.target as HTMLInputElement;
+      let finalValue = inputElement.value;
+
+      // Xử lý kiểu dữ liệu tương tự như trong handleCellSave
+      if (field === 'value') {
+        const numValue = parseFloat(finalValue);
+        finalValue = isNaN(numValue) ? 0 : numValue;
+      } else if (field === 'year') {
+        const numValue = parseInt(finalValue);
+        finalValue = isNaN(numValue) ? new Date().getFullYear() : numValue;
+      }
+
+      handleCellSave(field, finalValue);
+
       // Navigate to next cell
       const fields: (keyof Parameter)[] = ['year', 'code', 'value', 'descriptions'];
       const currentIndex = fields.indexOf(field);
@@ -74,7 +87,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
       onBlurCell();
     }
   };
-  
+
   const handleCellClick = (field: keyof Parameter) => {
     if (!isEditing(field)) {
       onEditCell(row.id, field);
@@ -95,7 +108,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
   return (
     <TableRow className={`group`}>
       <TableCell className="text-center font-medium border border-gray-300">{idx + 1}</TableCell>
-      
+
       <TableCell className="text-center p-1 border border-gray-300">
         {isEditing("year") ? (
           <input
@@ -150,7 +163,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
           </div>
         )}
       </TableCell>
-      
+
       <TableCell className="p-1 border border-gray-300">
         {isEditing("descriptions") ? (
           <input
@@ -168,7 +181,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
           </div>
         )}
       </TableCell>
-      
+
       <TableCell className="p-1 text-center border border-gray-300">
         <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
           <Button
