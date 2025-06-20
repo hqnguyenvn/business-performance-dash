@@ -96,9 +96,9 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
         // Đối với số thập phân, giữ nguyên độ chính xác
         const finalValue = allowDecimals ? num : Math.round(num);
         
-        // Format lại display value
+        // Đối với số thập phân, không format lại để giữ nguyên giá trị
         if (allowDecimals) {
-          setRawValue(formatNumberWithDecimals(finalValue, decimals));
+          setRawValue(finalValue.toString());
         } else {
           setRawValue(finalValue.toLocaleString('en-US'));
         }
