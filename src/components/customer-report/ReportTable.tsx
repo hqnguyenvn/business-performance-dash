@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
@@ -81,11 +80,12 @@ export function ReportTable({
   // Check if this is Company Report (no customer_code field) 
   const isCompanyReport = !data[0]?.customer_code;
 
-  // Notify parent component when filtered data changes
+  // Notify parent when filtered data changes
   useEffect(() => {
+    console.log('🔄 ReportTable: filteredData changed, length =', filteredData.length);
     if (onFilteredDataChange) {
-      // Cast to any[] to handle both Customer and Company report data types
-      onFilteredDataChange(filteredData as any[]);
+      onFilteredDataChange(filteredData);
+      console.log('📤 ReportTable: Called onFilteredDataChange with', filteredData.length, 'items');
     }
   }, [filteredData, onFilteredDataChange]);
 

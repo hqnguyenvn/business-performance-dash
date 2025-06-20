@@ -28,6 +28,7 @@ const CompanyReport = () => {
 
   // Callback để nhận dữ liệu đã filter từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
+    console.log('📥 CompanyReport: Received filtered data, length =', filtered.length);
     setTableFilteredData(filtered as GroupedCompanyData[]);
   };
 
