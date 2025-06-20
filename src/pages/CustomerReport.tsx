@@ -50,10 +50,10 @@ const CustomerReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<CustomerReportData[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
-  
+
   // DEBUG: Log parameter values
   useEffect(() => {
     console.log('🔍 PARAMETER VALUES DEBUG:');
@@ -212,22 +212,8 @@ const CustomerReport = () => {
      }
 
       // 4. Fetch bonus_by_c for the selected year
-      const { data: bonusRows, error: bonusError } = await supabase
-        .from('bonus_by_c')
-        .select(`
-          year, company_id, bn_bmm, percent_bn
-        `)
-        .eq('year', Number(selectedYear));
-
-      if (bonusError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu bonus_by_c.",
-        });
-        setLoading(false);
-        return;
-      }
+      // Get bonus rates from parameter table (already handled by useParameterValues hook)
+        console.log('📊 Using parameter values - bonusRate:', bonusRate, 'taxRate:', taxRate);
 
       // 5. Fetch customers data for debug function
       const { data: customers, error: customersError } = await supabase
@@ -319,7 +305,7 @@ const CustomerReport = () => {
       const salaryBonusByPeriod = new Map<string, number>();
       for (const [periodKey] of bmmByPeriod.entries()) {
         let totalSalaryBonus = 0;
-        
+
         // Sum bonus for each company in this period
         for (const [periodCompanyKey, bmm] of bmmByPeriodCompany.entries()) {
           if (periodCompanyKey.startsWith(periodKey + '_')) {
@@ -328,7 +314,7 @@ const CustomerReport = () => {
             totalSalaryBonus += bmm * bnBmm;
           }
         }
-        
+
         salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
@@ -563,12 +549,12 @@ const CustomerReport = () => {
         console.log('💰 bonusPerBMMSPLUS (SPLUS bonus per BMM):', bonusPerBMMSPLUS.toLocaleString(), 'VND/BMM');
         console.log('🎁 BonusSPLUS (SPLUS total bonus):', BonusSPLUS.toLocaleString(), 'VND');
         console.log('📊 costAvOverheadAfterBN ((Overhead - BonusSKG - BonusSPLUS) / Total BMM):', costAvOverheadAfterBN.toLocaleString(), 'VND/BMM');
-        
+
         // DEBUG: Base Salary Cost và Allocated Salary Cost theo công ty
         console.log('');
         console.log('🏢 COMPANY SALARY COST BREAKDOWN (January 2025)');
         console.log('===========================================');
-        
+
         // Tính Base Salary Cost theo company
         const baseSalaryCostByCompany = new Map<string, number>();
         for (const row of salaryRows ?? []) {
@@ -577,7 +563,7 @@ const CustomerReport = () => {
             baseSalaryCostByCompany.set(row.company_id, currentAmount + Number(row.amount || 0));
           }
         }
-        
+
         // Tính Allocated Salary Cost theo company
         const allocatedSalaryCostByCompany = new Map<string, number>();
         for (const [periodCompanyKey, unassignedAmount] of salaryWithoutCustomerMap.entries()) {
@@ -586,7 +572,7 @@ const CustomerReport = () => {
             allocatedSalaryCostByCompany.set(companyId, unassignedAmount);
           }
         }
-        
+
         // Log cho SPLUS và SKG
         const targetCompanies = ['SPLUS', 'SKG'];
         targetCompanies.forEach(companyCode => {
@@ -595,7 +581,7 @@ const CustomerReport = () => {
             const baseSalaryCost = baseSalaryCostByCompany.get(company.id) || 0;
             const allocatedSalaryCost = allocatedSalaryCostByCompany.get(company.id) || 0;
             const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
-            
+
             console.log(`🏭 Company: ${companyCode}`);
             console.log(`   💰 Base Salary Cost (from salary_costs with customer_id): ${Math.round(baseSalaryCost).toLocaleString()} VND`);
             console.log(`   📊 Allocated Salary Cost (from salary_costs without customer_id): ${Math.round(allocatedSalaryCost).toLocaleString()} VND`);
@@ -603,7 +589,7 @@ const CustomerReport = () => {
             console.log('   ────────────────────────────────────────────────────────');
           }
         });
-        
+
         console.log('=====================');
       };
 
