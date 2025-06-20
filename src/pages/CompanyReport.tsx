@@ -41,7 +41,10 @@ const CompanyReport = () => {
   };
 
   // Calculate totals directly from table displayed data (simple approach)
-  const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
+  // Always use tableFilteredData if it has been set by the callback, regardless of length
+  const dataToCalculate = tableFilteredData;
+  console.log('💰 CompanyReport: Calculating totals from', dataToCalculate.length, 'filtered records');
+  
   const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
   const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
@@ -53,6 +56,13 @@ const CompanyReport = () => {
   }, 0);
   const totalProfit = totalRevenue - totalCost;
   const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+  console.log('📊 CompanyReport: Calculated totals -', {
+    records: dataToCalculate.length,
+    revenue: Math.round(totalRevenue).toLocaleString(),
+    bmm: totalBMM,
+    cost: Math.round(totalCost).toLocaleString()
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
