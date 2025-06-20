@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building } from "lucide-react";
@@ -26,6 +26,13 @@ const CompanyReport = () => {
     selectedMonths
   });
 
+  // Initialize filteredData with groupedData when it loads
+  useEffect(() => {
+    if (groupedData.length > 0) {
+      setFilteredData(groupedData);
+    }
+  }, [groupedData]);
+
   // Callback để nhận filteredData từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
     // Cast to GroupedCompanyData[] since we know the structure matches
@@ -40,8 +47,8 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals từ filteredData thay vì groupedData
-  const dataToCalculate = filteredData.length > 0 ? filteredData : groupedData;
+  // Calculate totals từ filteredData (always initialized with groupedData)
+  const dataToCalculate = filteredData;
   const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
   const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
