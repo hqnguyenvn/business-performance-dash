@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useParameterValues } from "@/hooks/useParameterValues";
 
 // Tháng và năm để lọc, giống CustomerReport
 export const MONTHS = [
@@ -40,6 +41,9 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
   const { toast } = useToast();
   const [groupedData, setGroupedData] = useState<GroupedCompanyData[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Get parameter values from database
+  const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -274,8 +278,8 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + data.totalBMM);
       }
 
-      // Get first percent_bn value for bonus calculation
-      const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+      // Use bonus rate from parameters instead of bonus_by_c percent_bn
+      const percentBn = bonusRate * 100; // Convert decimal to percentage for calculation
 
       // Tạo map bonus theo company_id
       const bonusMap = new Map<string, number>();
@@ -301,10 +305,10 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalSalary = totalSalaryByPeriod.get(periodKey) ?? 0;
 
-        // Calculate components
-        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
+        // Calculate components using parameters
+        const bonusCost = salaryCostFromCosts * percentBn / 100;
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
-        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
         const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus - totalSalary;
 
         let overheadAvg = 0;
@@ -327,7 +331,8 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log(`  💵 Total Revenue: ${Math.round(totalRevenue).toLocaleString()} VND`);
           console.log(`  🎁 Salary Bonus (Sum bnByBMM): ${Math.round(salaryBonus).toLocaleString()} VND`);
           console.log(`  💰 Total Salary from salary_costs: ${Math.round(totalSalary).toLocaleString()} VND`);
-          console.log(`  📊 Percent BN: ${firstPercentBn}%`);
+          console.log(`  📊 Bonus Rate (from parameters): ${percentBn}%`);
+          console.log(`  💸 Tax Rate (from parameters): ${(taxRate * 100)}%`);
           console.log('');
           console.log('📊 BƯỚC 3: TÍNH TOTAL OVERHEAD');
           console.log(`  📈 TotalOverhead = Total Cost + Bonus Cost + Tax Cost - Salary Bonus - Total Salary`);

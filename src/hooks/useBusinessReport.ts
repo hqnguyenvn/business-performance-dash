@@ -76,11 +76,11 @@ export const useBusinessReport = () => {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Update rates when parameter values are loaded
+  // Update rates when parameter values are loaded - convert to percentage for display
   useEffect(() => {
     if (!paramLoading) {
-      setIncomeTaxRate(paramTaxRate);
-      setBonusRate(paramBonusRate);
+      setIncomeTaxRate(paramTaxRate * 100); // Convert 0.05 to 5 for display
+      setBonusRate(paramBonusRate * 100);   // Convert 0.15 to 15 for display
     }
   }, [paramTaxRate, paramBonusRate, paramLoading]);
 

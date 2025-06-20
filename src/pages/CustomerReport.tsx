@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useParameterValues } from "@/hooks/useParameterValues";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
@@ -49,6 +50,9 @@ const CustomerReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<CustomerReportData[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Get parameter values from database
+  const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -299,8 +303,8 @@ const CustomerReport = () => {
         }
       }
 
-      // Get first percent_bn value for bonus calculation
-      const firstPercentBn = bonusRows && bonusRows.length > 0 ? Number(bonusRows[0].percent_bn) || 0 : 0;
+      // Use bonus rate from parameters instead of bonus_by_c
+      const percentBn = bonusRate * 100; // Convert decimal to percentage for calculation
 
       // Calculate salaryBonus correctly for each period by summing up bonus for each company
       const salaryBonusByPeriod = new Map<string, number>();
@@ -327,12 +331,12 @@ const CustomerReport = () => {
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
 
-        // Calculate Bonus Cost = Total Salary (from costs with cost_type = "Salary") × percent_bn
-        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
+        // Calculate Bonus Cost using parameter value
+        const bonusCost = salaryCostFromCosts * percentBn / 100;
 
-        // Calculate Tax Cost = (Total Revenue - Total Cost from costs) × 5% (if profit > 0)
+        // Calculate Tax Cost using parameter value
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
-        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
 
         // Calculate Adjusted Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
         const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;

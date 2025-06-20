@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useParameterValues } from "@/hooks/useParameterValues";
 
 // Months and years for filter
 export const MONTHS = [
@@ -41,6 +42,9 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
   const { toast } = useToast();
   const [groupedData, setGroupedData] = useState<GroupedDivisionData[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Get parameter values from database
+  const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -305,8 +309,8 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         salaryBonusByPeriod.set(periodKey, (salaryBonusByPeriod.get(periodKey) ?? 0) + salaryBonus);
       }
 
-      // Tính percent_bn từ company để tính bonus cost
-      const firstPercentBn = bonusByCompanyRows && bonusByCompanyRows.length > 0 ? Number(bonusByCompanyRows[0].percent_bn) || 0 : 0;
+      // Use bonus rate from parameters instead of company bonus_by_c
+      const percentBn = bonusRate * 100; // Convert decimal to percentage for calculation
 
       // Overhead calculation với công thức đúng giống Company Report
       const overheadPerBMMByPeriod = new Map<string, number>();
@@ -317,12 +321,12 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
 
-        // Tính bonus cost từ salary costs từ bảng costs (không phải salary_costs)
-        const bonusCost = salaryCostFromCosts * (firstPercentBn / 100);
+        // Tính bonus cost using parameter value
+        const bonusCost = salaryCostFromCosts * percentBn / 100;
 
-        // Tính tax cost = 5% profit trước tax (chỉ từ totalCostFromCosts)
+        // Tính tax cost using parameter value
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
-        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * 0.05 : 0;
+        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
 
         // Tổng overhead theo công thức đúng
         const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryCostFromSalaryCosts - salaryBonus;

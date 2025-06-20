@@ -11,8 +11,8 @@ interface ParameterValues {
 
 export const useParameterValues = (year?: number): ParameterValues => {
   const { toast } = useToast();
-  const [taxRate, setTaxRate] = useState<number>(5); // Default fallback
-  const [bonusRate, setBonusRate] = useState<number>(15); // Default fallback
+  const [taxRate, setTaxRate] = useState<number>(0.05); // Default fallback
+  const [bonusRate, setBonusRate] = useState<number>(0.15); // Default fallback
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -41,11 +41,11 @@ export const useParameterValues = (year?: number): ParameterValues => {
         if (data && data.length > 0) {
           data.forEach(param => {
             if (param.code === 'Tax') {
-              // Convert from decimal (0.05) to percentage (5)
-              setTaxRate(param.value * 100);
+              // Keep as decimal (0.05)
+              setTaxRate(param.value);
             } else if (param.code === 'Bonus') {
-              // Convert from decimal (0.15) to percentage (15)
-              setBonusRate(param.value * 100);
+              // Keep as decimal (0.15)
+              setBonusRate(param.value);
             }
           });
         }
