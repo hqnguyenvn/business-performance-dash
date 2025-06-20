@@ -41,8 +41,8 @@ const CompanyReport = () => {
   };
 
   // Calculate totals directly from table displayed data (simple approach)
-  // Always use tableFilteredData if it has been set by the callback, regardless of length
-  const dataToCalculate = tableFilteredData;
+  // Use tableFilteredData if it has data, otherwise use original groupedData
+  const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
   console.log('💰 CompanyReport: Calculating totals from', dataToCalculate.length, 'filtered records');
   
   const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
