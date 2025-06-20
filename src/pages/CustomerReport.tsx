@@ -67,24 +67,90 @@ const CustomerReport = () => {
     const fetchData = async () => {
       setLoading(true);
 
-      // 1. Fetch revenues with group data for all months selected
-      const { data: rows, error } = await supabase
-        .from('revenues')
-        .select(
-          `
-            year,
-            month,
-            customer_id,
-            company_id,
-            quantity,
-            vnd_revenue,
-            customers!revenues_customer_id_fkey(code),
-            companies!revenues_company_id_fkey(code)
-          `
-        )
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths);
+      // Execute all queries in parallel for better performance
+      const [
+        { data: rows, error },
+        { data: salaryRows, error: salaryError },
+        { data: costRows, error: costError },
+        { data: costTypes, error: costTypesError },
+        { data: salaryWithoutCustomerRows, error: salaryWithoutCustomerError },
+        { data: bonusRows, error: bonusError },
+        { data: customers, error: customersError },
+        { data: companies, error: companiesError }
+      ] = await Promise.all([
+        // 1. Fetch revenues with group data for all months selected
+        supabase
+          .from('revenues')
+          .select(
+            `
+              year,
+              month,
+              customer_id,
+              company_id,
+              quantity,
+              vnd_revenue,
+              customers!revenues_customer_id_fkey(code),
+              companies!revenues_company_id_fkey(code)
+            `
+          )
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths),
 
+        // 2. Fetch salary_costs: SUM amount by (year, month, customer_id)
+        supabase
+          .from('salary_costs')
+          .select(`
+            year, month, customer_id, company_id, amount
+          `)
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths),
+
+        // 3. Fetch costs: SUM cost by (year, month) with is_cost = true
+        supabase
+          .from('costs')
+          .select(`
+            year, month, cost, is_cost
+          `)
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths)
+          .eq('is_cost', true),
+
+        // 4. Fetch cost_types to get the ID for "Salary" cost type by CODE
+        supabase
+          .from('cost_types')
+          .select('id, name, code')
+          .eq('code', 'Salary'),
+
+        // 5. Fetch salary_costs without customer_id: SUM amount by (year, month, company_id)
+        supabase
+          .from('salary_costs')
+          .select(`
+            year, month, company_id, amount
+          `)
+          .eq('year', Number(selectedYear))
+          .in('month', selectedMonths)
+          .is('customer_id', null),
+
+        // 6. Fetch bonus_by_c for the selected year
+        supabase
+          .from('bonus_by_c')
+          .select(`
+            year, company_id, bn_bmm
+          `)
+          .eq('year', Number(selectedYear)),
+
+        // 7. Fetch customers data for debug function
+        supabase
+          .from('customers')
+          .select('id, code, name'),
+
+        // 8. Fetch companies data for debug function
+        supabase
+          .from('companies')
+          .select('id, code, name')
+      ]);
+
+      // Check for errors
       if (error) {
         toast({
           variant: "destructive",
@@ -94,15 +160,6 @@ const CustomerReport = () => {
         setLoading(false);
         return;
       }
-
-      // 2. Fetch salary_costs: SUM amount by (year, month, customer_id)
-      const { data: salaryRows, error: salaryError } = await supabase
-        .from('salary_costs')
-        .select(`
-          year, month, customer_id, company_id, amount
-        `)
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths);
 
       if (salaryError) {
         toast({
@@ -114,16 +171,6 @@ const CustomerReport = () => {
         return;
       }
 
-      // 3. Fetch costs: SUM cost by (year, month) with is_cost = true
-      const { data: costRows, error: costError } = await supabase
-        .from('costs')
-        .select(`
-          year, month, cost, is_cost
-        `)
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths)
-        .eq('is_cost', true);
-
       if (costError) {
         toast({
           variant: "destructive",
@@ -134,24 +181,51 @@ const CustomerReport = () => {
         return;
       }
 
-      // 3.1. Fetch ALL cost_types first to debug
-      const { data: allCostTypes, error: allCostTypesError } = await supabase
-        .from('cost_types')
-        .select('id, name, code');
-
-      console.log('🔍 ALL COST TYPES:', allCostTypes);
-
-      // 3.1. Fetch cost_types to get the ID for "Salary" cost type by CODE
-      const { data: costTypes, error: costTypesError } = await supabase
-        .from('cost_types')
-        .select('id, name, code')
-        .eq('code', 'Salary');
-
       if (costTypesError) {
         toast({
           variant: "destructive",
           title: "Lỗi lấy dữ liệu",
           description: "Không lấy được dữ liệu cost_types.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (salaryWithoutCustomerError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu salary_costs without customer_id.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (bonusError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu bonus_by_c.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (customersError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu customers.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (companiesError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu companies.",
         });
         setLoading(false);
         return;
@@ -181,85 +255,6 @@ const CustomerReport = () => {
           return;
         }
         salaryCostRows = salaryFromCosts || [];
-
-        // DEBUG: Total cost from costs table with cost_type = Salary (January 2025)
-        if (selectedYear === '2025' && selectedMonths.includes(1)) {
-          const jan2025SalaryFromCosts = salaryFromCosts
-            ?.filter(row => row.year === 2025 && row.month === 1)
-            ?.reduce((sum, row) => sum + Number(row.cost || 0), 0) || 0;
-          console.log('3️⃣ Total cost from costs table with cost_type = Salary (January 2025):', jan2025SalaryFromCosts);
-        }
-      }
-
-       // Fetch salary_costs without customer_id: SUM amount by (year, month, company_id)
-       const { data: salaryWithoutCustomerRows, error: salaryWithoutCustomerError } = await supabase
-       .from('salary_costs')
-       .select(`
-         year, month, company_id, amount
-       `)
-       .eq('year', Number(selectedYear))
-       .in('month', selectedMonths)
-       .is('customer_id', null);
-
-     if (salaryWithoutCustomerError) {
-       toast({
-         variant: "destructive",
-         title: "Lỗi lấy dữ liệu",
-         description: "Không lấy được dữ liệu salary_costs without customer_id.",
-       });
-       setLoading(false);
-       return;
-     }
-
-      // 4. Fetch bonus_by_c for the selected year
-      const { data: bonusRows, error: bonusError } = await supabase
-        .from('bonus_by_c')
-        .select(`
-          year, company_id, bn_bmm
-        `)
-        .eq('year', Number(selectedYear));
-
-      if (bonusError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu bonus_by_c.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Get bonus rates from parameter table (already handled by useParameterValues hook)
-      console.log('📊 Using parameter values - bonusRate:', bonusRate, 'taxRate:', taxRate);
-
-      // 5. Fetch customers data for debug function
-      const { data: customers, error: customersError } = await supabase
-        .from('customers')
-        .select('id, code, name');
-
-      if (customersError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu customers.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // 6. Fetch companies data for debug function
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .select('id, code, name');
-
-      if (companiesError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu companies.",
-        });
-        setLoading(false);
-        return;
       }
 
       // Aggregation per filter
