@@ -80,7 +80,7 @@ const CompanyReport = () => {
       totalProfit: profit,
       totalProfitPercent: profitPercent
     };
-  }, [tableFilteredData, groupedData]);
+  }, [tableFilteredData, groupedData, tableFilteredData.length]);
 
   return (
     <div className="min-h-screen bg-gray-50">
