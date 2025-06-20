@@ -1,11 +1,12 @@
 
 import { PageHeader } from "@/components/PageHeader";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardFilter } from "@/components/dashboard/DashboardFilter";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 import { DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useParameterValues } from "@/hooks/useParameterValues";
 import { formatNumber } from "@/lib/format";
 
 // Month & year options
@@ -36,8 +37,20 @@ const Index = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, idx) => idx + 1)
   );
+  
+  // Get parameter values from database
+  const { taxRate: paramTaxRate, bonusRate: paramBonusRate, loading: paramLoading } = useParameterValues(selectedYear);
+  
   const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
   const [bonusRate, setBonusRate] = useState<number>(15);
+
+  // Update rates when parameter values are loaded - convert to percentage for display
+  useEffect(() => {
+    if (!paramLoading) {
+      setIncomeTaxRate(paramTaxRate * 100); // Convert 0.05 to 5 for display
+      setBonusRate(paramBonusRate * 100);   // Convert 0.15 to 15 for display
+    }
+  }, [paramTaxRate, paramBonusRate, paramLoading]);
 
   // Month toggle utility
   const handleMonthToggle = (month: number) => {
