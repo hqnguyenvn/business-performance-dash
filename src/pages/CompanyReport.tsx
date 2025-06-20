@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building } from "lucide-react";
@@ -40,29 +40,47 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals directly from table displayed data (simple approach)
-  // Use tableFilteredData if it has data, otherwise use original groupedData
-  const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
-  console.log('💰 CompanyReport: Calculating totals from', dataToCalculate.length, 'filtered records');
-  
-  const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
-  const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
-  const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
-  const totalCost = dataToCalculate.reduce((sum, d) => {
-    const salary = d.salaryCost ?? 0;
-    const bonus = d.bonusValue ?? 0;
-    const oh = d.overheadCost ?? 0;
-    return sum + salary + bonus + oh;
-  }, 0);
-  const totalProfit = totalRevenue - totalCost;
-  const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  // Calculate totals using useMemo to ensure re-calculation when data changes
+  const {
+    totalRevenue,
+    totalBMM, 
+    totalBonus,
+    totalCost,
+    totalProfit,
+    totalProfitPercent
+  } = useMemo(() => {
+    // Use tableFilteredData if it has data, otherwise use original groupedData
+    const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
+    console.log('💰 CompanyReport: Calculating totals from', dataToCalculate.length, 'filtered records');
+    
+    const revenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
+    const bmm = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
+    const bonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
+    const cost = dataToCalculate.reduce((sum, d) => {
+      const salary = d.salaryCost ?? 0;
+      const bonusVal = d.bonusValue ?? 0;
+      const oh = d.overheadCost ?? 0;
+      return sum + salary + bonusVal + oh;
+    }, 0);
+    const profit = revenue - cost;
+    const profitPercent = revenue !== 0 ? (profit / revenue) * 100 : 0;
 
-  console.log('📊 CompanyReport: Calculated totals -', {
-    records: dataToCalculate.length,
-    revenue: Math.round(totalRevenue).toLocaleString(),
-    bmm: totalBMM,
-    cost: Math.round(totalCost).toLocaleString()
-  });
+    console.log('📊 CompanyReport: Calculated totals -', {
+      records: dataToCalculate.length,
+      revenue: Math.round(revenue).toLocaleString(),
+      bmm: bmm,
+      cost: Math.round(cost).toLocaleString()
+    });
+
+    return {
+      totalRevenue: revenue,
+      totalBMM: bmm,
+      totalBonus: bonus,
+      totalCost: cost,
+      totalProfit: profit,
+      totalProfitPercent: profitPercent
+    };
+  }, [tableFilteredData, groupedData]);
 
   return (
     <div className="min-h-screen bg-gray-50">
