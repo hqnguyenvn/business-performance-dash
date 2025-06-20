@@ -707,7 +707,7 @@ const CustomerReport = () => {
       }
     };
     fetchData();
-  }, [selectedYear, selectedMonths]);
+  }, [selectedYear, selectedMonths, bonusRate, taxRate]);
 
   const exportToCSV = () => {
     exportCustomerReportCSV(groupedData, 0); // Pass 0 as bonusRate since we're not using it anymore
