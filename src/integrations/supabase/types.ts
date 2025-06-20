@@ -201,6 +201,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "costs_cost_type_fkey"
+            columns: ["cost_type"]
+            isOneToOne: false
+            referencedRelation: "cost_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "costs_division_id_fkey"
             columns: ["division_id"]
             isOneToOne: false

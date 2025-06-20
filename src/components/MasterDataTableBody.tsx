@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -43,6 +44,44 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   deleteItem,
   addRowBelow,
 }) => {
+  const [editingValues, setEditingValues] = React.useState<Record<string, any>>({});
+
+  const handleInputChange = (id: string, field: keyof MasterData, value: string) => {
+    const key = `${id}-${field}`;
+    setEditingValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleInputBlur = (id: string, field: keyof MasterData) => {
+    const key = `${id}-${field}`;
+    const value = editingValues[key];
+    if (value !== undefined) {
+      handleCellEdit(id, field, value);
+      setEditingValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[key];
+        return newValues;
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, id: string, field: keyof MasterData) => {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      handleInputBlur(id, field);
+      // Focus next input if needed
+      const currentElement = e.target as HTMLElement;
+      const nextElement = currentElement.closest('td')?.nextElementSibling?.querySelector('input, select') as HTMLElement;
+      if (nextElement) {
+        nextElement.focus();
+      }
+    }
+  };
+
+  const getInputValue = (item: MasterData, field: keyof MasterData) => {
+    const key = `${item.id}-${field}`;
+    return editingValues[key] !== undefined ? editingValues[key] : (item[field] || "");
+  };
+
   return (
     <>
       {data.map((item, idx) => (
@@ -52,8 +91,10 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
             <td className="border border-gray-300 p-1">
               <select
                 className="border-0 p-1 h-8 w-full"
-                value={item.company_id || ""}
-                onChange={(e) => handleCellEdit(item.id, 'company_id', e.target.value)}
+                value={getInputValue(item, 'company_id')}
+                onChange={(e) => handleInputChange(item.id, 'company_id', e.target.value)}
+                onBlur={() => handleInputBlur(item.id, 'company_id')}
+                onKeyDown={(e) => handleKeyDown(e, item.id, 'company_id')}
               >
                 <option value="">Select company</option>
                 {companies.map((company) => (
@@ -68,8 +109,10 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
             <td className="border border-gray-300 p-1">
               <select
                 className="border-0 p-1 h-8 w-full"
-                value={item.customer_id || ""}
-                onChange={(e) => handleCellEdit(item.id, 'customer_id', e.target.value)}
+                value={getInputValue(item, 'customer_id')}
+                onChange={(e) => handleInputChange(item.id, 'customer_id', e.target.value)}
+                onBlur={() => handleInputBlur(item.id, 'customer_id')}
+                onKeyDown={(e) => handleKeyDown(e, item.id, 'customer_id')}
               >
                 <option value="">Select customer</option>
                 {customers.map((customer) => (
@@ -83,27 +126,32 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
           <td className="border border-gray-300 p-1">
             <input
               className="border-0 p-1 h-8 w-full"
-              value={item.code}
-              onChange={(e) => handleCellEdit(item.id, 'code', e.target.value)}
+              value={getInputValue(item, 'code')}
+              onChange={(e) => handleInputChange(item.id, 'code', e.target.value)}
+              onBlur={() => handleInputBlur(item.id, 'code')}
+              onKeyDown={(e) => handleKeyDown(e, item.id, 'code')}
             />
           </td>
           <td className="border border-gray-300 p-1">
             <input
               className="border-0 p-1 h-8 w-full"
-              value={item.name}
-              onChange={(e) => handleCellEdit(item.id, 'name', e.target.value)}
+              value={getInputValue(item, 'name')}
+              onChange={(e) => handleInputChange(item.id, 'name', e.target.value)}
+              onBlur={() => handleInputBlur(item.id, 'name')}
+              onKeyDown={(e) => handleKeyDown(e, item.id, 'name')}
             />
           </td>
           <td className="border border-gray-300 p-1">
             <input
               className="border-0 p-1 h-8 w-full"
-              value={item.description || ""}
-              onChange={(e) => handleCellEdit(item.id, 'description', e.target.value)}
+              value={getInputValue(item, 'description')}
+              onChange={(e) => handleInputChange(item.id, 'description', e.target.value)}
+              onBlur={() => handleInputBlur(item.id, 'description')}
+              onKeyDown={(e) => handleKeyDown(e, item.id, 'description')}
             />
           </td>
           <td className="border border-gray-300 p-2 text-center">
             <div className="flex items-center justify-center gap-1">
-              {/* Nút + để thêm dòng mới bên dưới */}
               <Button
                 type="button"
                 variant="outline"
@@ -118,7 +166,6 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
                   <line x1="5" x2="19" y1="12" y2="12" />
                 </svg>
               </Button>
-              {/* Nút xóa với màu đỏ nổi bật */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

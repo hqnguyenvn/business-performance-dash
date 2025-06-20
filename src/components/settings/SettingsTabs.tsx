@@ -51,19 +51,43 @@ interface SettingsTabsProps {
 export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
   return (
     <Tabs defaultValue="customers" className="w-full">
-      <TabsList className="grid w-full grid-cols-11">
-        <TabsTrigger value="customers">Customers</TabsTrigger>
-        <TabsTrigger value="companies">Companies</TabsTrigger>
-        <TabsTrigger value="divisions">Divisions</TabsTrigger>
-        <TabsTrigger value="projects">Projects</TabsTrigger>
-        <TabsTrigger value="projectTypes">Project Types</TabsTrigger>
-        <TabsTrigger value="resources">Resources</TabsTrigger>
-        <TabsTrigger value="currencies">Currencies</TabsTrigger>
-        <TabsTrigger value="costTypes">Cost Types</TabsTrigger>
-        <TabsTrigger value="exchangeRates">Exchange Rates</TabsTrigger>
-        <TabsTrigger value="bonusByDivision">Bonus by D</TabsTrigger>
-        <TabsTrigger value="bonusByCompany">Bonus by C</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto pb-2">
+        <TabsList className="grid grid-cols-11 min-w-max w-full h-auto">
+          <TabsTrigger value="customers" className="whitespace-nowrap px-2 py-2 text-xs">
+            Customers
+          </TabsTrigger>
+          <TabsTrigger value="companies" className="whitespace-nowrap px-2 py-2 text-xs">
+            Companies
+          </TabsTrigger>
+          <TabsTrigger value="divisions" className="whitespace-nowrap px-2 py-2 text-xs">
+            Divisions
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="whitespace-nowrap px-2 py-2 text-xs">
+            Projects
+          </TabsTrigger>
+          <TabsTrigger value="projectTypes" className="whitespace-nowrap px-2 py-2 text-xs">
+            Project Types
+          </TabsTrigger>
+          <TabsTrigger value="resources" className="whitespace-nowrap px-2 py-2 text-xs">
+            Resources
+          </TabsTrigger>
+          <TabsTrigger value="currencies" className="whitespace-nowrap px-2 py-2 text-xs">
+            Currencies
+          </TabsTrigger>
+          <TabsTrigger value="costTypes" className="whitespace-nowrap px-2 py-2 text-xs">
+            Cost Types
+          </TabsTrigger>
+          <TabsTrigger value="exchangeRates" className="whitespace-nowrap px-2 py-2 text-xs">
+            Exchange Rates
+          </TabsTrigger>
+          <TabsTrigger value="bonusByDivision" className="whitespace-nowrap px-2 py-2 text-xs">
+            Bonus by D
+          </TabsTrigger>
+          <TabsTrigger value="bonusByCompany" className="whitespace-nowrap px-2 py-2 text-xs">
+            Bonus by C
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="customers">
         <MasterDataTable
