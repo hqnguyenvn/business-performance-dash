@@ -11,8 +11,8 @@ interface ParameterValues {
 
 export const useParameterValues = (year?: number): ParameterValues => {
   const { toast } = useToast();
-  const [taxRate, setTaxRate] = useState<number>(0.05); // Default fallback
-  const [bonusRate, setBonusRate] = useState<number>(0.15); // Default fallback
+  const [taxRate, setTaxRate] = useState<number | null>(null); // Will be set from database
+  const [bonusRate, setBonusRate] = useState<number | null>(null); // Will be set from database
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -43,6 +43,9 @@ export const useParameterValues = (year?: number): ParameterValues => {
             title: "Lỗi lấy dữ liệu",
             description: "Không thể lấy thông số từ database. Sử dụng giá trị mặc định.",
           });
+          // Set fallback values when database error occurs
+          setTaxRate(0.05); // 5% fallback
+          setBonusRate(0.15); // 15% fallback
           return;
         }
 
@@ -64,7 +67,9 @@ export const useParameterValues = (year?: number): ParameterValues => {
             }
           });
         } else {
-          console.log('⚠️ No parameter data found, using defaults');
+          console.log('⚠️ No parameter data found, using fallback defaults');
+          setTaxRate(0.05); // 5% fallback
+          setBonusRate(0.15); // 15% fallback
         }
       } catch (error) {
         console.error('Error in fetchParameterValues:', error);
@@ -82,8 +87,8 @@ export const useParameterValues = (year?: number): ParameterValues => {
   }, [year, toast]);
 
   return {
-    taxRate,
-    bonusRate,
+    taxRate: taxRate ?? 0.05, // Use 5% as final fallback
+    bonusRate: bonusRate ?? 0.15, // Use 15% as final fallback
     loading
   };
 };
