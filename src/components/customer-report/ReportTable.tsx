@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -38,6 +38,7 @@ interface ReportTableProps {
   endIndex: number;
   bonusRate: number;
   companyLabel?: string;
+  onFilteredDataChange?: (filteredData: GroupedCustomerData[]) => void;
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -67,6 +68,7 @@ export function ReportTable({
   data,
   bonusRate,
   companyLabel,
+  onFilteredDataChange,
 }: ReportTableProps) {
   // Sử dụng useTableFilter để filter cột
   const {
@@ -78,6 +80,13 @@ export function ReportTable({
 
   // Check if this is Company Report (no customer_code field) 
   const isCompanyReport = !data[0]?.customer_code;
+
+  // Notify parent component when filtered data changes
+  useEffect(() => {
+    if (onFilteredDataChange) {
+      onFilteredDataChange(filteredData);
+    }
+  }, [filteredData, onFilteredDataChange]);
 
   return (
     <div className="overflow-x-auto">

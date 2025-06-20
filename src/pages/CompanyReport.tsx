@@ -19,11 +19,17 @@ const CompanyReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
+  const [filteredData, setFilteredData] = useState<GroupedCompanyData[]>([]);
 
   const { groupedData, loading } = useCompanyReportData({
     selectedYear,
     selectedMonths
   });
+
+  // Callback để nhận filteredData từ ReportTable
+  const handleFilteredDataChange = (filtered: GroupedCompanyData[]) => {
+    setFilteredData(filtered);
+  };
 
   const exportToCSV = () => {
     exportCustomerReportCSV(groupedData as any, 0); // Pass 0 since we're not using bonusRate anymore
@@ -33,11 +39,12 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals - using bonusValue from data instead of bonusRate
-  const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
-  const totalBonus = groupedData.reduce((sum, d) => sum + d.bonusValue, 0);
-  const totalCost = groupedData.reduce((sum, d) => {
+  // Calculate totals từ filteredData thay vì groupedData
+  const dataToCalculate = filteredData.length > 0 ? filteredData : groupedData;
+  const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
+  const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
+  const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
+  const totalCost = dataToCalculate.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
     const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating with rate
     const oh = d.overheadCost ?? 0;
@@ -92,6 +99,7 @@ const CompanyReport = () => {
               endIndex={groupedData.length}
               bonusRate={0}
               companyLabel="Company"
+              onFilteredDataChange={handleFilteredDataChange}
             />
           </CardContent>
         </Card>
