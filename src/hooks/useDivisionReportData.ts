@@ -378,7 +378,7 @@ export function useDivisionReportData({ selectedYear, selectedMonths }: UseDivis
 
     fetchData();
     // eslint-disable-next-line
-  }, [selectedYear, selectedMonths]);
+  }, [selectedYear, selectedMonths, bonusRate, taxRate]);
 
   return { groupedData, loading };
 }
