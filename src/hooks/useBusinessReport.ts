@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { exportBusinessReportCSV } from "@/utils/csvExport";
+import { useParameterValues } from "@/hooks/useParameterValues";
 
 export interface BusinessData {
   year: number;
@@ -63,13 +64,25 @@ export const useBusinessReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
-  const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
-  const [bonusRate, setBonusRate] = useState<number>(15);
+  
+  // Get parameter values from database
+  const { taxRate: paramTaxRate, bonusRate: paramBonusRate, loading: paramLoading } = useParameterValues(parseInt(selectedYear));
+  
+  const [incomeTaxRate, setIncomeTaxRate] = useState<number>(paramTaxRate);
+  const [bonusRate, setBonusRate] = useState<number>(paramBonusRate);
   const [revenues, setRevenues] = useState<RevenueData[]>([]);
   const [costs, setCosts] = useState<CostData[]>([]);
   const [costTypes, setCostTypes] = useState<CostTypeData[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Update rates when parameter values are loaded
+  useEffect(() => {
+    if (!paramLoading) {
+      setIncomeTaxRate(paramTaxRate);
+      setBonusRate(paramBonusRate);
+    }
+  }, [paramTaxRate, paramBonusRate, paramLoading]);
 
   useEffect(() => {
     const fetchData = async () => {
