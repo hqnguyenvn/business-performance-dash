@@ -8,11 +8,11 @@ export interface FilterState {
 export const useTableFilter = <T extends Record<string, any>>(data: T[]) => {
   const [filters, setFilters] = useState<FilterState>({});
 
-  // Reset filters when data changes (new data from parent)
+  // Reset filters only when completely new data is loaded (e.g., year/month change)
+  const dataHash = JSON.stringify(data.map(d => d.year + '-' + d.month).sort());
   useEffect(() => {
-    // Only clear filters if data actually changed (not just re-render)
     setFilters({});
-  }, [data.length]); // Use data.length to avoid unnecessary resets
+  }, [dataHash]);
 
   const filteredData = useMemo(() => {
     if (Object.keys(filters).length === 0) return data;

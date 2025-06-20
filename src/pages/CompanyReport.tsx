@@ -19,22 +19,16 @@ const CompanyReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
-  const [filteredData, setFilteredData] = useState<GroupedCompanyData[]>([]);
+  const [tableFilteredData, setTableFilteredData] = useState<GroupedCompanyData[]>([]);
 
   const { groupedData, loading } = useCompanyReportData({
     selectedYear,
     selectedMonths
   });
 
-  // Initialize filteredData when groupedData is first loaded or completely changed
-  useEffect(() => {
-    setFilteredData(groupedData);
-  }, [groupedData]);
-
-  // Callback để nhận filteredData từ ReportTable
+  // Callback để nhận dữ liệu đã filter từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
-    // Cast to GroupedCompanyData[] since we know the structure matches
-    setFilteredData(filtered as GroupedCompanyData[]);
+    setTableFilteredData(filtered as GroupedCompanyData[]);
   };
 
   const exportToCSV = () => {
@@ -45,14 +39,14 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals từ filteredData with fallback to groupedData
-  const dataToCalculate = filteredData.length > 0 ? filteredData : groupedData;
+  // Calculate totals directly from table displayed data (simple approach)
+  const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
   const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
   const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
   const totalCost = dataToCalculate.reduce((sum, d) => {
     const salary = d.salaryCost ?? 0;
-    const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating with rate
+    const bonus = d.bonusValue ?? 0;
     const oh = d.overheadCost ?? 0;
     return sum + salary + bonus + oh;
   }, 0);
