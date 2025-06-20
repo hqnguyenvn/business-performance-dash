@@ -27,11 +27,12 @@ const CompanyReport = () => {
   });
 
   // Initialize filteredData with groupedData when it loads
+  // Use groupedData.length as dependency to avoid resetting filteredData on filter changes
   useEffect(() => {
     if (groupedData.length > 0) {
       setFilteredData(groupedData);
     }
-  }, [groupedData]);
+  }, [groupedData.length]);
 
   // Callback để nhận filteredData từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
@@ -47,8 +48,8 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals từ filteredData (always initialized with groupedData)
-  const dataToCalculate = filteredData;
+  // Calculate totals từ filteredData with fallback to groupedData
+  const dataToCalculate = filteredData.length > 0 ? filteredData : groupedData;
   const totalRevenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
   const totalBMM = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
   const totalBonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
