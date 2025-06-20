@@ -20,6 +20,14 @@ const CompanyReport = () => {
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
   const [tableFilteredData, setTableFilteredData] = useState<GroupedCompanyData[]>([]);
+  const [totals, setTotals] = useState({
+    totalRevenue: 0,
+    totalBMM: 0,
+    totalBonus: 0,
+    totalCost: 0,
+    totalProfit: 0,
+    totalProfitPercent: 0
+  });
 
   const { groupedData, loading } = useCompanyReportData({
     selectedYear,
@@ -32,6 +40,12 @@ const CompanyReport = () => {
     setTableFilteredData(filtered as GroupedCompanyData[]);
   };
 
+  // Callback để nhận totals từ ReportTable
+  const handleTotalsChange = (newTotals: typeof totals) => {
+    console.log('💰 CompanyReport: Received totals from ReportTable', newTotals);
+    setTotals(newTotals);
+  };
+
   const exportToCSV = () => {
     exportCustomerReportCSV(groupedData as any, 0); // Pass 0 since we're not using bonusRate anymore
     toast({
@@ -40,7 +54,7 @@ const CompanyReport = () => {
     });
   };
 
-  // Calculate totals using useMemo to ensure re-calculation when data changes
+  // Use totals directly from state (calculated in ReportTable)
   const {
     totalRevenue,
     totalBMM, 
@@ -48,39 +62,7 @@ const CompanyReport = () => {
     totalCost,
     totalProfit,
     totalProfitPercent
-  } = useMemo(() => {
-    // Use tableFilteredData if it has data, otherwise use original groupedData
-    const dataToCalculate = tableFilteredData.length > 0 ? tableFilteredData : groupedData;
-    console.log('💰 CompanyReport: Calculating totals from', dataToCalculate.length, 'filtered records');
-    
-    const revenue = dataToCalculate.reduce((sum, d) => sum + d.revenue, 0);
-    const bmm = dataToCalculate.reduce((sum, d) => sum + d.bmm, 0);
-    const bonus = dataToCalculate.reduce((sum, d) => sum + d.bonusValue, 0);
-    const cost = dataToCalculate.reduce((sum, d) => {
-      const salary = d.salaryCost ?? 0;
-      const bonusVal = d.bonusValue ?? 0;
-      const oh = d.overheadCost ?? 0;
-      return sum + salary + bonusVal + oh;
-    }, 0);
-    const profit = revenue - cost;
-    const profitPercent = revenue !== 0 ? (profit / revenue) * 100 : 0;
-
-    console.log('📊 CompanyReport: Calculated totals -', {
-      records: dataToCalculate.length,
-      revenue: Math.round(revenue).toLocaleString(),
-      bmm: bmm,
-      cost: Math.round(cost).toLocaleString()
-    });
-
-    return {
-      totalRevenue: revenue,
-      totalBMM: bmm,
-      totalBonus: bonus,
-      totalCost: cost,
-      totalProfit: profit,
-      totalProfitPercent: profitPercent
-    };
-  }, [tableFilteredData, groupedData, tableFilteredData.length]);
+  } = totals;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -129,6 +111,7 @@ const CompanyReport = () => {
               bonusRate={0}
               companyLabel="Company"
               onFilteredDataChange={handleFilteredDataChange}
+              onTotalsChange={handleTotalsChange}
             />
           </CardContent>
         </Card>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -38,6 +38,14 @@ interface ReportTableProps {
   bonusRate: number;
   companyLabel?: string;
   onFilteredDataChange?: (filteredData: any[]) => void;
+  onTotalsChange?: (totals: {
+    totalRevenue: number;
+    totalBMM: number;
+    totalBonus: number;
+    totalCost: number;
+    totalProfit: number;
+    totalProfitPercent: number;
+  }) => void;
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -68,6 +76,7 @@ export function ReportTable({
   bonusRate,
   companyLabel,
   onFilteredDataChange,
+  onTotalsChange,
 }: ReportTableProps) {
   // Sử dụng useTableFilter để filter cột
   const {
@@ -80,6 +89,39 @@ export function ReportTable({
   // Check if this is Company Report (no customer_code field) 
   const isCompanyReport = !data[0]?.customer_code;
 
+  // Calculate totals from filtered data
+  const totals = useMemo(() => {
+    console.log('💰 ReportTable: Calculating totals from', filteredData.length, 'filtered records');
+    
+    const revenue = filteredData.reduce((sum, d) => sum + (d.revenue || 0), 0);
+    const bmm = filteredData.reduce((sum, d) => sum + (d.bmm || 0), 0);
+    const bonus = filteredData.reduce((sum, d) => sum + (d.bonusValue || 0), 0);
+    const cost = filteredData.reduce((sum, d) => {
+      const salary = d.salaryCost || 0;
+      const bonusVal = d.bonusValue || 0;
+      const oh = d.overheadCost || 0;
+      return sum + salary + bonusVal + oh;
+    }, 0);
+    const profit = revenue - cost;
+    const profitPercent = revenue !== 0 ? (profit / revenue) * 100 : 0;
+
+    console.log('📊 ReportTable: Calculated totals -', {
+      records: filteredData.length,
+      revenue: Math.round(revenue).toLocaleString(),
+      cost: Math.round(cost).toLocaleString(),
+      profit: Math.round(profit).toLocaleString()
+    });
+
+    return {
+      totalRevenue: revenue,
+      totalBMM: bmm,
+      totalBonus: bonus,
+      totalCost: cost,
+      totalProfit: profit,
+      totalProfitPercent: profitPercent
+    };
+  }, [filteredData]);
+
   // Notify parent when filtered data changes
   useEffect(() => {
     console.log('🔄 ReportTable: filteredData changed, length =', filteredData.length);
@@ -88,6 +130,15 @@ export function ReportTable({
       console.log('📤 ReportTable: Called onFilteredDataChange with', filteredData.length, 'items');
     }
   }, [filteredData, onFilteredDataChange]);
+
+  // Notify parent when totals change
+  useEffect(() => {
+    console.log('🧮 ReportTable: Totals changed, sending to parent');
+    if (onTotalsChange) {
+      onTotalsChange(totals);
+      console.log('📤 ReportTable: Called onTotalsChange with totals');
+    }
+  }, [totals, onTotalsChange]);
 
   return (
     <div className="overflow-x-auto">
