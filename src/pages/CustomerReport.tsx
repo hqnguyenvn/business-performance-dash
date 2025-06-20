@@ -212,8 +212,25 @@ const CustomerReport = () => {
      }
 
       // 4. Fetch bonus_by_c for the selected year
+      const { data: bonusRows, error: bonusError } = await supabase
+        .from('bonus_by_c')
+        .select(`
+          year, company_id, bn_bmm
+        `)
+        .eq('year', Number(selectedYear));
+
+      if (bonusError) {
+        toast({
+          variant: "destructive",
+          title: "Lỗi lấy dữ liệu",
+          description: "Không lấy được dữ liệu bonus_by_c.",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Get bonus rates from parameter table (already handled by useParameterValues hook)
-        console.log('📊 Using parameter values - bonusRate:', bonusRate, 'taxRate:', taxRate);
+      console.log('📊 Using parameter values - bonusRate:', bonusRate, 'taxRate:', taxRate);
 
       // 5. Fetch customers data for debug function
       const { data: customers, error: customersError } = await supabase
