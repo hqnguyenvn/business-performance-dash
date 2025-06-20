@@ -44,6 +44,14 @@ export const parameterService = {
     return data;
   },
   update: async (id: string, updates: Partial<Parameter>): Promise<Parameter> => {
+    // Đảm bảo value là số thập phân hợp lệ
+    if (updates.value !== undefined) {
+      updates.value = Number(updates.value);
+      if (isNaN(updates.value)) {
+        throw new Error("Invalid decimal value for parameter");
+      }
+    }
+    
     const { data, error } = await supabase
       .from("parameter")
       .update(updates)

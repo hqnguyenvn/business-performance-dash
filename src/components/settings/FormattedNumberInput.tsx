@@ -93,18 +93,21 @@ export const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
     if (rawValue !== "") {
       const num = parseFloat(rawValue);
       if (!isNaN(num)) {
+        // Đối với số thập phân, giữ nguyên độ chính xác
+        const finalValue = allowDecimals ? num : Math.round(num);
+        
         // Format lại display value
         if (allowDecimals) {
-          setRawValue(formatNumberWithDecimals(num, decimals));
+          setRawValue(formatNumberWithDecimals(finalValue, decimals));
         } else {
-          setRawValue(Math.round(num).toLocaleString('en-US'));
+          setRawValue(finalValue.toLocaleString('en-US'));
         }
         
         if (onBlur) {
-          onBlur(num);
+          onBlur(finalValue);
         }
         if (onChange) {
-          onChange(num);
+          onChange(finalValue);
         }
       } else {
         setRawValue("");

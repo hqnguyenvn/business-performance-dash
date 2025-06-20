@@ -35,8 +35,24 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
   }, [editingCell, row]);
 
   const handleCellSave = (field: keyof Parameter, value: any) => {
-    if (value !== row[field]) {
-      saveCell(row.id, field, value);
+    let processedValue = value;
+    
+    // Đảm bảo giá trị số được xử lý đúng kiểu
+    if (field === 'value') {
+      processedValue = typeof value === 'string' ? parseFloat(value) : value;
+      // Đảm bảo là số hợp lệ
+      if (isNaN(processedValue)) {
+        processedValue = 0;
+      }
+    } else if (field === 'year') {
+      processedValue = typeof value === 'string' ? parseInt(value) : value;
+      if (isNaN(processedValue)) {
+        processedValue = new Date().getFullYear();
+      }
+    }
+    
+    if (processedValue !== row[field]) {
+      saveCell(row.id, field, processedValue);
     }
     onBlurCell();
   };
