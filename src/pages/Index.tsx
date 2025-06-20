@@ -41,8 +41,8 @@ const Index = () => {
   // Get parameter values from database
   const { taxRate: paramTaxRate, bonusRate: paramBonusRate, loading: paramLoading } = useParameterValues(selectedYear);
   
-  const [incomeTaxRate, setIncomeTaxRate] = useState<number>(5);
-  const [bonusRate, setBonusRate] = useState<number>(15);
+  const [incomeTaxRate, setIncomeTaxRate] = useState<number | null>(null);
+  const [bonusRate, setBonusRate] = useState<number | null>(null);
 
   // Update rates when parameter values are loaded - convert to percentage for display
   useEffect(() => {
@@ -61,12 +61,12 @@ const Index = () => {
     );
   };
 
-  // Lấy dữ liệu thống kê mới
+  // Lấy dữ liệu thống kê mới - use fallback values if parameters not loaded
   const stats = useDashboardStats({
     year: selectedYear,
     months: selectedMonths,
-    incomeTaxRate,
-    bonusRate,
+    incomeTaxRate: incomeTaxRate ?? 5, // Fallback to 5% if not loaded
+    bonusRate: bonusRate ?? 15, // Fallback to 15% if not loaded
   });
 
   const statCardsData = [
@@ -132,9 +132,9 @@ const Index = () => {
             selectedMonths={selectedMonths}
             setSelectedMonths={setSelectedMonths}
             onMonthToggle={handleMonthToggle}
-            incomeTaxRate={incomeTaxRate}
+            incomeTaxRate={incomeTaxRate ?? 5}
             setIncomeTaxRate={setIncomeTaxRate}
-            bonusRate={bonusRate}
+            bonusRate={bonusRate ?? 15}
             setBonusRate={setBonusRate}
           />
         </div>

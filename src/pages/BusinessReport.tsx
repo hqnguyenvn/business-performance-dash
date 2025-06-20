@@ -55,9 +55,9 @@ const BusinessReport = () => {
           onYearChange={handleYearChange}
           selectedMonths={selectedMonths}
           onMonthToggle={handleMonthToggle}
-          incomeTaxRate={incomeTaxRate}
+          incomeTaxRate={incomeTaxRate ?? 5}
           onIncomeTaxRateChange={setIncomeTaxRate}
-          bonusRate={bonusRate}
+          bonusRate={bonusRate ?? 15}
           onBonusRateChange={setBonusRate}
           months={MONTHS}
         />

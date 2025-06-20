@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useParameterValues } from "@/hooks/useParameterValues";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
@@ -18,6 +19,9 @@ const DivisionReport = () => {
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
+
+  // Get parameter values from database
+  const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
 
   const { groupedData, loading } = useDivisionReportData({
     selectedYear,

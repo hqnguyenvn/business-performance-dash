@@ -64,17 +64,12 @@ export const useBusinessReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: currentMonth }, (_, i) => i + 1)
   );
-  
+
   // Get parameter values from database
   const { taxRate: paramTaxRate, bonusRate: paramBonusRate, loading: paramLoading } = useParameterValues(parseInt(selectedYear));
-  
-  const [incomeTaxRate, setIncomeTaxRate] = useState<number>(paramTaxRate);
-  const [bonusRate, setBonusRate] = useState<number>(paramBonusRate);
-  const [revenues, setRevenues] = useState<RevenueData[]>([]);
-  const [costs, setCosts] = useState<CostData[]>([]);
-  const [costTypes, setCostTypes] = useState<CostTypeData[]>([]);
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const [incomeTaxRate, setIncomeTaxRate] = useState<number | null>(null);
+  const [bonusRate, setBonusRate] = useState<number | null>(null);
 
   // Update rates when parameter values are loaded - convert to percentage for display
   useEffect(() => {
@@ -84,11 +79,17 @@ export const useBusinessReport = () => {
     }
   }, [paramTaxRate, paramBonusRate, paramLoading]);
 
+  const [revenues, setRevenues] = useState<RevenueData[]>([]);
+  const [costs, setCosts] = useState<CostData[]>([]);
+  const [costTypes, setCostTypes] = useState<CostTypeData[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         const { data: revenueData, error: revenueError } = await supabase.from('revenues').select('*');
         if (revenueError) throw revenueError;
         setRevenues(revenueData || []);
@@ -117,7 +118,7 @@ export const useBusinessReport = () => {
 
   const allBusinessData = useMemo(() => {
     const businessDataMap = new Map<string, BusinessData>();
-    
+
     const salaryCostType = costTypes.find(ct => ct.code.toLowerCase() === 'salary');
     const salaryCostTypeId = salaryCostType ? salaryCostType.id : null;
 
@@ -145,7 +146,7 @@ export const useBusinessReport = () => {
     Array.from(businessDataMap.values()).forEach(data => {
       data.grossProfit = data.revenue - data.cost;
       data.incomeTax = data.grossProfit < 0 ? 0 : data.grossProfit * (incomeTaxRate / 100);
-      
+
       let monthlySalaryCost = 0;
       if (salaryCostTypeId) {
         monthlySalaryCost = costs
@@ -157,7 +158,7 @@ export const useBusinessReport = () => {
           .reduce((sum, c) => sum + (c.cost || 0), 0);
       }
       data.bonus = monthlySalaryCost * (bonusRate / 100);
-      
+
       data.totalCost = data.cost + data.incomeTax + data.bonus;
       data.netProfit = data.revenue - data.totalCost;
       data.grossProfitPercent = data.revenue > 0 ? (data.grossProfit / data.revenue) * 100 : 0;
