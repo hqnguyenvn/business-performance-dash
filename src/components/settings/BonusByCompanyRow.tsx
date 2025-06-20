@@ -50,7 +50,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
       handleCellSave(field, tempValue);
       
       // Navigate to next cell
-      const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'percent_bn', 'notes'];
+      const fields: (keyof BonusByCompany)[] = ['year', 'company_id', 'bn_bmm', 'notes'];
       const currentIndex = fields.indexOf(field);
       if (currentIndex < fields.length - 1) {
         const nextField = fields[currentIndex + 1];
@@ -70,10 +70,10 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
 
   const handlePaste = (event: React.ClipboardEvent, field: keyof BonusByCompany) => {
     const pasteData = event.clipboardData.getData('text');
-    if (field === 'bn_bmm' || field === 'percent_bn') {
+    if (field === 'bn_bmm') {
       const num = parseFloat(pasteData.replace(/[^\d.-]/g, ''));
       if (!isNaN(num)) {
-        const finalNum = field === 'bn_bmm' ? Math.round(num) : num;
+        const finalNum = Math.round(num);
         setTempValue(finalNum);
         handleCellSave(field, finalNum);
       }
@@ -148,25 +148,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
         )}
       </TableCell>
 
-      <TableCell className="text-right p-1 border border-gray-300">
-        {isEditing("percent_bn") ? (
-          <input
-            type="number"
-            step="0.1"
-            className="h-8 w-full border rounded text-right px-2"
-            value={tempValue ?? ""}
-            onChange={e => setTempValue(parseFloat(e.target.value) || 0)}
-            onBlur={() => handleCellSave("percent_bn", Number(tempValue))}
-            onKeyDown={e => handleKeyDown(e, "percent_bn")}
-            onPaste={e => handlePaste(e, "percent_bn")}
-            autoFocus
-          />
-        ) : (
-          <div className="cursor-pointer h-8 flex items-center justify-end pr-2" onClick={() => handleCellClick("percent_bn")}>
-            {row.percent_bn.toFixed(1)}
-          </div>
-        )}
-      </TableCell>
+      
       
       <TableCell className="p-1 border border-gray-300">
         {isEditing("notes") ? (

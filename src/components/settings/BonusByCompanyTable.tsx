@@ -54,7 +54,6 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
       year: thisYear,
       company_id: companies.length > 0 ? companies[0].id : '',
       bn_bmm: 0,
-      percent_bn: 0,
       notes: '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -73,7 +72,6 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
       year: anchorRow.year,
       company_id: anchorRow.company_id,
       bn_bmm: 0,
-      percent_bn: 0,
       notes: '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -114,14 +112,14 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
     setter(prev => prev.map(row => (row.id === id ? { ...row, [field]: value } : row)));
 
     const updatedRow = { ...originalRow, [field]: value };
-    const { year, company_id, bn_bmm, percent_bn, notes } = updatedRow;
+    const { year, company_id, bn_bmm, notes } = updatedRow;
     
     if (!company_id) return;
     
     try {
         if (isNew) {
             if (year && company_id) { // Only add if required fields are present
-                const newRecord = await bonusByCompanyService.add({ year, company_id, bn_bmm, percent_bn, notes: notes ?? '' });
+                const newRecord = await bonusByCompanyService.add({ year, company_id, bn_bmm, notes: notes ?? '' });
                 setter(prev => prev.map(row => (row.id === id ? newRecord : row)));
                 toast({ title: "Success", description: "Created new entry" });
             }
@@ -179,16 +177,7 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
                 >
                   BN_BMM
                 </TableHead>
-                <TableHead
-                  className="border border-gray-300 text-right"
-                  showFilter={true}
-                  filterData={filterData.percent_bn}
-                  filterField="percent_bn"
-                  onFilter={setFilter}
-                  activeFilters={getActiveFilters("percent_bn")}
-                >
-                  % Bonus
-                </TableHead>
+                
                 <TableHead
                   className="border border-gray-300"
                   showFilter={true}

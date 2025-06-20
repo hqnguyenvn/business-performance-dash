@@ -6,7 +6,6 @@ export interface BonusByCompany {
   year: number;
   company_id: string;
   bn_bmm: number;
-  percent_bn: number;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -16,7 +15,6 @@ export interface BonusByCompanyInsert {
   year: number;
   company_id: string;
   bn_bmm: number;
-  percent_bn: number;
   notes?: string;
 }
 
