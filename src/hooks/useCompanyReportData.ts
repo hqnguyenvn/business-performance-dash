@@ -278,8 +278,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + data.totalBMM);
       }
 
-      // Use bonus rate from parameters instead of bonus_by_c percent_bn
-      const percentBn = bonusRate * 100; // Convert decimal to percentage for calculation
+      // Use bonus rate from parameters (already in decimal format)
 
       // Tạo map bonus theo company_id
       const bonusMap = new Map<string, number>();
@@ -306,7 +305,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
         const totalSalary = totalSalaryByPeriod.get(periodKey) ?? 0;
 
         // Calculate components using parameters
-        const bonusCost = salaryCostFromCosts * percentBn / 100;
+        const bonusCost = salaryCostFromCosts * bonusRate;
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
         const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus - totalSalary;
@@ -331,7 +330,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           console.log(`  💵 Total Revenue: ${Math.round(totalRevenue).toLocaleString()} VND`);
           console.log(`  🎁 Salary Bonus (Sum bnByBMM): ${Math.round(salaryBonus).toLocaleString()} VND`);
           console.log(`  💰 Total Salary from salary_costs: ${Math.round(totalSalary).toLocaleString()} VND`);
-          console.log(`  📊 Bonus Rate (from parameters): ${percentBn}%`);
+          console.log(`  📊 Bonus Rate (from parameters): ${(bonusRate * 100)}%`);
           console.log(`  💸 Tax Rate (from parameters): ${(taxRate * 100)}%`);
           console.log('');
           console.log('📊 BƯỚC 3: TÍNH TOTAL OVERHEAD');
