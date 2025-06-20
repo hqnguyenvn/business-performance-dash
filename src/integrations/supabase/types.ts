@@ -360,6 +360,36 @@ export type Database = {
           },
         ]
       }
+      parameter: {
+        Row: {
+          code: string
+          created_at: string
+          descriptions: string | null
+          id: string
+          updated_at: string
+          value: number
+          year: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          descriptions?: string | null
+          id?: string
+          updated_at?: string
+          value: number
+          year: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          descriptions?: string | null
+          id?: string
+          updated_at?: string
+          value?: number
+          year?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

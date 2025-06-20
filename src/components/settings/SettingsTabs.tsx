@@ -16,8 +16,10 @@ import {
 } from "@/services/masterDataService";
 import BonusByDivisionTable from "./BonusByDivisionTable";
 import BonusByCompanyTable from "./BonusByCompanyTable";
+import ParameterTable from "./ParameterTable";
 import { BonusByDivision } from "@/services/bonusByDivisionService";
 import { BonusByCompany } from "@/services/bonusByCompanyService";
+import { Parameter } from "@/services/parameterService";
 
 interface SettingsTabsProps {
   data: {
@@ -32,6 +34,7 @@ interface SettingsTabsProps {
     exchangeRates: ExchangeRateDisplay[];
     bonusByDivision: BonusByDivision[];
     bonusByCompany: BonusByCompany[];
+    parameters: Parameter[];
   };
   setters: {
     setCustomers: React.Dispatch<React.SetStateAction<MasterData[]>>;
@@ -45,6 +48,7 @@ interface SettingsTabsProps {
     setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
     setBonusByDivision: React.Dispatch<React.SetStateAction<BonusByDivision[]>>;
     setBonusByCompany: React.Dispatch<React.SetStateAction<BonusByCompany[]>>;
+    setParameters: React.Dispatch<React.SetStateAction<Parameter[]>>;
   };
 }
 
@@ -84,6 +88,9 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
         </TabsTrigger>
         <TabsTrigger value="bonusByCompany" className="whitespace-nowrap px-3 py-2">
           Bonus by C
+        </TabsTrigger>
+        <TabsTrigger value="parameters" className="whitespace-nowrap px-3 py-2">
+          Parameters
         </TabsTrigger>
       </TabsList>
 
@@ -184,6 +191,13 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           data={data.bonusByCompany}
           setter={setters.setBonusByCompany}
           companies={data.companies}
+        />
+      </TabsContent>
+      
+      <TabsContent value="parameters">
+        <ParameterTable
+          data={data.parameters}
+          setter={setters.setParameters}
         />
       </TabsContent>
     </Tabs>

@@ -15,6 +15,7 @@ import {
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
 import { bonusByCompanyService, BonusByCompany } from "@/services/bonusByCompanyService";
+import { parameterService, Parameter } from "@/services/parameterService";
 
 export const useSettingsData = () => {
   const { toast } = useToast();
@@ -29,6 +30,7 @@ export const useSettingsData = () => {
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [bonusByDivision, setBonusByDivision] = useState<BonusByDivision[]>([]);
   const [bonusByCompany, setBonusByCompany] = useState<BonusByCompany[]>([]);
+  const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAllData = useCallback(async () => {
@@ -45,7 +47,8 @@ export const useSettingsData = () => {
         costTypesData,
         exchangeRatesData,
         bonusByDivisionData,
-        bonusByCompanyData
+        bonusByCompanyData,
+        parametersData
       ] = await Promise.all([
         customersService.getAll(),
         companiesService.getAll(),
@@ -57,7 +60,8 @@ export const useSettingsData = () => {
         costTypesService.getAll(),
         exchangeRateService.getAll(),
         bonusByDivisionService.getAll(),
-        bonusByCompanyService.getAll()
+        bonusByCompanyService.getAll(),
+        parameterService.getAll()
       ]);
 
       setCustomers(customersData);
@@ -71,6 +75,7 @@ export const useSettingsData = () => {
       setExchangeRates(exchangeRatesData);
       setBonusByDivision(bonusByDivisionData);
       setBonusByCompany(bonusByCompanyData);
+      setParameters(parametersData);
 
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
@@ -101,6 +106,7 @@ export const useSettingsData = () => {
       exchangeRates,
       bonusByDivision,
       bonusByCompany,
+      parameters,
     },
     setters: {
       setCustomers,
@@ -114,6 +120,7 @@ export const useSettingsData = () => {
       setExchangeRates,
       setBonusByDivision,
       setBonusByCompany,
+      setParameters,
     },
     loading,
     setLoading,
