@@ -332,7 +332,7 @@ const CustomerReport = () => {
         const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
 
         // Calculate Bonus Cost using parameter value
-        const bonusCost = salaryCostFromCosts * percentBn / 100;
+        const bonusCost = salaryCostFromCosts * bonusRate;
 
         // Calculate Tax Cost using parameter value
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
