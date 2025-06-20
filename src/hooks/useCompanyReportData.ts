@@ -408,7 +408,7 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
     fetchData();
     // We consciously ignore toast from dependencies since it won't change.
     // eslint-disable-next-line
-  }, [selectedYear, selectedMonths]);
+  }, [selectedYear, selectedMonths, bonusRate, taxRate]);
 
   return {
     groupedData,
