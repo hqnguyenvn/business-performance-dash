@@ -1,5 +1,5 @@
 
-export type GroupedDivisionData = {
+export interface GroupedDivisionData {
   year: number;
   month: number;
   division_id: string;
@@ -9,7 +9,7 @@ export type GroupedDivisionData = {
   salaryCost: number;
   overheadCost: number;
   bonusValue: number;
-};
+}
 
 export interface UseDivisionReportDataProps {
   selectedYear: string;
