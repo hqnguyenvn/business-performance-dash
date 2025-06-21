@@ -75,6 +75,9 @@ export const CostsTable = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-red-50">
+            <TableHead className="border border-gray-300 text-center w-16">
+              No.
+            </TableHead>
             <TableHead 
               className="border border-gray-300"
               showFilter={true}
@@ -183,7 +186,7 @@ export const CostsTable = ({
         <TableBody>
           {tableFilteredCosts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="border border-gray-300 p-8 text-center text-gray-500">
+              <TableCell colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
                 {costs.length === 0
                   ? "No data available. Click \"Add Row\" to start entering data."
                   : "No data matches the selected filters. Try adjusting the year or month selection."
@@ -191,8 +194,11 @@ export const CostsTable = ({
               </TableCell>
             </TableRow>
           ) : (
-            tableFilteredCosts.map((cost) => (
+            tableFilteredCosts.map((cost, index) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
+                <TableCell className="border border-gray-300 p-2 text-center">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Input
                     value={cost.year.toString()}
