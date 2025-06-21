@@ -1,6 +1,4 @@
-The code is updated to use RolesTable component instead of MasterDataTable for displaying Roles data.
-```
-```replit_final_file
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MasterDataTable from "@/components/MasterDataTable";
 import RolesTable from "@/components/RolesTable";
