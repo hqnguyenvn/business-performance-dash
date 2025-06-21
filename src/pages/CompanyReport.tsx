@@ -36,13 +36,22 @@ const CompanyReport = () => {
 
   // Callback để nhận dữ liệu đã filter từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
-    console.log('📥 CompanyReport: Received filtered data, length =', filtered.length);
+    console.log('');
+    console.log('📥 CompanyReport: Received filtered data');
+    console.log('  Filtered data length:', filtered.length);
+    console.log('  Sample companies:', filtered.slice(0, 3).map(item => item.company_code).join(', '));
+    console.log('');
     setTableFilteredData(filtered as GroupedCompanyData[]);
   };
 
   // Callback để nhận totals từ ReportTable
   const handleTotalsChange = (newTotals: typeof totals) => {
-    console.log('💰 CompanyReport: Received totals from ReportTable', newTotals);
+    console.log('');
+    console.log('💰 CompanyReport: Received totals from ReportTable');
+    console.log('  Previous totals:', totals);
+    console.log('  New totals:', newTotals);
+    console.log('  Revenue changed:', totals.totalRevenue !== newTotals.totalRevenue);
+    console.log('');
     setTotals(newTotals);
   };
 
