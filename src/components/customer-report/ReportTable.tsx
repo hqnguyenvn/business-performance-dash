@@ -204,14 +204,7 @@ export function ReportTable({
             <TableHead className="border border-gray-300 p-2 text-center font-medium w-10">
               No.
             </TableHead>
-            <TableHead
-              className="border border-gray-300 p-2 text-center font-medium"
-              showFilter
-              filterData={getFilterData(data, "month")}
-              filterField="month"
-              onFilter={() => {}} // Removed setFilter as local filtering is used
-              activeFilters={{}} // Removed activeFilters as local filtering is used
-            >
+            <TableHead className="border border-gray-300 p-2 text-center font-medium">
               Month
             </TableHead>
             <TableHead

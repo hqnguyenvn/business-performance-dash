@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,7 @@ export const TableFilter: React.FC<TableFilterProps> = ({
         display: String(displayValue || '(Empty)')
       };
     });
-    
+
     // Remove duplicates based on value
     const seen = new Set();
     return options.filter(option => {
@@ -123,7 +122,7 @@ export const TableFilter: React.FC<TableFilterProps> = ({
             className="h-8"
           />
         </div>
-        
+
         <div className="p-2 border-b">
           <div className="flex items-center space-x-2">
             <Checkbox
