@@ -370,12 +370,10 @@ const CustomerReport = () => {
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
 
-      // Create bonus map by company_id
+      // Create bonus map by company_id - FIXED: Remove percent_bn reference
       const bonusMap = new Map<string, number>();
-      const percentBnMap = new Map<string, number>();
       for (const row of bonusRows ?? []) {
         bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
-        percentBnMap.set(row.company_id, Number(row.percent_bn) || 0);
       }
 
       
