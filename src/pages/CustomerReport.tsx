@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,13 +68,11 @@ const CustomerReport = () => {
 
   // Callback để nhận dữ liệu đã filter từ ReportTable
   const handleFilteredDataChange = (filtered: CustomerReportData[]) => {
-    console.log('📥 CustomerReport: Received filtered data, length =', filtered.length);
     setTableFilteredData(filtered);
   };
 
   // Callback để nhận totals từ ReportTable
   const handleTotalsChange = (newTotals: typeof totals) => {
-    console.log('💰 CustomerReport: Received totals from ReportTable', newTotals);
     setTotals(newTotals);
   };
 

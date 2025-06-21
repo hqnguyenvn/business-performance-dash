@@ -95,7 +95,6 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      console.log('🚀 Starting Company Report data fetch...');
 
       try {
         // OPTIMIZATION 1: Reduce parallel queries by combining related queries
@@ -159,8 +158,6 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
             return;
           }
         }
-
-        console.log('📊 Data fetched successfully, processing...');
 
         // OPTIMIZATION 3: Process data more efficiently with single-pass algorithms
         const companyRevenueMap = new Map<string, {
@@ -291,11 +288,9 @@ export function useCompanyReportData({ selectedYear, selectedMonths }: UseCompan
           return a.company_code.localeCompare(b.company_code);
         });
 
-        console.log('✅ Company Report data processing completed');
         setGroupedData(resultArr);
 
       } catch (error) {
-        console.error('❌ Error in Company Report data fetch:', error);
         toast({
           variant: "destructive",
           title: "Lỗi hệ thống",

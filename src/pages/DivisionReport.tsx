@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +10,6 @@ import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useDivisionReportData, MONTHS, YEARS, GroupedDivisionData } from "@/hooks/useDivisionReportData";
-
-console.log("DivisionReport component loaded!");
 
 const DivisionReport = () => {
   const { toast } = useToast();
