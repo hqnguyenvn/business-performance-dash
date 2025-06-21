@@ -1,3 +1,4 @@
+
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -23,13 +24,13 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
 }) => {
   const isEditing = (field: keyof Parameter) => editingCell?.id === row.id && editingCell.field === field;
 
-  const [tempValue, setTempValue] = React.useState<any>(null);
+  const [tempValue, setTempValue] = React.useState<string | number>('');
 
   React.useEffect(() => {
     if (editingCell?.id === row.id) {
       setTempValue(row[editingCell.field] ?? '');
     } else {
-      setTempValue(null);
+      setTempValue('');
     }
   }, [editingCell, row]);
 
@@ -62,14 +63,14 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
 
       // Lấy giá trị trực tiếp từ input thay vì dùng tempValue
       const inputElement = event.target as HTMLInputElement;
-      let finalValue = inputElement.value;
+      let finalValue: string | number = inputElement.value;
 
       // Xử lý kiểu dữ liệu tương tự như trong handleCellSave
       if (field === 'value') {
-        const numValue = parseFloat(finalValue);
+        const numValue = parseFloat(String(finalValue));
         finalValue = isNaN(numValue) ? 0 : numValue;
       } else if (field === 'year') {
-        const numValue = parseInt(finalValue);
+        const numValue = parseInt(String(finalValue));
         finalValue = isNaN(numValue) ? new Date().getFullYear() : numValue;
       }
 
@@ -114,9 +115,9 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
           <input
             type="number"
             className="h-8 w-full border rounded text-center px-2"
-            value={tempValue ?? ""}
-            onChange={e => setTempValue(Number(e.target.value))}
-            onBlur={() => handleCellSave("year", Number(tempValue))}
+            value={String(tempValue)}
+            onChange={e => setTempValue(e.target.value)}
+            onBlur={() => handleCellSave("year", tempValue)}
             onKeyDown={e => handleKeyDown(e, "year")}
             autoFocus
           />
@@ -129,7 +130,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
         {isEditing("code") ? (
           <input
             className="h-8 w-full border rounded px-2"
-            value={tempValue ?? ""}
+            value={String(tempValue)}
             onChange={e => setTempValue(e.target.value)}
             onBlur={() => handleCellSave("code", tempValue)}
             onKeyDown={e => handleKeyDown(e, "code")}
@@ -168,7 +169,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
         {isEditing("descriptions") ? (
           <input
             className="h-8 w-full border rounded px-2"
-            value={tempValue ?? ""}
+            value={String(tempValue)}
             onChange={e => setTempValue(e.target.value)}
             onBlur={() => handleCellSave("descriptions", tempValue)}
             onKeyDown={e => handleKeyDown(e, "descriptions")}
