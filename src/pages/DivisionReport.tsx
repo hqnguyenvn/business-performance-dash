@@ -9,7 +9,8 @@ import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
-import { useDivisionReportData, MONTHS, YEARS, GroupedDivisionData } from "@/hooks/useDivisionReportData";
+import { useDivisionReportData, MONTHS, YEARS } from "@/hooks/useDivisionReportData";
+import { GroupedDivisionData } from "@/hooks/division-report/types";
 
 const DivisionReport = () => {
   const { toast } = useToast();
