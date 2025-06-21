@@ -16,6 +16,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          percent_bn: number | null
           updated_at: string
           year: number
         }
@@ -25,6 +26,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          percent_bn?: number | null
           updated_at?: string
           year: number
         }
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          percent_bn?: number | null
           updated_at?: string
           year?: number
         }

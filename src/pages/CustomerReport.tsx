@@ -50,9 +50,32 @@ const CustomerReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<CustomerReportData[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // State to track filtered data and totals from ReportTable
+  const [tableFilteredData, setTableFilteredData] = useState<CustomerReportData[]>([]);
+  const [totals, setTotals] = useState({
+    totalRevenue: 0,
+    totalBMM: 0,
+    totalBonus: 0,
+    totalCost: 0,
+    totalProfit: 0,
+    totalProfitPercent: 0
+  });
 
   // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
+
+  // Callback để nhận dữ liệu đã filter từ ReportTable
+  const handleFilteredDataChange = (filtered: CustomerReportData[]) => {
+    console.log('📥 CustomerReport: Received filtered data, length =', filtered.length);
+    setTableFilteredData(filtered);
+  };
+
+  // Callback để nhận totals từ ReportTable
+  const handleTotalsChange = (newTotals: typeof totals) => {
+    console.log('💰 CustomerReport: Received totals from ReportTable', newTotals);
+    setTotals(newTotals);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -448,22 +471,15 @@ const CustomerReport = () => {
     });
   };
 
-  // Card totals - using bonusValue from data instead of calculated bonus
-  const totalRevenue = groupedData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalBMM = groupedData.reduce((sum, d) => sum + d.bmm, 0);
-  const totalBonus = groupedData.reduce((sum, d) => sum + (d.bonusValue ?? 0), 0);
-
-  // Calculate total cost using bonusValue instead of bonusRate
-  const totalCost = groupedData.reduce((sum, d) => {
-    const salary = d.salaryCost ?? 0;
-    const bonus = d.bonusValue ?? 0; // Use bonusValue instead of calculating
-    const oh = d.overheadCost ?? 0;
-    return sum + salary + bonus + oh;
-  }, 0);
-
-  // Total profit, %profit
-  const totalProfit = totalRevenue - totalCost;
-  const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  // Use totals directly from state (calculated in ReportTable)
+  const {
+    totalRevenue,
+    totalBMM, 
+    totalBonus,
+    totalCost,
+    totalProfit,
+    totalProfitPercent
+  } = totals;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -511,6 +527,8 @@ const CustomerReport = () => {
               startIndex={1}
               endIndex={groupedData.length}
               bonusRate={0}
+              onFilteredDataChange={handleFilteredDataChange}
+              onTotalsChange={handleTotalsChange}
             />
           </CardContent>
         </Card>
