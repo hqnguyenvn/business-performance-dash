@@ -2,12 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const fetchDivisionReportData = async (selectedYear: string, selectedMonths: number[]) => {
-  const [
-    { data: revenueData, error: revenueError },
-    { data: salaryData, error: salaryError },
-    { data: costData, error: costError },
-    { data: bonusData, error: bonusError }
-  ] = await Promise.all([
+  try {
+    const [
+      { data: revenueData, error: revenueError },
+      { data: salaryData, error: salaryError },
+      { data: costData, error: costError },
+      { data: bonusData, error: bonusError }
+    ] = await Promise.all([
     // Combined revenue query with divisions
     supabase
       .from('revenues')
@@ -42,6 +43,37 @@ export const fetchDivisionReportData = async (selectedYear: string, selectedMont
       .select('year, division_id, bn_bmm')
       .eq('year', Number(selectedYear))
   ]);
+
+  // Check for errors
+  if (revenueError || salaryError || costError || bonusError) {
+    console.error("Database errors:", { revenueError, salaryError, costError, bonusError });
+    return {
+      revenueData: [],
+      salaryData: [],
+      costData: [],
+      bonusData: [],
+      error: revenueError || salaryError || costError || bonusError
+    };
+  }
+
+  return {
+    revenueData: revenueData || [],
+    salaryData: salaryData || [],
+    costData: costData || [],
+    bonusData: bonusData || [],
+    error: null
+  };
+  } catch (error) {
+    console.error("Error in fetchDivisionReportData:", error);
+    return {
+      revenueData: [],
+      salaryData: [],
+      costData: [],
+      bonusData: [],
+      error
+    };
+  }
+};
 
   // Check for errors
   const errors = [
