@@ -9,19 +9,7 @@ import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
-import { useDivisionReportData, MONTHS, YEARS } from "@/hooks/useDivisionReportData";
-
-interface GroupedDivisionData {
-  year: number;
-  month: number;
-  division_id: string;
-  division_code: string;
-  bmm: number;
-  revenue: number;
-  salaryCost: number;
-  overheadCost: number;
-  bonusValue: number;
-}
+import { useDivisionReportData, MONTHS, YEARS, type GroupedDivisionData } from "@/hooks/useDivisionReportData";
 
 const DivisionReport = () => {
   const { toast } = useToast();

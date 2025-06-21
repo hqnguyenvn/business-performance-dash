@@ -6,7 +6,8 @@ import { GroupedDivisionData, UseDivisionReportDataProps } from "./division-repo
 import { MONTHS, YEARS } from "./division-report/constants";
 import { useParameterValues } from "./useParameterValues";
 
-export { MONTHS, YEARS, GroupedDivisionData };
+export { MONTHS, YEARS };
+export type { GroupedDivisionData };
 
 export const useDivisionReportData = ({ selectedYear, selectedMonths }: UseDivisionReportDataProps) => {
   const [groupedData, setGroupedData] = useState<GroupedDivisionData[]>([]);
