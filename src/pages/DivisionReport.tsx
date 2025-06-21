@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useParameterValues } from "@/hooks/useParameterValues";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
@@ -27,6 +27,9 @@ const DivisionReport = () => {
     selectedMonths
   });
 
+  // Show loading indicator when data is being fetched
+  const isDataLoading = loading || (groupedData.length === 0 && loading);
+
   // Map dữ liệu sang format ReportTable mong muốn: company_code => division_code
   const mappedData = groupedData.map((row) => ({
     ...row,
@@ -35,6 +38,15 @@ const DivisionReport = () => {
   }));
 
   const exportToCSV = () => {
+    if (groupedData.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Không có dữ liệu",
+        description: "Không có dữ liệu để xuất file CSV.",
+      });
+      return;
+    }
+
     exportCustomerReportCSV(mappedData as any, 0); // Pass 0 since we're not using bonusRate anymore
     toast({
       title: "Export Successful",
@@ -74,7 +86,10 @@ const DivisionReport = () => {
         <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle>Division Report</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Division Report
+                {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              </CardTitle>
               <ReportFilter
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
@@ -87,21 +102,28 @@ const DivisionReport = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <ReportTable
-              data={mappedData as any}
-              loading={loading}
-              paginatedData={mappedData as any}
-              currentPage={1}
-              totalPages={1}
-              goToPage={() => {}}
-              goToNextPage={() => {}}
-              goToPreviousPage={() => {}}
-              totalItems={mappedData.length}
-              startIndex={1}
-              endIndex={mappedData.length}
-              bonusRate={0}
-              companyLabel="Division"
-            />
+            {isDataLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                <span className="text-lg">Đang tải dữ liệu...</span>
+              </div>
+            ) : (
+              <ReportTable
+                data={mappedData as any}
+                loading={loading}
+                paginatedData={mappedData as any}
+                currentPage={1}
+                totalPages={1}
+                goToPage={() => {}}
+                goToNextPage={() => {}}
+                goToPreviousPage={() => {}}
+                totalItems={mappedData.length}
+                startIndex={1}
+                endIndex={mappedData.length}
+                bonusRate={0}
+                companyLabel="Division"
+              />
+            )}
           </CardContent>
         </Card>
       </div>
