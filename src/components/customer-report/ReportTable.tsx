@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { TableFilter } from "@/components/ui/table-filter";
 import { useTableFilter } from "@/hooks/useTableFilter";
@@ -78,89 +78,49 @@ export function ReportTable({
   onFilteredDataChange,
   onTotalsChange,
 }: ReportTableProps) {
-  // Local state for filter term
-  const [filterTerm, setFilterTerm] = useState('');
-
-  // Apply filter with detailed debugging
-  const filteredData = useMemo(() => {
-    console.log('🔍 Filter processing:');
-    console.log('  Filter term:', `"${filterTerm}"`);
-    console.log('  Original data length:', data.length);
-
-    if (!filterTerm.trim()) {
-      console.log('  ✅ No filter term - returning all data');
-      return data;
-    }
-
-    const term = filterTerm.toLowerCase().trim();
-    console.log('  🔍 Normalized filter term:', `"${term}"`);
-
-    const filtered = data.filter(item => {
-      const companyCode = (item.company_code || '').toLowerCase();
-      const matches = companyCode.includes(term);
-
-      if (matches) {
-        console.log(`    ✅ Match: "${item.company_code}" contains "${term}"`);
-      }
-
-      return matches;
-    });
-
-    console.log('  📊 Filtered data length:', filtered.length);
-    console.log('  🎯 Matching companies:', filtered.map(item => item.company_code).join(', '));
-
-    return filtered;
-  }, [data, filterTerm]);
+  // Sử dụng useTableFilter để filter cột
+  const {
+    filteredData,
+    setFilter,
+    getActiveFilters,
+    clearAllFilters
+  } = useTableFilter(data);
 
   // Check if this is Company Report (no customer_code field) 
   const isCompanyReport = !data[0]?.customer_code;
 
-  // Calculate totals from filteredData only
+  // Calculate totals from filtered data
   const totals = useMemo(() => {
-    console.log('');
-    console.log('🧮 ReportTable: Calculating totals...');
-    console.log('📊 Original data length:', data.length);
-    console.log('🔍 Filtered data length:', filteredData.length);
-    console.log('🔍 Filter term:', filterTerm);
+    console.log('💰 ReportTable: Calculating totals from', filteredData.length, 'filtered records');
+    
+    const revenue = filteredData.reduce((sum, d) => sum + (d.revenue || 0), 0);
+    const bmm = filteredData.reduce((sum, d) => sum + (d.bmm || 0), 0);
+    const bonus = filteredData.reduce((sum, d) => sum + (d.bonusValue || 0), 0);
+    const cost = filteredData.reduce((sum, d) => {
+      const salary = d.salaryCost || 0;
+      const bonusVal = d.bonusValue || 0;
+      const oh = d.overheadCost || 0;
+      return sum + salary + bonusVal + oh;
+    }, 0);
+    const profit = revenue - cost;
+    const profitPercent = revenue !== 0 ? (profit / revenue) * 100 : 0;
 
-    // Debug: Show first few items of original data vs filtered data
-    console.log('📋 First 3 original data items:');
-    data.slice(0, 3).forEach((item, index) => {
-      console.log(`  ${index + 1}. ${item.company_code || 'N/A'} - Revenue: ${Math.round(item.revenue || 0).toLocaleString()}`);
+    console.log('📊 ReportTable: Calculated totals -', {
+      records: filteredData.length,
+      revenue: Math.round(revenue).toLocaleString(),
+      cost: Math.round(cost).toLocaleString(),
+      profit: Math.round(profit).toLocaleString()
     });
 
-    console.log('📋 First 3 filtered data items:');
-    filteredData.slice(0, 3).forEach((item, index) => {
-      console.log(`  ${index + 1}. ${item.company_code || 'N/A'} - Revenue: ${Math.round(item.revenue || 0).toLocaleString()}`);
-    });
-
-    // Calculate totals ONLY from filteredData
-    const totalRevenue = filteredData.reduce((sum, item) => sum + (item.revenue || 0), 0);
-    const totalBMM = filteredData.reduce((sum, item) => sum + (item.bmm || 0), 0);
-    const totalBonus = filteredData.reduce((sum, item) => sum + (item.bonusValue || 0), 0);
-    const totalCost = filteredData.reduce((sum, item) => sum + (item.salaryCost || 0) + (item.overheadCost || 0), 0);
-    const totalProfit = totalRevenue - totalCost;
-    const totalProfitPercent = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-
-    const calculatedTotals = {
-      totalRevenue,
-      totalBMM,
-      totalBonus,
-      totalCost,
-      totalProfit,
-      totalProfitPercent
+    return {
+      totalRevenue: revenue,
+      totalBMM: bmm,
+      totalBonus: bonus,
+      totalCost: cost,
+      totalProfit: profit,
+      totalProfitPercent: profitPercent
     };
-
-    console.log('💰 Calculated totals from filtered data:', calculatedTotals);
-    console.log(`💵 Total Revenue: ${Math.round(totalRevenue).toLocaleString()} VND`);
-    console.log(`📦 Total BMM: ${totalBMM}`);
-    console.log(`🎁 Total Bonus: ${Math.round(totalBonus).toLocaleString()} VND`);
-    console.log(`💸 Total Cost: ${Math.round(totalCost).toLocaleString()} VND`);
-    console.log(`💰 Total Profit: ${Math.round(totalProfit).toLocaleString()} VND`);
-    console.log('');
-
-    return calculatedTotals;
-  }, [filteredData, filterTerm, data.length]);
+  }, [filteredData]);
 
   // Notify parent when filtered data changes
   useEffect(() => {
@@ -180,41 +140,42 @@ export function ReportTable({
     }
   }, [totals, onTotalsChange]);
 
-    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    console.log('🔍 Filter input changed:', `"${newValue}"`);
-    setFilterTerm(newValue);
-  };
-
   return (
     <div className="overflow-x-auto">
-       <div>
-          <label htmlFor="filter">Filter by Company Code:</label>
-          <input
-            type="text"
-            id="filter"
-            value={filterTerm}
-            onChange={handleFilterChange}
-            placeholder="Enter company code"
-          />
-        </div>
       <Table>
         <TableHeader>
           <TableRow className="bg-green-50">
             <TableHead className="border border-gray-300 p-2 text-center font-medium w-10">
               No.
             </TableHead>
-            <TableHead className="border border-gray-300 p-2 text-center font-medium">
+            <TableHead
+              className="border border-gray-300 p-2 text-center font-medium"
+              showFilter
+              filterData={getFilterData(data, "month")}
+              filterField="month"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters("month")}
+            >
               Month
             </TableHead>
             <TableHead
               className="border border-gray-300 p-2 text-left font-medium"
+              showFilter
+              filterData={getFilterData(data, "company_code")}
+              filterField="company_code"
+              onFilter={setFilter}
+              activeFilters={getActiveFilters("company_code")}
             >
               {companyLabel || "Company"}
             </TableHead>
             {!isCompanyReport && (
               <TableHead
                 className="border border-gray-300 p-2 text-left font-medium"
+                showFilter
+                filterData={getFilterData(data, "customer_code")}
+                filterField="customer_code"
+                onFilter={setFilter}
+                activeFilters={getActiveFilters("customer_code")}
               >
                 Customer
               </TableHead>
