@@ -1,6 +1,9 @@
-
+The code is updated to use RolesTable component instead of MasterDataTable for displaying Roles data.
+```
+```replit_final_file
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MasterDataTable from "@/components/MasterDataTable";
+import RolesTable from "@/components/RolesTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
 import { MasterData } from "@/services/masterDataService";
 import { ExchangeRateDisplay } from "@/services/exchangeRateService";
@@ -56,6 +59,8 @@ interface SettingsTabsProps {
 }
 
 export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
+  const { roles } = data;
+  const { setRoles } = setters;
   return (
     <Tabs defaultValue="customers" className="w-full">
       <TabsList className="flex flex-wrap h-auto w-full p-2 gap-1">
@@ -177,11 +182,9 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
       </TabsContent>
 
       <TabsContent value="roles">
-        <MasterDataTable
-          data={data.roles}
-          setter={setters.setRoles}
-          title="Role List"
-          service={rolesService}
+        <RolesTable
+          data={roles}
+          setter={setRoles}
         />
       </TabsContent>
 
@@ -192,7 +195,7 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           currencies={data.currencies}
         />
       </TabsContent>
-      
+
       <TabsContent value="bonusByDivision">
         <BonusByDivisionTable
           data={data.bonusByDivision}
@@ -200,7 +203,7 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           divisions={data.divisions}
         />
       </TabsContent>
-      
+
       <TabsContent value="bonusByCompany">
         <BonusByCompanyTable
           data={data.bonusByCompany}
@@ -208,7 +211,7 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           companies={data.companies}
         />
       </TabsContent>
-      
+
       <TabsContent value="parameters">
         <ParameterTable
           data={data.parameters}
