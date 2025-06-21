@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building } from "lucide-react";
+import { Building, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
 import { ReportSummary } from "@/components/customer-report/ReportSummary";
@@ -34,6 +34,9 @@ const CompanyReport = () => {
     selectedMonths
   });
 
+  // Show loading indicator when data is being fetched
+  const isDataLoading = loading || (groupedData.length === 0 && loading);
+
   // Callback để nhận dữ liệu đã filter từ ReportTable
   const handleFilteredDataChange = (filtered: any[]) => {
     console.log('📥 CompanyReport: Received filtered data, length =', filtered.length);
@@ -47,7 +50,16 @@ const CompanyReport = () => {
   };
 
   const exportToCSV = () => {
-    exportCustomerReportCSV(groupedData as any, 0); // Pass 0 since we're not using bonusRate anymore
+    if (groupedData.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Không có dữ liệu",
+        description: "Không có dữ liệu để xuất file CSV.",
+      });
+      return;
+    }
+
+    exportCustomerReportCSV(groupedData as any, 0);
     toast({
       title: "Export Successful",
       description: "Company report has been successfully exported as a CSV file.",
@@ -83,7 +95,10 @@ const CompanyReport = () => {
         <Card className="bg-white">
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle>Company Report</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Company Report
+                {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              </CardTitle>
               <ReportFilter
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
@@ -96,23 +111,30 @@ const CompanyReport = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <ReportTable
-              data={groupedData as any}
-              loading={loading}
-              paginatedData={groupedData as any}
-              currentPage={1}
-              totalPages={1}
-              goToPage={() => {}}
-              goToNextPage={() => {}}
-              goToPreviousPage={() => {}}
-              totalItems={groupedData.length}
-              startIndex={1}
-              endIndex={groupedData.length}
-              bonusRate={0}
-              companyLabel="Company"
-              onFilteredDataChange={handleFilteredDataChange}
-              onTotalsChange={handleTotalsChange}
-            />
+            {isDataLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mr-2" />
+                <span className="text-lg">Đang tải dữ liệu...</span>
+              </div>
+            ) : (
+              <ReportTable
+                data={groupedData as any}
+                loading={loading}
+                paginatedData={groupedData as any}
+                currentPage={1}
+                totalPages={1}
+                goToPage={() => {}}
+                goToNextPage={() => {}}
+                goToPreviousPage={() => {}}
+                totalItems={groupedData.length}
+                startIndex={1}
+                endIndex={groupedData.length}
+                bonusRate={0}
+                companyLabel="Company"
+                onFilteredDataChange={handleFilteredDataChange}
+                onTotalsChange={handleTotalsChange}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
