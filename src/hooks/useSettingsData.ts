@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -10,7 +9,8 @@ import {
   resourcesService,
   currenciesService,
   costTypesService,
-  MasterData
+  rolesService,
+  MasterData,
 } from "@/services/masterDataService";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
@@ -27,6 +27,7 @@ export const useSettingsData = () => {
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
   const [costTypes, setCostTypes] = useState<MasterData[]>([]);
+  const [roles, setRoles] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [bonusByDivision, setBonusByDivision] = useState<BonusByDivision[]>([]);
   const [bonusByCompany, setBonusByCompany] = useState<BonusByCompany[]>([]);
@@ -45,10 +46,11 @@ export const useSettingsData = () => {
         resourcesData,
         currenciesData,
         costTypesData,
+        rolesData,
         exchangeRatesData,
         bonusByDivisionData,
         bonusByCompanyData,
-        parametersData
+        parametersData,
       ] = await Promise.all([
         customersService.getAll(),
         companiesService.getAll(),
@@ -58,6 +60,7 @@ export const useSettingsData = () => {
         resourcesService.getAll(),
         currenciesService.getAll(),
         costTypesService.getAll(),
+        rolesService.getAll(),
         exchangeRateService.getAll(),
         bonusByDivisionService.getAll(),
         bonusByCompanyService.getAll(),
@@ -72,6 +75,7 @@ export const useSettingsData = () => {
       setResources(resourcesData);
       setCurrencies(currenciesData);
       setCostTypes(costTypesData);
+      setRoles(rolesData);
       setExchangeRates(exchangeRatesData);
       setBonusByDivision(bonusByDivisionData);
       setBonusByCompany(bonusByCompanyData);
@@ -103,6 +107,7 @@ export const useSettingsData = () => {
       resources,
       currencies,
       costTypes,
+      roles,
       exchangeRates,
       bonusByDivision,
       bonusByCompany,
@@ -117,6 +122,7 @@ export const useSettingsData = () => {
       setResources,
       setCurrencies,
       setCostTypes,
+      setRoles,
       setExchangeRates,
       setBonusByDivision,
       setBonusByCompany,

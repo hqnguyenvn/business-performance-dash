@@ -13,6 +13,7 @@ import {
   resourcesService,
   currenciesService,
   costTypesService,
+  rolesService,
 } from "@/services/masterDataService";
 import BonusByDivisionTable from "./BonusByDivisionTable";
 import BonusByCompanyTable from "./BonusByCompanyTable";
@@ -31,6 +32,7 @@ interface SettingsTabsProps {
     resources: MasterData[];
     currencies: MasterData[];
     costTypes: MasterData[];
+    roles: MasterData[];
     exchangeRates: ExchangeRateDisplay[];
     bonusByDivision: BonusByDivision[];
     bonusByCompany: BonusByCompany[];
@@ -45,6 +47,7 @@ interface SettingsTabsProps {
     setResources: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setCurrencies: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setCostTypes: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setRoles: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
     setBonusByDivision: React.Dispatch<React.SetStateAction<BonusByDivision[]>>;
     setBonusByCompany: React.Dispatch<React.SetStateAction<BonusByCompany[]>>;
@@ -79,6 +82,9 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
         </TabsTrigger>
         <TabsTrigger value="costTypes" className="whitespace-nowrap px-3 py-2">
           Cost Types
+        </TabsTrigger>
+        <TabsTrigger value="roles" className="whitespace-nowrap px-3 py-2">
+          Roles
         </TabsTrigger>
         <TabsTrigger value="exchangeRates" className="whitespace-nowrap px-3 py-2">
           Exchange Rates
@@ -167,6 +173,15 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
           setter={setters.setCostTypes}
           title="Cost Type List"
           service={costTypesService}
+        />
+      </TabsContent>
+
+      <TabsContent value="roles">
+        <MasterDataTable
+          data={data.roles}
+          setter={setters.setRoles}
+          title="Role List"
+          service={rolesService}
         />
       </TabsContent>
 
