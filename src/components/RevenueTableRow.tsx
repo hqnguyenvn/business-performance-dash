@@ -1,4 +1,5 @@
 
+
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/types/revenue";
@@ -157,7 +158,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
   );
 
   return (
-    <TableRow key={revenue.id} className={"h-[53px] " + (isTempRow ? "bg-yellow-50" : "")}>
+    <TableRow key={revenue.id} className={"hover:bg-gray-50 " + (isTempRow ? "bg-yellow-50" : "")}>
       {cellConfigs.map((config, idx) => (
         <RevenueTableCell
           key={config.field ? `${revenue.id}-${config.field}` : `${revenue.id}-col-${idx}`}
@@ -169,8 +170,8 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           setEditingCell={setEditingCell}
         />
       ))}
-      <TableCell className="border-r p-0 h-[53px]">
-        <div className="h-full flex items-center justify-center">
+      <TableCell className="border-r p-1">
+        <div className="flex gap-1 justify-center">
           {isTempRow ? (
             <button
               className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 text-xs"
@@ -195,3 +196,4 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
 };
 
 export default RevenueTableRow;
+
