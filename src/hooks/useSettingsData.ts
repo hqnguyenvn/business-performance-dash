@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -9,9 +10,10 @@ import {
   resourcesService,
   currenciesService,
   costTypesService,
-  rolesService,
   MasterData,
 } from "@/services/masterDataService";
+import { roleService } from "@/services/roleService";
+import { Role } from "@/types/role";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import { bonusByDivisionService, BonusByDivision } from "@/services/bonusByDivisionService";
 import { bonusByCompanyService, BonusByCompany } from "@/services/bonusByCompanyService";
@@ -27,7 +29,7 @@ export const useSettingsData = () => {
   const [resources, setResources] = useState<MasterData[]>([]);
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
   const [costTypes, setCostTypes] = useState<MasterData[]>([]);
-  const [roles, setRoles] = useState<MasterData[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRateDisplay[]>([]);
   const [bonusByDivision, setBonusByDivision] = useState<BonusByDivision[]>([]);
   const [bonusByCompany, setBonusByCompany] = useState<BonusByCompany[]>([]);
@@ -60,7 +62,7 @@ export const useSettingsData = () => {
         resourcesService.getAll(),
         currenciesService.getAll(),
         costTypesService.getAll(),
-        rolesService.getAll(),
+        roleService.getAll(),
         exchangeRateService.getAll(),
         bonusByDivisionService.getAll(),
         bonusByCompanyService.getAll(),

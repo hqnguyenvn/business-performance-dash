@@ -1,9 +1,9 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MasterDataTable from "@/components/MasterDataTable";
 import RolesTable from "@/components/RolesTable";
 import ExchangeRateTable from "@/components/ExchangeRateTable";
 import { MasterData } from "@/services/masterDataService";
+import { Role } from "@/types/role";
 import { ExchangeRateDisplay } from "@/services/exchangeRateService";
 import {
   customersService,
@@ -14,7 +14,6 @@ import {
   resourcesService,
   currenciesService,
   costTypesService,
-  rolesService,
 } from "@/services/masterDataService";
 import BonusByDivisionTable from "./BonusByDivisionTable";
 import BonusByCompanyTable from "./BonusByCompanyTable";
@@ -33,7 +32,7 @@ interface SettingsTabsProps {
     resources: MasterData[];
     currencies: MasterData[];
     costTypes: MasterData[];
-    roles: MasterData[];
+    roles: Role[];
     exchangeRates: ExchangeRateDisplay[];
     bonusByDivision: BonusByDivision[];
     bonusByCompany: BonusByCompany[];
@@ -48,7 +47,7 @@ interface SettingsTabsProps {
     setResources: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setCurrencies: React.Dispatch<React.SetStateAction<MasterData[]>>;
     setCostTypes: React.Dispatch<React.SetStateAction<MasterData[]>>;
-    setRoles: React.Dispatch<React.SetStateAction<MasterData[]>>;
+    setRoles: React.Dispatch<React.SetStateAction<Role[]>>;
     setExchangeRates: React.Dispatch<React.SetStateAction<ExchangeRateDisplay[]>>;
     setBonusByDivision: React.Dispatch<React.SetStateAction<BonusByDivision[]>>;
     setBonusByCompany: React.Dispatch<React.SetStateAction<BonusByCompany[]>>;
@@ -57,8 +56,6 @@ interface SettingsTabsProps {
 }
 
 export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
-  const { roles } = data;
-  const { setRoles } = setters;
   return (
     <Tabs defaultValue="customers" className="w-full">
       <TabsList className="flex flex-wrap h-auto w-full p-2 gap-1">
@@ -181,8 +178,8 @@ export const SettingsTabs = ({ data, setters }: SettingsTabsProps) => {
 
       <TabsContent value="roles">
         <RolesTable
-          data={roles}
-          setter={setRoles}
+          data={data.roles}
+          setter={setters.setRoles}
         />
       </TabsContent>
 

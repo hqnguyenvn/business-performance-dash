@@ -489,66 +489,6 @@ export class CostTypesService {
   }
 }
 
-// Roles Service
-export class RolesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('roles')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching roles:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('roles')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating role:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('roles')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating role:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('roles')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting role:', error);
-      throw error;
-    }
-  }
-}
-
 // Service instances
 export const customersService = new CustomersService();
 export const companiesService = new CompaniesService();
@@ -558,7 +498,6 @@ export const projectTypesService = new ProjectTypesService();
 export const resourcesService = new ResourcesService();
 export const currenciesService = new CurrenciesService();
 export const costTypesService = new CostTypesService();
-export const rolesService = new RolesService();
 
 // Utility function to get master data by type
 export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
@@ -579,8 +518,6 @@ export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
       return currenciesService.getAll();
     case 'cost_types':
       return costTypesService.getAll();
-    case 'roles':
-      return rolesService.getAll();
     default:
       throw new Error(`Unknown master data type: ${type}`);
   }

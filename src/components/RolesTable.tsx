@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,15 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Edit, Eye, Copy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { rolesService } from "@/services/masterDataService";
+import { roleService } from "@/services/roleService";
+import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { useState, useCallback, useRef } from "react";
-
-interface Role {
-  id: string;
-  code: string;
-  description: string;
-}
 
 interface RolesTableProps {
   data: Role[];
@@ -81,7 +75,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
           }
         } else {
           // Update existing role
-          await rolesService.update(id, { [field]: value.trim() });
+          await roleService.update(id, { [field]: value.trim() });
           toast({
             title: "Success",
             description: "Role updated successfully"
@@ -184,7 +178,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
   const deleteRole = useCallback(async (id: string) => {
     try {
       if (!id.startsWith('tmp-')) {
-        await rolesService.delete(id);
+        await roleService.delete(id);
       }
       setter(prev => prev.filter(role => role.id !== id));
       setDeleteId(null);
@@ -269,7 +263,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
         }
       }
 
-      const savedRole = await rolesService.create({
+      const savedRole = await roleService.create({
         code: role.code,
         description: role.description
       });
