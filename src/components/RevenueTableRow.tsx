@@ -1,3 +1,4 @@
+
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Revenue } from "@/types/revenue";
@@ -168,7 +169,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           setEditingCell={setEditingCell}
         />
       ))}
-      <TableCell className="border-r p-0">
+      <TableCell className="border-r p-0 h-[53px]">
         <div className="h-full flex items-center justify-center">
           {isTempRow ? (
             <button
