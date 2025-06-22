@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Copy } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { roleService } from "@/services/roleService";
@@ -231,25 +230,6 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
     }
   }, [data, setter]);
 
-  // Clone row
-  const cloneRow = useCallback((id: string) => {
-    const roleToClone = data.find(role => role.id === id);
-    if (roleToClone) {
-      const clonedRole: Role = {
-        id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
-        code: "",
-        description: roleToClone.description
-      };
-      
-      const index = data.findIndex(role => role.id === id);
-      setter(prev => {
-        const newData = [...prev];
-        newData.splice(index + 1, 0, clonedRole);
-        return newData;
-      });
-    }
-  }, [data, setter]);
-
   // Save new role
   const saveNewRole = useCallback(async (role: Role) => {
     try {
@@ -394,15 +374,6 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                           onClick={() => insertRowBelow(role.id)}
                         >
                           <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          title="Clone row"
-                          onClick={() => cloneRow(role.id)}
-                        >
-                          <Copy className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
