@@ -671,6 +671,30 @@ export type Database = {
           },
         ]
       }
+      roles: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       salary_costs: {
         Row: {
           amount: number
