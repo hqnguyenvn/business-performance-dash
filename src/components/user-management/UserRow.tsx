@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -22,7 +23,7 @@ interface UserRowProps {
   user: UserRowType;
   roleOptions: AppRole[];
   onChange: () => void;
-  index?: number; // thêm index option, mặc định là 0 nếu không có
+  index?: number;
 }
 
 export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
@@ -113,7 +114,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   };
 
   return (
-    <tr key={user.id}>
+    <tr key={user.id} className="hover:bg-gray-50">
       <td className="p-2 border text-center">{index !== undefined ? index + 1 : ""}</td>
       <td className="p-2 border">{user.email}</td>
       <td className="p-2 border">
@@ -175,23 +176,23 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
       </td>
       <td className="p-2 border">
         {editing ? (
-          <>
-            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving} className="mr-1">
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving}>
               Save
             </Button>
             <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
               Cancel
             </Button>
-          </>
+          </div>
         ) : (
-          <>
-            <Button variant="ghost" size="sm" onClick={handleEdit} className="mr-1">
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={handleEdit}>
               Edit
             </Button>
             <Button variant="destructive" size="sm" onClick={handleDelete}>
               Delete
             </Button>
-          </>
+          </div>
         )}
       </td>
     </tr>

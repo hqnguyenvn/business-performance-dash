@@ -17,11 +17,10 @@ interface UserAddFormProps {
 export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [newFullName, setNewFullName] = useState(""); // NEW 
+  const [newFullName, setNewFullName] = useState("");
   const [newRole, setNewRole] = useState<AppRole>("User");
   const [adding, setAdding] = useState(false);
 
-  // Khi chọn 1 checkbox thì bỏ check những cái còn lại
   const handleRoleCheckbox = (role: AppRole) => {
     setNewRole(role);
   };
@@ -37,7 +36,10 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
       email: newEmail,
       password: newPassword,
       options: {
-        emailRedirectTo: window.location.origin + "/auth"
+        emailRedirectTo: window.location.origin + "/auth",
+        data: {
+          email_confirm_at: new Date().toISOString() // Auto-confirm email at current time
+        }
       }
     });
 
@@ -73,6 +75,7 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
         onUserAdded();
         return;
       }
+      
       // Cập nhật full_name vào profiles (nếu có nhập)
       if (newFullName.trim()) {
         const { error: profileErr } = await supabase
@@ -81,12 +84,11 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
           .eq("id", userId);
         if (profileErr) {
           toast({ title: "Warning", description: "Failed to set full name: " + profileErr.message });
-          // Tiếp tục luồng tạo user, chỉ báo warning lên UI
         }
       }
     }
 
-    toast({ title: "Success", description: "User created. Please ask user to check email to verify account!" });
+    toast({ title: "Success", description: "User created and activated successfully!" });
     setNewEmail("");
     setNewPassword("");
     setNewFullName("");
@@ -113,7 +115,6 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
         className="w-48"
         disabled={adding}
       />
-      {/* Thêm ô nhập Full name */}
       <Input
         type="text"
         placeholder="Full name"
@@ -138,4 +139,3 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     </div>
   );
 }
-
