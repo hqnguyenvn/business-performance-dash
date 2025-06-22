@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,13 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Edit, Eye, Copy } from "lucide-react";
+import { Trash2, Plus, Copy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { roleService } from "@/services/roleService";
 import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { useState, useCallback, useRef } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface RolesTableProps {
   data: Role[];
@@ -25,7 +27,7 @@ interface RolesTableProps {
 const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
   const { toast } = useToast();
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Role } | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, any>>({});
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -97,6 +99,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
         return newValues;
       });
     }
+    setEditingCell(null);
   }, [data, setter, toast, editingValues]);
 
   // Handle keyboard navigation
@@ -148,6 +151,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
           return newValues;
         });
       }
+      setEditingCell(null);
       (e.target as HTMLInputElement).blur();
     }
   };
@@ -181,7 +185,6 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
         await roleService.delete(id);
       }
       setter(prev => prev.filter(role => role.id !== id));
-      setDeleteId(null);
       toast({
         title: "Success",
         description: "Role deleted successfully"
@@ -203,13 +206,13 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
       code: "",
       description: ""
     };
-    setter(prev => [...prev, newRole]);
+    setter(prev => [newRole, ...prev]);
     
     // Focus the first cell of the new row after a short delay
     setTimeout(() => {
-      focusCell(filteredData.length, 'code');
+      focusCell(0, 'code');
     }, 100);
-  }, [setter, filteredData.length]);
+  }, [setter]);
 
   // Insert row below
   const insertRowBelow = useCallback((id: string) => {
@@ -286,42 +289,41 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
     }
   }, [data, setter, toast]);
 
+  const handleCellClick = (id: string, field: keyof Role) => {
+    setEditingCell({ id, field });
+  };
+
+  const isEditing = (id: string, field: keyof Role) => {
+    return editingCell?.id === id && editingCell.field === field;
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Roles</CardTitle>
-          <Button onClick={addNewRole} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Role
-          </Button>
-        </div>
+        <CardTitle>Roles</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table ref={tableRef}>
             <TableHeader>
-              <TableRow className="bg-red-50">
-                <TableHead className="border border-gray-300 w-16 text-center">
-                  No.
-                </TableHead>
-                <TableHead className="border border-gray-300">
-                  Code
-                </TableHead>
-                <TableHead className="border border-gray-300">
-                  Description
-                </TableHead>
-                <TableHead className="border border-gray-300 text-center">
-                  Actions
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={addNewRole}
-                    className="h-6 w-6 p-0 ml-1"
-                    title="Add New Row"
-                  >
-                    <Plus className="h-4 w-4 text-blue-600" />
-                  </Button>
+              <TableRow className="bg-gray-50">
+                <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
+                <TableHead className="border border-gray-300 text-center">Code</TableHead>
+                <TableHead className="border border-gray-300">Description</TableHead>
+                <TableHead className="border border-gray-300 text-center w-28">
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Actions</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="ml-1 h-6 w-6 p-0"
+                      onClick={addNewRole}
+                      title="Add new row"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -337,77 +339,97 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                 </TableRow>
               ) : (
                 filteredData.map((role, index) => (
-                  <TableRow key={role.id} className="hover:bg-gray-50">
-                    <TableCell className="border border-gray-300 p-2 text-center">
-                      {index + 1}
+                  <TableRow key={role.id} className="group hover:bg-gray-50">
+                    <TableCell className="text-center font-medium border border-gray-300">{index + 1}</TableCell>
+                    
+                    <TableCell className="text-center p-1 border border-gray-300">
+                      {isEditing(role.id, 'code') ? (
+                        <Input
+                          value={getInputValue(role, 'code')}
+                          onChange={(e) => handleInputChange(role.id, 'code', e.target.value)}
+                          onBlur={() => handleCellBlur(role.id, 'code')}
+                          onKeyDown={(e) => handleKeyDown(e, role.id, 'code', index)}
+                          className="border-0 p-1 h-8 text-center"
+                          placeholder="Enter code"
+                          autoFocus
+                        />
+                      ) : (
+                        <div 
+                          className="cursor-pointer h-8 flex items-center justify-center" 
+                          onClick={() => handleCellClick(role.id, 'code')}
+                        >
+                          {role.code}
+                        </div>
+                      )}
                     </TableCell>
-                    <TableCell className="border border-gray-300 p-1">
-                      <Input
-                        value={getInputValue(role, 'code')}
-                        onChange={(e) => handleInputChange(role.id, 'code', e.target.value)}
-                        onBlur={() => handleCellBlur(role.id, 'code')}
-                        onKeyDown={(e) => handleKeyDown(e, role.id, 'code', index)}
-                        className="border-0 p-1 h-8"
-                        placeholder="Enter code"
-                      />
+
+                    <TableCell className="p-1 border border-gray-300">
+                      {isEditing(role.id, 'description') ? (
+                        <Input
+                          value={getInputValue(role, 'description')}
+                          onChange={(e) => handleInputChange(role.id, 'description', e.target.value)}
+                          onBlur={() => handleCellBlur(role.id, 'description')}
+                          onKeyDown={(e) => handleKeyDown(e, role.id, 'description', index)}
+                          className="border-0 p-1 h-8"
+                          placeholder="Enter description"
+                          autoFocus
+                        />
+                      ) : (
+                        <div 
+                          className="cursor-pointer h-8 flex items-center px-2" 
+                          onClick={() => handleCellClick(role.id, 'description')}
+                        >
+                          {role.description}
+                        </div>
+                      )}
                     </TableCell>
-                    <TableCell className="border border-gray-300 p-1">
-                      <Input
-                        value={getInputValue(role, 'description')}
-                        onChange={(e) => handleInputChange(role.id, 'description', e.target.value)}
-                        onBlur={() => handleCellBlur(role.id, 'description')}
-                        onKeyDown={(e) => handleKeyDown(e, role.id, 'description', index)}
-                        className="border-0 p-1 h-8"
-                        placeholder="Enter description"
-                      />
-                    </TableCell>
-                    <TableCell className="border border-gray-300 p-1">
-                      <div className="flex gap-1 justify-center">
+
+                    <TableCell className="p-1 text-center border border-gray-300">
+                      <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
+                          className="h-8 w-8"
+                          title="Add row after"
                           onClick={() => insertRowBelow(role.id)}
-                          className="h-6 w-6 p-0"
-                          title="Add Row Below"
                         >
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-4 w-4" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
+                          className="h-8 w-8"
+                          title="Clone row"
                           onClick={() => cloneRow(role.id)}
-                          className="h-6 w-6 p-0"
-                          title="Clone Row"
                         >
-                          <Copy className="h-3 w-3" />
+                          <Copy className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {/* View action */}}
-                          className="h-6 w-6 p-0"
-                          title="View"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {/* Edit action */}}
-                          className="h-6 w-6 p-0"
-                          title="Edit"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setDeleteId(role.id)}
-                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="destructive"
+                              className="h-8 w-8"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this role? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteRole(role.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -416,32 +438,6 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
             </TableBody>
           </Table>
         </div>
-
-        {/* Delete Confirmation Dialog */}
-        {deleteId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this role? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setDeleteId(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteRole(deleteId)}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
