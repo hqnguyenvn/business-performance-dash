@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { Input } from "@/components/ui/input";
+import { Edit, X, Trash2 } from "lucide-react";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -177,19 +178,19 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
         {editing ? (
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={handleSave} disabled={saving} className="h-6 w-6 p-0">
-              Save
+              ✓
             </Button>
             <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving} className="h-6 w-6 p-0">
-              Cancel
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={handleEdit} className="h-6 w-6 p-0">
-              Edit
+              <Edit className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="outline" onClick={handleDelete} className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
-              Delete
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         )}
