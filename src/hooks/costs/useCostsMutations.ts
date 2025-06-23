@@ -1,50 +1,88 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createCost, updateCost, deleteCost, batchCreateCosts, Cost, NewCost } from "@/services/costApi";
 import { useToast } from "@/hooks/use-toast";
-import { costService, Cost as DbCost, NewCost } from "@/services/costService";
 
 export const useCostsMutations = () => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
-    const createCostMutation = useMutation({
-        mutationFn: (cost: NewCost): Promise<DbCost> => costService.create(cost),
-        onError: (error) => {
-          toast({ title: "Error", description: `Could not create cost: ${error.message}`, variant: "destructive" });
-        }
-    });
-
-    const updateCostMutation = useMutation({
-        mutationFn: (cost: DbCost): Promise<DbCost> => costService.update(cost.id, cost),
-        onError: (error) => {
-          toast({ title: "Error", description: `Could not update cost: ${error.message}`, variant: "destructive" });
-        }
-    });
-
-    const deleteCostMutation = useMutation({
-    mutationFn: costService.delete.bind(costService),
-    onSuccess: () => {
+    const invalidateQueries = () => {
       queryClient.invalidateQueries({ queryKey: ['costs'] });
-      toast({ title: "Success", description: "Cost deleted successfully." });
+    };
+
+    const createCostMutation = useMutation({
+    mutationFn: (newCost: NewCost) => createCost(newCost),
+    onSuccess: () => {
+      invalidateQueries();
+      toast({
+        title: "Cost created successfully!",
+      });
     },
     onError: (error) => {
+      console.error("Error creating cost:", error);
       toast({
-        title: "Error",
-        description: `Failed to delete cost: ${error.message}`,
-        variant: "destructive"
+        variant: "destructive",
+        title: "Error creating cost",
+        description: "Please try again.",
       });
-    }
+    },
+  });
+
+  const updateCostMutation = useMutation({
+    mutationFn: ({ id, cost }: { id: string; cost: Partial<Cost> }) => 
+      updateCost(id, cost),
+    onSuccess: () => {
+      invalidateQueries();
+      toast({
+        title: "Cost updated successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating cost:", error);
+      toast({
+        variant: "destructive",
+        title: "Error updating cost",
+        description: "Please try again.",
+      });
+    },
+  });
+
+  const deleteCostMutation = useMutation({
+    mutationFn: (id: string) => deleteCost(id),
+    onSuccess: () => {
+      invalidateQueries();
+      toast({
+        title: "Cost deleted successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error("Error deleting cost:", error);
+      toast({
+        variant: "destructive",
+        title: "Error deleting cost",
+        description: "Please try again.",
+      });
+    },
   });
 
   const batchCreateCostMutation = useMutation({
-        mutationFn: (costs: NewCost[]) => costService.batchCreate(costs),
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['costs'] });
-          toast({ title: "Success", description: "Costs batch created successfully." });
-        },
-        onError: (error) => {
-          toast({ title: "Error", description: `Batch create failed: ${error.message}`, variant: "destructive" });
-        }
-    });
+    mutationFn: (costs: NewCost[]) => batchCreateCosts(costs),
+    onSuccess: (result) => {
+      invalidateQueries();
+      toast({
+        title: `Batch import completed!`,
+        description: `Success: ${result.success}, Failed: ${result.failed}`,
+      });
+    },
+    onError: (error) => {
+      console.error("Error in batch import:", error);
+      toast({
+        variant: "destructive",
+        title: "Batch import failed",
+        description: "Please try again.",
+      });
+    },
+  });
 
     return {
         createCostMutation,

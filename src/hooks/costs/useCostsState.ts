@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { costService, Cost as DbCost } from "@/services/costService";
+import { getCosts, Cost as DbCost, CostSearchParams } from "@/services/costApi";
 import { costTypesService, MasterData } from "@/services/masterDataService";
 
 export type Cost = DbCost;
@@ -26,17 +26,20 @@ export const useCostsState = () => {
   
   const { data: paginatedResult, isLoading: isLoadingCosts } = useQuery({
     queryKey: ["costs", selectedYear, selectedMonths, currentPage, pageSize],
-    queryFn: () => costService.getPaginated({
+    queryFn: () => getCosts({
       year: parseInt(selectedYear),
       months: selectedMonths,
       page: currentPage,
       pageSize: pageSize
-    }),
+    } as CostSearchParams),
     staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
     gcTime: 10 * 60 * 1000, // 10 minutes - cache time
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     keepPreviousData: true, // Keep previous data while loading new page
+    // Enable background refetch for better UX
+    refetchInterval: 10 * 60 * 1000, // Background refetch every 10 minutes
+    refetchIntervalInBackground: false,
   });
 
   const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery({
@@ -62,7 +65,7 @@ export const useCostsState = () => {
 
   // Since data is already filtered server-side, filteredCosts = costs
   const filteredCosts = costs;
-  const totalCount = paginatedResult?.totalCount || 0;
+  const totalCount = paginatedResult?.total || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
   
   const handleYearChange = (value: string) => {
