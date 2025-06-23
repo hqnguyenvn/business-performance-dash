@@ -6,6 +6,7 @@ import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
 import { CostsImportStatus } from "@/components/costs/CostsImportStatus";
+import { PaginationControls } from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Import } from "lucide-react";
 import CloneCostDialog from "@/components/costs/CloneCostDialog";
@@ -28,6 +29,11 @@ const Costs = () => {
     costTypes,
     availableYears,
     filteredCosts,
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
+    handlePageChange,
     addNewRow,
     updateCost,
     openDialog,
@@ -73,7 +79,7 @@ const Costs = () => {
           />
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Cost Data ({filteredCosts.length} records)
+              Cost Data ({totalCount} total records, showing {filteredCosts.length})
             </h2>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={importFromCSV}>
@@ -102,6 +108,18 @@ const Costs = () => {
             insertRowBelow={insertRowBelow}
             cloneRow={cloneRow}
           />
+          
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                pageSize={pageSize}
+                totalItems={totalCount}
+              />
+            </div>
+          )}
         </div>
       </div>
 

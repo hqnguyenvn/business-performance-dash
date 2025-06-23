@@ -19,10 +19,20 @@ export const useCostsState = () => {
   
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6]);
-
-  const { data: dbCosts, isLoading: isLoadingCosts } = useQuery({
-    queryKey: ["costs"],
-    queryFn: () => costService.getAll(),
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(25);
+  
+  const { data: paginatedResult, isLoading: isLoadingCosts } = useQuery({
+    queryKey: ["costs", selectedYear, selectedMonths, currentPage, pageSize],
+    queryFn: () => costService.getPaginated({
+      year: parseInt(selectedYear),
+      months: selectedMonths,
+      page: currentPage,
+      pageSize: pageSize
+    }),
+    keepPreviousData: true, // Keep previous data while loading new page
   });
 
   const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery({
@@ -31,10 +41,10 @@ export const useCostsState = () => {
   });
 
   useEffect(() => {
-    if (dbCosts) {
-      setCosts(dbCosts);
+    if (paginatedResult?.data) {
+      setCosts(paginatedResult.data);
     }
-  }, [dbCosts]);
+  }, [paginatedResult]);
 
   const availableYears = useMemo(() => {
     const startYear = 2020;
@@ -42,16 +52,14 @@ export const useCostsState = () => {
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
   }, []);
 
-  const filteredCosts = useMemo(() => {
-    return costs.filter(cost => {
-      const yearMatch = cost.year === parseInt(selectedYear);
-      const monthMatch = selectedMonths.includes(cost.month);
-      return yearMatch && monthMatch;
-    });
-  }, [costs, selectedYear, selectedMonths]);
+  // Since data is already filtered server-side, filteredCosts = costs
+  const filteredCosts = costs;
+  const totalCount = paginatedResult?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
   
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
+    setCurrentPage(1); // Reset to first page when filter changes
   };
 
   const handleMonthToggle = (monthValue: number) => {
@@ -61,6 +69,11 @@ export const useCostsState = () => {
         : [...prev, monthValue].sort((a,b) => a-b);
       return newMonths;
     });
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const getMonthName = (monthNumber: number) => {
@@ -97,8 +110,14 @@ export const useCostsState = () => {
     costTypes,
     availableYears,
     filteredCosts,
+    // Pagination data
+    currentPage,
+    pageSize,
+    totalCount,
+    totalPages,
     handleYearChange,
     handleMonthToggle,
+    handlePageChange,
     getMonthName,
     getCostTypeName,
     getMonthNumber,
