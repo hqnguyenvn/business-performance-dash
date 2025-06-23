@@ -130,6 +130,9 @@ export interface BatchImportResult {
 
 export const batchCreateRevenues = async (revenues: Omit<Revenue, 'id'>[]): Promise<BatchImportResult> => {
   try {
+    console.log("🚀 Gửi batch request tới:", '/api/revenues/batch');
+    console.log("📦 Số lượng records:", revenues.length);
+    
     const response = await fetch('/api/revenues/batch', {
       method: 'POST',
       headers: {

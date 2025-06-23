@@ -16,9 +16,13 @@ import { eq, and, desc, inArray } from "drizzle-orm";
 import express, { type Request, Response } from "express";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log("🔧 Đang đăng ký routes...");
 
   // Batch import route - must be defined before other revenue routes
   app.post("/api/revenues/batch", async (req: Request, res: Response) => {
+    console.log("🔥 Batch import endpoint được gọi!", req.method, req.path);
+    console.log("📊 Request body:", req.body);
+    
     try {
       const { data: revenueArray } = req.body;
 
@@ -494,5 +498,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  console.log("✅ Tất cả routes đã được đăng ký, bao gồm: /api/revenues/batch");
   return httpServer;
 }
