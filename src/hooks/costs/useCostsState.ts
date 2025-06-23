@@ -32,12 +32,20 @@ export const useCostsState = () => {
       page: currentPage,
       pageSize: pageSize
     }),
+    staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache time
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     keepPreviousData: true, // Keep previous data while loading new page
   });
 
   const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery({
     queryKey: ["cost_types"],
     queryFn: () => costTypesService.getAll(),
+    staleTime: 15 * 60 * 1000, // 15 minutes - master data doesn't change often
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {

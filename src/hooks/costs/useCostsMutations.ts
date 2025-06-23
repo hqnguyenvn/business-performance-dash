@@ -36,33 +36,20 @@ export const useCostsMutations = () => {
   });
 
   const batchCreateCostMutation = useMutation({
-    mutationFn: costService.batchCreate.bind(costService),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['costs'] });
-      const { success, failed, errors } = result;
+        mutationFn: (costs: NewCost[]) => costService.batchCreate(costs),
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['costs'] });
+          toast({ title: "Success", description: "Costs batch created successfully." });
+        },
+        onError: (error) => {
+          toast({ title: "Error", description: `Batch create failed: ${error.message}`, variant: "destructive" });
+        }
+    });
 
-      if (failed === 0) {
-        toast({ 
-          title: "Import Successful", 
-          description: `Successfully imported ${success} cost records.` 
-        });
-      } else {
-        toast({
-          title: "Import Completed with Errors",
-          description: `${success} successful, ${failed} failed. Check console for details.`,
-          variant: "destructive"
-        });
-        console.log("Import errors:", errors);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Import Failed",
-        description: `An error occurred: ${error.message}`,
-        variant: "destructive"
-      });
-    }
-  });
-
-  return { createCostMutation, updateCostMutation, deleteCostMutation, batchCreateCostMutation };
+    return {
+        createCostMutation,
+        updateCostMutation,
+        deleteCostMutation,
+        batchCreateCostMutation,
+    };
 }
