@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -114,15 +113,15 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   };
 
   return (
-    <tr key={user.id} className="hover:bg-gray-50 h-[53px]">
-      <td className="p-2 border text-center">{index !== undefined ? index + 1 : ""}</td>
-      <td className="p-2 border">{user.email}</td>
-      <td className="p-2 border">
+    <tr key={user.id} className="hover:bg-gray-50">
+      <td className="border border-gray-300 text-center p-1">{index !== undefined ? index + 1 : ""}</td>
+      <td className="border border-gray-300 p-1">{user.email}</td>
+      <td className="border border-gray-300 p-1">
         {editing ? (
           <Input
             value={editForm.full_name ?? ""}
             onChange={handleFullNameChange}
-            className="w-40 h-8"
+            className="border-0 p-1 h-8"
             disabled={saving}
             placeholder="Enter full name"
           />
@@ -130,7 +129,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
           user.full_name || ""
         )}
       </td>
-      <td className="p-2 border">
+      <td className="border border-gray-300 p-1">
         {editing ? (
           <div className="flex gap-2">
             {roleOptions.map((role) => (
@@ -148,7 +147,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
           user.role
         )}
       </td>
-      <td className="p-2 border">
+      <td className="border border-gray-300 p-1">
         {editing ? (
           <Select
             value={
@@ -160,7 +159,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
               setEditForm((ef) => ({ ...ef, is_active: v === "true" }))
             }
           >
-            <SelectTrigger className="w-24 h-8">
+            <SelectTrigger className="border-0 p-1 h-8">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
@@ -174,22 +173,22 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
           "Inactive"
         )}
       </td>
-      <td className="p-2 border">
+      <td className="border border-gray-300 p-1">
         {editing ? (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving} className="h-8 px-2">
+            <Button size="sm" variant="outline" onClick={handleSave} disabled={saving} className="h-6 w-6 p-0">
               Save
             </Button>
-            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving} className="h-8 px-2">
+            <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving} className="h-6 w-6 p-0">
               Cancel
             </Button>
           </div>
         ) : (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={handleEdit} className="h-8 px-2">
+            <Button size="sm" variant="outline" onClick={handleEdit} className="h-6 w-6 p-0">
               Edit
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete} className="h-8 px-2">
+            <Button size="sm" variant="outline" onClick={handleDelete} className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
               Delete
             </Button>
           </div>
