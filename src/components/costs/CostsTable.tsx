@@ -181,12 +181,21 @@ export const CostsTable = ({
                   {index + 1}
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
-                  <Input
+                  <Select
                     value={cost.year.toString()}
-                    onChange={(e) => updateCost(cost.id, 'year', parseInt(e.target.value) || currentYear)}
-                    className="border-0 p-1 h-8 text-center"
-                    type="number"
-                  />
+                    onValueChange={(value) => updateCost(cost.id, 'year', parseInt(value))}
+                  >
+                    <SelectTrigger className="border-0 p-1 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Select
