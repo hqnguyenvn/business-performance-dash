@@ -6,7 +6,7 @@ import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
 import { CostsImportStatus } from "@/components/costs/CostsImportStatus";
-import { PaginationControls } from "@/components/PaginationControls";
+import PaginationControls from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Import } from "lucide-react";
 import CloneCostDialog from "@/components/costs/CloneCostDialog";
