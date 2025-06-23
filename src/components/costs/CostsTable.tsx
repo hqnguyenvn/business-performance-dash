@@ -108,26 +108,7 @@ export const CostsTable = ({
             >
               Description
             </TableHead>
-            <TableHead 
-              className="border border-gray-300 text-right"
-              showFilter={true}
-              filterData={getFilterData('price')}
-              filterField="price"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('price')}
-            >
-              Unit Price
-            </TableHead>
-            <TableHead 
-              className="border border-gray-300 text-right"
-              showFilter={true}
-              filterData={getFilterData('volume')}
-              filterField="volume"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('volume')}
-            >
-              Volume
-            </TableHead>
+            
             <TableHead className="border border-gray-300 text-right">Cost</TableHead>
             <TableHead 
               className="border border-gray-300"
@@ -186,7 +167,7 @@ export const CostsTable = ({
         <TableBody>
           {tableFilteredCosts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={12} className="border border-gray-300 p-8 text-center text-gray-500">
+              <TableCell colSpan={10} className="border border-gray-300 p-8 text-center text-gray-500">
                 {costs.length === 0
                   ? "No data available. Click \"Add Row\" to start entering data."
                   : "No data matches the selected filters. Try adjusting the year or month selection."
@@ -231,20 +212,7 @@ export const CostsTable = ({
                     className="border-0 p-1 h-8"
                   />
                 </TableCell>
-                <TableCell className="border border-gray-300 p-1">
-                  <NumberInput
-                    value={cost.price || 0}
-                    onChange={(value) => updateCost(cost.id, 'price', value)}
-                    className="border-0 p-1 h-8"
-                  />
-                </TableCell>
-                <TableCell className="border border-gray-300 p-1">
-                  <NumberInput
-                    value={cost.volume || 0}
-                    onChange={(value) => updateCost(cost.id, 'volume', value)}
-                    className="border-0 p-1 h-8"
-                  />
-                </TableCell>
+                
                 <TableCell className="border border-gray-300 p-1">
                   <Input
                     value={formatNumber(cost.cost)}
