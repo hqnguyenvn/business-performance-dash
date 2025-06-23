@@ -13,9 +13,67 @@ import {
   insertParameterSchema
 } from "../shared/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
+import express, { type Request, Response } from "express";
+
+const router = express.Router();
+
+router.post("/api/revenues/batch", async (req: Request, res: Response) => {
+    try {
+      const { data: revenueArray } = req.body;
+
+      if (!Array.isArray(revenueArray)) {
+        return res.status(400).json({ error: 'Data must be an array' });
+      }
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as { index: number; error: string }[]
+      };
+
+      // Process in batches of 100
+      const batchSize = 100;
+      for (let i = 0; i < revenueArray.length; i += batchSize) {
+        const batch = revenueArray.slice(i, i + batchSize);
+        const validatedBatch = [];
+
+        for (let j = 0; j < batch.length; j++) {
+          try {
+            const validatedData = insertRevenueSchema.parse(batch[j]);
+            validatedBatch.push(validatedData);
+          } catch (error) {
+            results.failed++;
+            results.errors.push({
+              index: i + j,
+              error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+          }
+        }
+
+        if (validatedBatch.length > 0) {
+          try {
+            await db.insert(revenues).values(validatedBatch);
+            results.success += validatedBatch.length;
+          } catch (error) {
+            results.failed += validatedBatch.length;
+            validatedBatch.forEach((_, index) => {
+              results.errors.push({
+                index: i + index,
+                error: `Database error: ${error instanceof Error ? error.message : 'Unknown error'}`
+              });
+            });
+          }
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: 'Batch import failed' });
+    }
+  });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   // Master data routes
   app.get('/api/companies', async (req, res) => {
     try {
@@ -250,24 +308,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { page = 1, pageSize = 50, year, months } = req.query;
       let query = db.select().from(revenues);
-      
+
       const filters = [];
       if (year) filters.push(eq(revenues.year, parseInt(year as string)));
       if (months) {
         const monthArray = (months as string).split(',').map(m => parseInt(m));
         filters.push(inArray(revenues.month, monthArray));
       }
-      
+
       if (filters.length > 0) {
         query = query.where(and(...filters));
       }
-      
+
       const offset = (parseInt(page as string) - 1) * parseInt(pageSize as string);
       const data = await query
         .orderBy(desc(revenues.year), desc(revenues.month))
         .limit(parseInt(pageSize as string))
         .offset(offset);
-      
+
       res.json(data);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch revenues' });
@@ -283,61 +341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: 'Invalid revenue data' });
     }
   });
-
-  app.post('/api/revenues/batch', async (req, res) => {
-    try {
-      const { data: revenueArray } = req.body;
-      
-      if (!Array.isArray(revenueArray)) {
-        return res.status(400).json({ error: 'Data must be an array' });
-      }
-
-      const results = {
-        success: 0,
-        failed: 0,
-        errors: [] as { index: number; error: string }[]
-      };
-
-      // Process in batches of 100
-      const batchSize = 100;
-      for (let i = 0; i < revenueArray.length; i += batchSize) {
-        const batch = revenueArray.slice(i, i + batchSize);
-        const validatedBatch = [];
-        
-        for (let j = 0; j < batch.length; j++) {
-          try {
-            const validatedData = insertRevenueSchema.parse(batch[j]);
-            validatedBatch.push(validatedData);
-          } catch (error) {
-            results.failed++;
-            results.errors.push({
-              index: i + j,
-              error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
-            });
-          }
-        }
-
-        if (validatedBatch.length > 0) {
-          try {
-            await db.insert(revenues).values(validatedBatch);
-            results.success += validatedBatch.length;
-          } catch (error) {
-            results.failed += validatedBatch.length;
-            validatedBatch.forEach((_, index) => {
-              results.errors.push({
-                index: i + index,
-                error: `Database error: ${error instanceof Error ? error.message : 'Unknown error'}`
-              });
-            });
-          }
-        }
-      }
-
-      res.json(results);
-    } catch (error) {
-      res.status(500).json({ error: 'Batch import failed' });
-    }
-  });
+  
+  app.use(router);
 
   app.put('/api/revenues/:id', async (req, res) => {
     try {
@@ -368,18 +373,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { year, months } = req.query;
       let query = db.select().from(costs);
-      
+
       const filters = [];
       if (year) filters.push(eq(costs.year, parseInt(year as string)));
       if (months) {
         const monthArray = (months as string).split(',').map(m => parseInt(m));
         filters.push(inArray(costs.month, monthArray));
       }
-      
+
       if (filters.length > 0) {
         query = query.where(and(...filters));
       }
-      
+
       const data = await query.orderBy(desc(costs.year), desc(costs.month));
       res.json(data);
     } catch (error) {
@@ -402,18 +407,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { year, months } = req.query;
       let query = db.select().from(salaryCosts);
-      
+
       const filters = [];
       if (year) filters.push(eq(salaryCosts.year, parseInt(year as string)));
       if (months) {
         const monthArray = (months as string).split(',').map(m => parseInt(m));
         filters.push(inArray(salaryCosts.month, monthArray));
       }
-      
+
       if (filters.length > 0) {
         query = query.where(and(...filters));
       }
-      
+
       const data = await query.orderBy(desc(salaryCosts.year), desc(salaryCosts.month));
       res.json(data);
     } catch (error) {
@@ -436,11 +441,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { year } = req.query;
       let query = db.select().from(parameter);
-      
+
       if (year) {
         query = query.where(eq(parameter.year, parseInt(year as string)));
       }
-      
+
       const data = await query.orderBy(desc(parameter.year), parameter.code);
       res.json(data);
     } catch (error) {
@@ -463,11 +468,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { year } = req.query;
       let query = db.select().from(bonusByD);
-      
+
       if (year) {
         query = query.where(eq(bonusByD.year, parseInt(year as string)));
       }
-      
+
       const data = await query.orderBy(desc(bonusByD.year));
       res.json(data);
     } catch (error) {
@@ -479,11 +484,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { year } = req.query;
       let query = db.select().from(bonusByC);
-      
+
       if (year) {
         query = query.where(eq(bonusByC.year, parseInt(year as string)));
       }
-      
+
       const data = await query.orderBy(desc(bonusByC.year));
       res.json(data);
     } catch (error) {
