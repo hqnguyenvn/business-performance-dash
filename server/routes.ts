@@ -15,9 +15,10 @@ import {
 import { eq, and, desc, inArray } from "drizzle-orm";
 import express, { type Request, Response } from "express";
 
-const router = express.Router();
+export async function registerRoutes(app: Express): Promise<Server> {
 
-router.post("/api/revenues/batch", async (req: Request, res: Response) => {
+  // Batch import route - must be defined before other revenue routes
+  app.post("/api/revenues/batch", async (req: Request, res: Response) => {
     try {
       const { data: revenueArray } = req.body;
 
@@ -71,8 +72,6 @@ router.post("/api/revenues/batch", async (req: Request, res: Response) => {
       res.status(500).json({ error: 'Batch import failed' });
     }
   });
-
-export async function registerRoutes(app: Express): Promise<Server> {
 
   // Master data routes
   app.get('/api/companies', async (req, res) => {
@@ -341,8 +340,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: 'Invalid revenue data' });
     }
   });
-  
-  app.use(router);
 
   app.put('/api/revenues/:id', async (req, res) => {
     try {
