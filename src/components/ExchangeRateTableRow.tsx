@@ -43,6 +43,7 @@ interface ExchangeRateTableRowProps {
   addRowBelow: (id: string) => void;
   currencies: MasterData[];
   MONTHS: string[];
+  className?: string;
 }
 
 const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
@@ -56,9 +57,10 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
   addRowBelow,
   currencies,
   MONTHS,
+  className,
 }) => {
   return (
-    <tr key={rate.id} className="hover:bg-gray-50">
+    <tr key={rate.id} className={`hover:bg-gray-50 ${className || ''}`}>
       {/* No. */}
       <td className="border border-gray-300 w-12 text-center">
         {idx + 1}
