@@ -212,6 +212,17 @@ const Revenues = () => {
     let errorRows: { row: number; reason: string }[] = [];
     const requiredFields = ['Year', 'Month', 'Original Amount']; // VND Revenue is calculated
 
+    // Function để parse số có dấu phẩy phân cách hàng nghìn
+    const parseNumberWithCommas = (value: string | number): number => {
+      if (typeof value === 'number') return value;
+      if (!value) return 0;
+      
+      // Loại bỏ dấu phẩy và convert sang number
+      const cleanValue = value.toString().replace(/,/g, '');
+      const parsed = Number(cleanValue);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
     // Thêm nhiều biến thể tên cột cho Original Amount/Revenue
     const getOriginalAmountValue = (row: any) => {
       return (
@@ -308,7 +319,7 @@ const Revenues = () => {
         }
         
         const originalAmountRaw = getOriginalAmountValue(row);
-        const original_amount = Number(originalAmountRaw);
+        const original_amount = parseNumberWithCommas(originalAmountRaw);
         if (isNaN(original_amount)) {
           errorRows.push({ row: i + 2, reason: `Số tiền gốc không hợp lệ: ${originalAmountRaw}` });
           continue;
@@ -317,7 +328,7 @@ const Revenues = () => {
         // ===> Dùng giá trị quantity lấy từ cột BMM (ưu tiên), fallback xuống Quantity/quantity
         let quantityRaw = getQuantityValue(row);
         const quantity = quantityRaw !== undefined && quantityRaw !== null && quantityRaw !== ""
-          ? Number(quantityRaw)
+          ? parseNumberWithCommas(quantityRaw)
           : undefined;
 
         const newRevenuePartial: Partial<Revenue> = {
@@ -330,7 +341,7 @@ const Revenues = () => {
           project_type_id: project_type_id || undefined,
           resource_id: resource_id || undefined,
           currency_id: currency_id || undefined,
-          unit_price: row["Unit Price"] !== undefined ? Number(row["Unit Price"]) : (row["unit_price"] !== undefined ? Number(row["unit_price"]) : undefined),
+          unit_price: row["Unit Price"] !== undefined ? parseNumberWithCommas(row["Unit Price"]) : (row["unit_price"] !== undefined ? parseNumberWithCommas(row["unit_price"]) : undefined),
           quantity,
           original_amount: original_amount,
           notes: row["Notes"] || row["notes"] || undefined,
