@@ -80,7 +80,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
   };
 
   return (
-    <TableRow className="group h-[53px]">
+    <TableRow className="group h-[40px]">
       <TableCell className="text-center font-medium border border-gray-300 p-1">{idx + 1}</TableCell>
 
       <TableCell className="text-center p-1 border border-gray-300">

@@ -319,7 +319,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                 </TableRow>
               ) : (
                 filteredData.map((role, index) => (
-                  <TableRow key={role.id} className="group hover:bg-gray-50 h-[45px]">
+                  <TableRow key={role.id} className="group hover:bg-gray-50 h-[40px]">
                     <TableCell className="text-center font-medium border border-gray-300 p-1">{index + 1}</TableCell>
                     
                     <TableCell className="text-center p-1 border border-gray-300">

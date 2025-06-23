@@ -106,7 +106,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
   };
 
   return (
-    <TableRow className="group h-[45px]">
+    <TableRow className="group h-[40px]">
       <TableCell className="text-center font-medium border border-gray-300">{idx + 1}</TableCell>
 
       <TableCell className="text-center p-1 border border-gray-300">
