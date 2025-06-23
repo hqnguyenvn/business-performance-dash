@@ -114,7 +114,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   };
 
   return (
-    <tr key={user.id} className="hover:bg-gray-50">
+    <tr key={user.id} className="hover:bg-gray-50 h-[45px]">
       <td className="border border-gray-300 text-center p-1">{index !== undefined ? index + 1 : ""}</td>
       <td className="border border-gray-300 p-1">{user.email}</td>
       <td className="border border-gray-300 p-1">
