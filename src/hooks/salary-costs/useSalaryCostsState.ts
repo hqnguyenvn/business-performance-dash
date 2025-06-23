@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getSalaryCosts, SalaryCost } from '@/services/salaryCostService';
+import { getSalaryCostsPaginated, SalaryCost, SalaryCostFilters } from '@/services/salaryCostService';
 import { getMasterDatas, MasterData } from '@/services/masterDataService';
 
 export { type SalaryCost };
@@ -16,9 +16,19 @@ export const useSalaryCostsState = () => {
   const defaultSelectedMonths = Array.from({ length: currentMonth }, (_, i) => i + 1);
   const [selectedMonths, setSelectedMonths] = useState<number[]>(defaultSelectedMonths);
 
-  const { data: initialSalaryCosts, isLoading: isLoadingCosts } = useQuery({
-    queryKey: ['salaryCosts'],
-    queryFn: getSalaryCosts,
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(25);
+
+  // Build filters
+  const filters: SalaryCostFilters = useMemo(() => ({
+    year: parseInt(selectedYear),
+    months: selectedMonths
+  }), [selectedYear, selectedMonths]);
+
+  const { data: paginatedData, isLoading: isLoadingCosts } = useQuery({
+    queryKey: ['salaryCosts', currentPage, pageSize, filters],
+    queryFn: () => getSalaryCostsPaginated(currentPage, pageSize, filters),
   });
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({ queryKey: ['companies'], queryFn: () => getMasterDatas('companies') });
@@ -28,10 +38,15 @@ export const useSalaryCostsState = () => {
   const isLoading = isLoadingCosts || isLoadingCompanies || isLoadingDivisions || isLoadingCustomers;
 
   useEffect(() => {
-    if (initialSalaryCosts) {
-      setSalaryCosts(initialSalaryCosts);
+    if (paginatedData?.data) {
+      setSalaryCosts(paginatedData.data);
     }
-  }, [initialSalaryCosts]);
+  }, [paginatedData]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedYear, selectedMonths]);
 
   const availableYears = useMemo(() => {
     const startYear = 2020;
@@ -39,12 +54,8 @@ export const useSalaryCostsState = () => {
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
   }, []);
 
-  const filteredSalaryCosts = useMemo(() => {
-    if (isLoading) return [];
-    return salaryCosts.filter(cost =>
-      cost.year.toString() === selectedYear && selectedMonths.includes(cost.month)
-    );
-  }, [salaryCosts, selectedYear, selectedMonths, isLoading]);
+  // With pagination, filtered data is the current page data
+  const filteredSalaryCosts = salaryCosts;
 
   const getMonthName = (monthNumber: number) => MONTHS.find(m => m.id === monthNumber)?.name || 'N/A';
   const getMasterDataName = (id: string | null, data: MasterData[], field: 'code' | 'name' = 'name') => data.find(d => d.id === id)?.[field] || '';
@@ -69,5 +80,10 @@ export const useSalaryCostsState = () => {
     availableYears,
     filteredSalaryCosts,
     getMonthName, getMasterDataName, getMasterDataId, getMonthNumber,
+    // Pagination data
+    currentPage, setCurrentPage,
+    pageSize,
+    totalRecords: paginatedData?.total || 0,
+    totalPages: Math.ceil((paginatedData?.total || 0) / pageSize)
   };
 };

@@ -9,6 +9,7 @@ import { SalaryCostsToolbar } from "@/components/salary-costs/SalaryCostsToolbar
 import { SalaryCostsTable } from "@/components/salary-costs/SalaryCostsTable";
 import { SalaryCostDialogs } from "@/components/salary-costs/SalaryCostDialogs";
 import CloneSalaryCostDialog from "@/components/salary-costs/CloneSalaryCostDialog";
+import PaginationControls from "@/components/PaginationControls";
 
 
 const SalaryCosts = () => {
@@ -46,6 +47,12 @@ const SalaryCosts = () => {
     importFromCSV,
     cloneSalaryCosts,
     confirmDelete,
+    // Pagination
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalRecords,
+    totalPages,
   } = useSalaryCosts();
 
   if (isLoading) {
@@ -73,7 +80,9 @@ const SalaryCosts = () => {
         <Card className="bg-white">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Salary Cost Data ({filteredSalaryCosts.length} records)</CardTitle>
+              <CardTitle>
+                Salary Cost Data ({totalRecords} total records, showing {filteredSalaryCosts.length} on page {currentPage})
+              </CardTitle>
               <div className="flex items-center gap-2">
                  <Button variant="outline" onClick={importFromCSV}>
                   <Import className="h-4 w-4 mr-2" />
@@ -103,6 +112,16 @@ const SalaryCosts = () => {
               divisions={divisions}
               customers={customers}
             />
+            
+            {totalPages > 1 && (
+              <div className="mt-4">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

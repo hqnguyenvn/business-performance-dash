@@ -26,6 +26,11 @@ export const useSalaryCosts = () => {
     getMasterDataName,
     getMonthNumber,
     getMasterDataId,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalRecords,
+    totalPages,
   } = useSalaryCostsState();
 
   const {
@@ -92,5 +97,11 @@ export const useSalaryCosts = () => {
     handleMonthToggle,
     getMonthName,
     getMasterDataName,
+    // Pagination
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    totalRecords,
+    totalPages,
   };
 };
