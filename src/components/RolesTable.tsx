@@ -319,8 +319,8 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                 </TableRow>
               ) : (
                 filteredData.map((role, index) => (
-                  <TableRow key={role.id} className="group hover:bg-gray-50">
-                    <TableCell className="text-center font-medium border border-gray-300">{index + 1}</TableCell>
+                  <TableRow key={role.id} className="group hover:bg-gray-50 h-[53px]">
+                    <TableCell className="text-center font-medium border border-gray-300 p-1">{index + 1}</TableCell>
                     
                     <TableCell className="text-center p-1 border border-gray-300">
                       {isEditing(role.id, 'code') ? (
@@ -369,7 +369,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-8 w-8"
+                          className="h-6 w-6"
                           title="Add row after"
                           onClick={() => insertRowBelow(role.id)}
                         >
@@ -380,7 +380,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                             <Button
                               size="icon"
                               variant="destructive"
-                              className="h-8 w-8"
+                              className="h-6 w-6"
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />

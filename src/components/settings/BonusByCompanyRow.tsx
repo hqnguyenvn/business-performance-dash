@@ -81,8 +81,8 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
   };
 
   return (
-    <TableRow className={`group`}>
-      <TableCell className="text-center font-medium border border-gray-300">{idx + 1}</TableCell>
+    <TableRow className="group h-[53px]">
+      <TableCell className="text-center font-medium border border-gray-300 p-1">{idx + 1}</TableCell>
       
       <TableCell className="text-center p-1 border border-gray-300">
         {isEditing("year") ? (
@@ -173,7 +173,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
           <Button
             size="icon"
             variant="outline"
-            className="h-8 w-8"
+            className="h-6 w-6"
             title="Add row after"
             onClick={e => {
               e.stopPropagation();
@@ -187,7 +187,7 @@ export const BonusByCompanyRow: React.FC<BonusByCompanyRowProps> = ({
               <Button
                 size="icon"
                 variant="destructive"
-                className="h-8 w-8"
+                className="h-6 w-6"
                 title="Delete"
                 onClick={e => e.stopPropagation()}
               >
