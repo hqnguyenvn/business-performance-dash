@@ -114,7 +114,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   };
 
   return (
-    <tr key={user.id} className="hover:bg-gray-50">
+    <tr key={user.id} className="hover:bg-gray-50 h-[53px]">
       <td className="p-2 border text-center">{index !== undefined ? index + 1 : ""}</td>
       <td className="p-2 border">{user.email}</td>
       <td className="p-2 border">
@@ -122,7 +122,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
           <Input
             value={editForm.full_name ?? ""}
             onChange={handleFullNameChange}
-            className="w-40"
+            className="w-40 h-8"
             disabled={saving}
             placeholder="Enter full name"
           />
@@ -160,7 +160,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
               setEditForm((ef) => ({ ...ef, is_active: v === "true" }))
             }
           >
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-24 h-8">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
@@ -177,19 +177,19 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
       <td className="p-2 border">
         {editing ? (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving}>
+            <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving} className="h-8 px-2">
               Save
             </Button>
-            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>
+            <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving} className="h-8 px-2">
               Cancel
             </Button>
           </div>
         ) : (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={handleEdit}>
+            <Button variant="ghost" size="sm" onClick={handleEdit} className="h-8 px-2">
               Edit
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Button variant="destructive" size="sm" onClick={handleDelete} className="h-8 px-2">
               Delete
             </Button>
           </div>
