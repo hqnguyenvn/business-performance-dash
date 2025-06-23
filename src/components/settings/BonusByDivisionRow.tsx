@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
     if (event.key === "Enter" || event.key === "Tab") {
       event.preventDefault();
       handleCellSave(field, tempValue);
-      
+
       // Navigate to next cell
       const fields: (keyof BonusByDivision)[] = ['year', 'division_id', 'bn_bmm', 'notes'];
       const currentIndex = fields.indexOf(field);
@@ -61,7 +60,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
       onBlurCell();
     }
   };
-  
+
   const handleCellClick = (field: keyof BonusByDivision) => {
     if (!isEditing(field)) {
       onEditCell(row.id, field);
@@ -82,7 +81,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
   return (
     <TableRow className="group h-[53px]">
       <TableCell className="text-center font-medium border border-gray-300 p-1">{idx + 1}</TableCell>
-      
+
       <TableCell className="text-center p-1 border border-gray-300">
         {isEditing("year") ? (
           <input
@@ -146,7 +145,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
           </div>
         )}
       </TableCell>
-      
+
       <TableCell className="p-1 border border-gray-300">
         {isEditing("notes") ? (
           <input
@@ -164,7 +163,7 @@ export const BonusByDivisionRow: React.FC<BonusByDivisionRowProps> = ({
           </div>
         )}
       </TableCell>
-      
+
       <TableCell className="p-1 text-center border border-gray-300">
         <div className="flex items-center justify-center gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
           <Button

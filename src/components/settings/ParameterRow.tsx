@@ -1,4 +1,3 @@
-
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -107,7 +106,7 @@ export const ParameterRow: React.FC<ParameterRowProps> = ({
   };
 
   return (
-    <TableRow className={`group`}>
+    <TableRow className="group h-[45px]">
       <TableCell className="text-center font-medium border border-gray-300">{idx + 1}</TableCell>
 
       <TableCell className="text-center p-1 border border-gray-300">
