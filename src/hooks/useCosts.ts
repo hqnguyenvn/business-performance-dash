@@ -26,7 +26,7 @@ export const useCosts = () => {
     getCostTypeId,
   } = useCostsState();
 
-  const { createCostMutation, updateCostMutation, deleteCostMutation } = useCostsMutations();
+  const { createCostMutation, updateCostMutation, deleteCostMutation, batchCreateCostMutation } = useCostsMutations();
 
   const {
     isDialogOpen,
@@ -63,6 +63,7 @@ export const useCosts = () => {
     filteredCosts,
     costTypes,
     createCostMutation,
+    batchCreateCostMutation,
     getMonthName,
     getMonthNumber,
     getCostTypeId,

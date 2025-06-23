@@ -13,12 +13,13 @@ interface UseCostsIOProps {
   filteredCosts: Cost[];
   costTypes: MasterData[];
   createCostMutation: Mutations['createCostMutation'];
+  batchCreateCostMutation: Mutations['batchCreateCostMutation'];
   getMonthName: (month: number) => string;
   getMonthNumber: (name: string) => number;
   getCostTypeId: (code: string) => string;
 }
 
-export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMonthName, getMonthNumber, getCostTypeId }: UseCostsIOProps) => {
+export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, batchCreateCostMutation, getMonthName, getMonthNumber, getCostTypeId }: UseCostsIOProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -85,6 +86,15 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
     };
 
     const importFromCSV = () => {
+        if (batchCreateCostMutation.isPending) {
+          toast({ 
+            title: "Import in Progress", 
+            description: "Please wait for the current import to complete.", 
+            variant: "default" 
+          });
+          return;
+        }
+
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.csv';
@@ -154,11 +164,9 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, getMo
     
                 toast({ title: "Importing...", description: `Importing ${newCosts.length} new cost records.` });
                 try {
-                  await Promise.all(newCosts.map(cost => createCostMutation.mutateAsync(cost)));
-                  toast({ title: "Import Successful", description: `Successfully imported ${newCosts.length} records.` });
-                  queryClient.invalidateQueries({ queryKey: ['costs'] });
+                  await batchCreateCostMutation.mutateAsync(newCosts);
                 } catch (error) {
-                  toast({ title: "Import Failed", description: `An error occurred: ${(error as Error).message}`, variant: "destructive" });
+                  console.error('Batch import error:', error);
                 }
               },
             });

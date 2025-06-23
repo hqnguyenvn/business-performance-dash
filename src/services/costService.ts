@@ -20,6 +20,48 @@ export class CostService {
     return data || [];
   }
 
+  async getPaginated(params: {
+    year?: number;
+    months?: number[];
+    page: number;
+    pageSize: number;
+  }): Promise<{ data: Cost[]; totalCount: number }> {
+    console.log("Fetching costs with params:", params);
+    
+    let query = supabase.from('costs').select('*', { count: 'exact' });
+    
+    // Apply filters
+    if (params.year) {
+      query = query.eq('year', params.year);
+    }
+    
+    if (params.months && params.months.length > 0) {
+      query = query.in('month', params.months);
+    }
+    
+    // Apply pagination
+    const from = (params.page - 1) * params.pageSize;
+    const to = from + params.pageSize - 1;
+    
+    query = query
+      .range(from, to)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error('Error fetching paginated costs:', error);
+      throw error;
+    }
+    
+    return { 
+      data: data || [], 
+      totalCount: count || 0 
+    };
+  }
+
   async create(item: NewCost): Promise<Cost> {
     const { data, error } = await supabase
       .from('costs')
@@ -84,6 +126,67 @@ export class CostService {
     }
     
     return data || [];
+  }
+
+  async batchCreate(costs: NewCost[]): Promise<{
+    success: number;
+    failed: number;
+    errors: Array<{ index: number; error: string }>;
+  }> {
+    try {
+      console.log("🚀 Bắt đầu batch import costs qua Supabase");
+      console.log("📦 Số lượng records:", costs.length);
+      
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as Array<{ index: number; error: string }>
+      };
+
+      // Process in batches of 100 to avoid hitting Supabase limits
+      const batchSize = 100;
+      
+      for (let i = 0; i < costs.length; i += batchSize) {
+        const batch = costs.slice(i, i + batchSize);
+        
+        try {
+          const { data, error } = await supabase
+            .from('costs')
+            .insert(batch)
+            .select();
+
+          if (error) {
+            console.error('Batch insert error:', error);
+            // Mark all items in this batch as failed
+            results.failed += batch.length;
+            batch.forEach((_, index) => {
+              results.errors.push({
+                index: i + index,
+                error: `Database error: ${error.message}`
+              });
+            });
+          } else {
+            results.success += data?.length || batch.length;
+            console.log(`✅ Batch ${Math.floor(i/batchSize) + 1} thành công: ${data?.length || batch.length} records`);
+          }
+        } catch (batchError) {
+          console.error('Batch processing error:', batchError);
+          results.failed += batch.length;
+          batch.forEach((_, index) => {
+            results.errors.push({
+              index: i + index,
+              error: `Batch error: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`
+            });
+          });
+        }
+      }
+
+      console.log("🎯 Batch import hoàn tất:", results);
+      return results;
+    } catch (error) {
+      console.error('Error in batch import:', error);
+      throw error;
+    }
   }
 }
 

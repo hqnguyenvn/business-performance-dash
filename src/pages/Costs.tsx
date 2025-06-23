@@ -5,6 +5,7 @@ import { CostsHeader } from "@/components/costs/CostsHeader";
 import { CostsToolbar } from "@/components/costs/CostsToolbar";
 import { CostsTable } from "@/components/costs/CostsTable";
 import { CostDialogs } from "@/components/costs/CostDialogs";
+import { CostsImportStatus } from "@/components/costs/CostsImportStatus";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, Import } from "lucide-react";
 import CloneCostDialog from "@/components/costs/CloneCostDialog";
@@ -67,6 +68,9 @@ const Costs = () => {
         />
 
         <div className="bg-white p-4 rounded-lg shadow">
+          <CostsImportStatus 
+            isImporting={false} // You can get this from the mutation state if needed
+          />
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-800">
               Cost Data ({filteredCosts.length} records)
