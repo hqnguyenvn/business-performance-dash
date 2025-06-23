@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { exportBusinessReportCSV } from "@/utils/csvExport";
 import { useParameterValues } from "@/hooks/useParameterValues";
+import { useQuery } from "@tanstack/react-query";
 
 export interface BusinessData {
   year: number;
@@ -79,48 +80,67 @@ export const useBusinessReport = () => {
     }
   }, [paramTaxRate, paramBonusRate, paramLoading]);
 
-  const [revenues, setRevenues] = useState<RevenueData[]>([]);
-  const [costs, setCosts] = useState<CostData[]>([]);
-  const [costTypes, setCostTypes] = useState<CostTypeData[]>([]);
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Fetch revenues with caching
+  const { data: revenues = [], isLoading: revenuesLoading } = useQuery({
+    queryKey: ['revenues', selectedYear],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('revenues')
+        .select('*')
+        .eq('year', parseInt(selectedYear));
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+  // Fetch costs with caching
+  const { data: costs = [], isLoading: costsLoading } = useQuery({
+    queryKey: ['costs', selectedYear],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('costs')
+        .select('*')
+        .eq('year', parseInt(selectedYear));
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-        const { data: revenueData, error: revenueError } = await supabase
-          .from('revenues')
-          .select('*')
-          .eq('year', parseInt(selectedYear));
-        if (revenueError) throw revenueError;
-        setRevenues(revenueData || []);
+  // Fetch cost types with caching (this rarely changes)
+  const { data: costTypes = [], isLoading: costTypesLoading } = useQuery({
+    queryKey: ['costTypes'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('cost_types').select('id, code');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 1 hour
+  });
 
-        const { data: costData, error: costError } = await supabase
-          .from('costs')
-          .select('*')
-          .eq('year', parseInt(selectedYear));
-        if (costError) throw costError;
-        setCosts(costData || []);
+  // Fetch available years with caching
+  const { data: availableYears = [], isLoading: yearsLoading } = useQuery({
+    queryKey: ['availableYears'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('revenues')
+        .select('year')
+        .order('year', { ascending: false });
+      if (error) throw error;
+      
+      const revenueYears = data?.map(r => r.year) || [];
+      const allYears = Array.from(new Set([...revenueYears, currentYear])).sort((a, b) => b - a);
+      return allYears;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
+  });
 
-        const { data: costTypesData, error: costTypesError } = await supabase.from('cost_types').select('id, code');
-        if (costTypesError) throw costTypesError;
-        setCostTypes(costTypesData || []);
-
-        const revenueYears = revenueData?.map(r => r.year) || [];
-        const allYears = Array.from(new Set([...revenueYears, currentYear])).sort((a, b) => b - a);
-        setAvailableYears(allYears);
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({ title: "Error", description: "Failed to fetch data from database", variant: "destructive" });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [toast, selectedYear]);
+  const loading = revenuesLoading || costsLoading || costTypesLoading || yearsLoading;
 
   const allBusinessData = useMemo(() => {
     const businessDataMap = new Map<string, BusinessData>();
@@ -172,6 +192,21 @@ export const useBusinessReport = () => {
 
     return Array.from(businessDataMap.values()).sort((a, b) => a.monthNumber - b.monthNumber);
   }, [revenues, costs, selectedYear, incomeTaxRate, bonusRate, costTypes]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (revenuesLoading || costsLoading || costTypesLoading || yearsLoading) return;
+    
+    // Show error toast if any query failed
+    const hasError = !revenues || !costs || !costTypes || !availableYears;
+    if (hasError) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to fetch data from database", 
+        variant: "destructive" 
+      });
+    }
+  }, [revenuesLoading, costsLoading, costTypesLoading, yearsLoading, revenues, costs, costTypes, availableYears, toast]);
 
   const businessData = useMemo(() => allBusinessData.filter(data => 
     selectedMonths.includes(data.monthNumber)
