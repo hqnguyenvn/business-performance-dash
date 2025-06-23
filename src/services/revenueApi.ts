@@ -130,22 +130,55 @@ export interface BatchImportResult {
 
 export const batchCreateRevenues = async (revenues: Omit<Revenue, 'id'>[]): Promise<BatchImportResult> => {
   try {
-    console.log("🚀 Gửi batch request tới:", '/api/revenues/batch');
+    console.log("🚀 Bắt đầu batch import qua Supabase");
     console.log("📦 Số lượng records:", revenues.length);
     
-    const response = await fetch('/api/revenues/batch', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ data: revenues }),
-    });
+    const results: BatchImportResult = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Process in batches of 100 to avoid hitting Supabase limits
+    const batchSize = 100;
+    
+    for (let i = 0; i < revenues.length; i += batchSize) {
+      const batch = revenues.slice(i, i + batchSize);
+      
+      try {
+        const { data, error } = await supabase
+          .from('revenues')
+          .insert(batch)
+          .select();
+
+        if (error) {
+          console.error('Batch insert error:', error);
+          // Mark all items in this batch as failed
+          results.failed += batch.length;
+          batch.forEach((_, index) => {
+            results.errors.push({
+              index: i + index,
+              error: `Database error: ${error.message}`
+            });
+          });
+        } else {
+          results.success += data?.length || batch.length;
+          console.log(`✅ Batch ${Math.floor(i/batchSize) + 1} thành công: ${data?.length || batch.length} records`);
+        }
+      } catch (batchError) {
+        console.error('Batch processing error:', batchError);
+        results.failed += batch.length;
+        batch.forEach((_, index) => {
+          results.errors.push({
+            index: i + index,
+            error: `Batch error: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`
+          });
+        });
+      }
     }
 
-    return await response.json();
+    console.log("🎯 Batch import hoàn tất:", results);
+    return results;
   } catch (error) {
     console.error('Error in batch import:', error);
     throw error;
