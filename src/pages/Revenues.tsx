@@ -206,7 +206,8 @@ const Revenues = () => {
       projectTypes: MasterData[],
       resources: MasterData[],
       currencies: MasterData[],
-    }
+    },
+    onProgress?: (progress: { processed: number; total: number; isComplete: boolean }) => void
   ) => {
     let successCount = 0;
     let errorRows: { row: number; reason: string }[] = [];
@@ -250,8 +251,17 @@ const Revenues = () => {
       );
     };
 
+    // Process data validation and prepare batch
+    const validRevenues: Omit<Revenue, 'id'>[] = [];
+    
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
+      
+      // Update progress
+      if (onProgress) {
+        onProgress({ processed: i, total: data.length, isComplete: false });
+      }
+      
       let missingRequiredFields: string[] = [];
       requiredFields.forEach(rf => {
         // Đối với Original Amount/Original Revenue
@@ -364,12 +374,37 @@ const Revenues = () => {
           continue;
         }
 
-        await (await import("@/services/revenueApi")).createRevenue(finalNewRevenue);
-        successCount++;
+        validRevenues.push(finalNewRevenue);
       } catch (err: any) {
-        errorRows.push({ row: i + 2, reason: `Lỗi khi insert: ${err.message}` });
+        errorRows.push({ row: i + 2, reason: `Lỗi validation: ${err.message}` });
       }
     }
+
+    // Batch import valid revenues
+    if (validRevenues.length > 0) {
+      try {
+        const { batchCreateRevenues } = await import("@/services/revenueApi");
+        const result = await batchCreateRevenues(validRevenues);
+        
+        successCount = result.success;
+        
+        // Add batch errors to errorRows
+        result.errors.forEach(error => {
+          errorRows.push({ 
+            row: error.index + 2, 
+            reason: error.error 
+          });
+        });
+      } catch (err: any) {
+        errorRows.push({ row: 0, reason: `Lỗi batch import: ${err.message}` });
+      }
+    }
+
+    // Final progress update
+    if (onProgress) {
+      onProgress({ processed: data.length, total: data.length, isComplete: true });
+    }
+
     fetchData();
     let msg = `Đã import thành công ${successCount} dòng dữ liệu.`;
     if (errorRows.length > 0) {

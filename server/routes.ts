@@ -284,6 +284,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/revenues/batch', async (req, res) => {
+    try {
+      const { data: revenueArray } = req.body;
+      
+      if (!Array.isArray(revenueArray)) {
+        return res.status(400).json({ error: 'Data must be an array' });
+      }
+
+      const results = {
+        success: 0,
+        failed: 0,
+        errors: [] as { index: number; error: string }[]
+      };
+
+      // Process in batches of 100
+      const batchSize = 100;
+      for (let i = 0; i < revenueArray.length; i += batchSize) {
+        const batch = revenueArray.slice(i, i + batchSize);
+        const validatedBatch = [];
+        
+        for (let j = 0; j < batch.length; j++) {
+          try {
+            const validatedData = insertRevenueSchema.parse(batch[j]);
+            validatedBatch.push(validatedData);
+          } catch (error) {
+            results.failed++;
+            results.errors.push({
+              index: i + j,
+              error: `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+          }
+        }
+
+        if (validatedBatch.length > 0) {
+          try {
+            await db.insert(revenues).values(validatedBatch);
+            results.success += validatedBatch.length;
+          } catch (error) {
+            results.failed += validatedBatch.length;
+            validatedBatch.forEach((_, index) => {
+              results.errors.push({
+                index: i + index,
+                error: `Database error: ${error instanceof Error ? error.message : 'Unknown error'}`
+              });
+            });
+          }
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: 'Batch import failed' });
+    }
+  });
+
   app.put('/api/revenues/:id', async (req, res) => {
     try {
       const { id } = req.params;

@@ -121,3 +121,30 @@ export const deleteRevenue = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+export interface BatchImportResult {
+  success: number;
+  failed: number;
+  errors: { index: number; error: string }[];
+}
+
+export const batchCreateRevenues = async (revenues: Omit<Revenue, 'id'>[]): Promise<BatchImportResult> => {
+  try {
+    const response = await fetch('/api/revenues/batch', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: revenues }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in batch import:', error);
+    throw error;
+  }
+};
