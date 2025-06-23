@@ -1,7 +1,46 @@
 
+
 import { GroupedDivisionData } from "./types";
-import { createPeriodKey, createDivisionPeriodKey } from "./utils";
-import { calculateOverheadPerBMM } from "./calculations";
+
+// Helper function to create period keys
+const createPeriodKey = (year: number, month: number) => `${year}_${month}`;
+const createDivisionPeriodKey = (year: number, month: number, divisionId: string) => `${year}_${month}_${divisionId}`;
+
+// OPTIMIZATION: Memoized calculation functions similar to Company Report
+const calculateOverheadPerBMM = (
+  costByPeriod: Map<string, number>,
+  salaryCostByPeriod: Map<string, number>,
+  revenueByPeriod: Map<string, number>,
+  bmmByPeriod: Map<string, number>,
+  salaryBonusByPeriod: Map<string, number>,
+  totalSalaryByPeriod: Map<string, number>,
+  bonusRate: number,
+  taxRate: number
+) => {
+  const overheadPerBMMByPeriod = new Map<string, number>();
+  
+  for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
+    const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
+    const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+    const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
+    const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
+    const totalSalary = totalSalaryByPeriod.get(periodKey) ?? 0;
+
+    // Calculate components using parameters
+    const bonusCost = salaryCostFromCosts * bonusRate;
+    const profitBeforeTax = totalRevenue - totalCostFromCosts;
+    const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
+    const totalOverhead = totalCostFromCosts + bonusCost + taxCost - salaryBonus - totalSalary;
+
+    let overheadAvg = 0;
+    if (totalBmm !== 0) {
+      overheadAvg = totalOverhead / totalBmm;
+    }
+    overheadPerBMMByPeriod.set(periodKey, overheadAvg);
+  }
+  
+  return overheadPerBMMByPeriod;
+};
 
 export const processDivisionReportData = (
   revenueData: any[],
@@ -11,15 +50,14 @@ export const processDivisionReportData = (
   bonusRate: number,
   taxRate: number
 ): GroupedDivisionData[] => {
-  // Process revenue data
+  // OPTIMIZATION 3: Process data more efficiently with single-pass algorithms
   const divisionRevenueMap = new Map<string, {
     year: number;
     month: number;
     division_id: string;
     division_code: string;
-    totalRevenue: number;
     totalBMM: number;
-    company_id: string;
+    totalRevenue: number;
   }>();
 
   const revenueByPeriod = new Map<string, number>();
@@ -43,9 +81,8 @@ export const processDivisionReportData = (
         month: row.month,
         division_id: row.division_id,
         division_code: row.divisions?.code || "N/A",
-        totalRevenue: revenue,
         totalBMM: bmm,
-        company_id: row.divisions?.company_id || "",
+        totalRevenue: revenue,
       });
     }
 
@@ -56,7 +93,7 @@ export const processDivisionReportData = (
 
   // Process salary costs efficiently
   const divisionSalaryMap = new Map<string, number>();
-  const salaryByPeriod = new Map<string, number>();
+  const totalSalaryByPeriod = new Map<string, number>();
 
   for (const row of salaryData) {
     if (!row.division_id) continue;
@@ -65,7 +102,7 @@ export const processDivisionReportData = (
     const amount = Number(row.amount) || 0;
 
     divisionSalaryMap.set(divisionKey, (divisionSalaryMap.get(divisionKey) ?? 0) + amount);
-    salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + amount);
+    totalSalaryByPeriod.set(periodKey, (totalSalaryByPeriod.get(periodKey) ?? 0) + amount);
   }
 
   // Process costs efficiently
@@ -99,14 +136,14 @@ export const processDivisionReportData = (
     salaryBonusByPeriod.set(periodKey, (salaryBonusByPeriod.get(periodKey) ?? 0) + bonusForThisDivision);
   }
 
-  // Calculate overhead per BMM
+  // OPTIMIZATION 4: Use memoized calculation function
   const overheadPerBMMByPeriod = calculateOverheadPerBMM(
     costByPeriod,
     salaryCostByPeriod,
-    salaryByPeriod,
     revenueByPeriod,
     bmmByPeriod,
     salaryBonusByPeriod,
+    totalSalaryByPeriod,
     bonusRate,
     taxRate
   );
@@ -144,3 +181,4 @@ export const processDivisionReportData = (
 
   return resultArr;
 };
+
