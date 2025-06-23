@@ -90,11 +90,17 @@ export const useBusinessReport = () => {
       try {
         setLoading(true);
 
-        const { data: revenueData, error: revenueError } = await supabase.from('revenues').select('*');
+        const { data: revenueData, error: revenueError } = await supabase
+          .from('revenues')
+          .select('*')
+          .eq('year', parseInt(selectedYear));
         if (revenueError) throw revenueError;
         setRevenues(revenueData || []);
 
-        const { data: costData, error: costError } = await supabase.from('costs').select('*');
+        const { data: costData, error: costError } = await supabase
+          .from('costs')
+          .select('*')
+          .eq('year', parseInt(selectedYear));
         if (costError) throw costError;
         setCosts(costData || []);
 
@@ -114,7 +120,7 @@ export const useBusinessReport = () => {
       }
     };
     fetchData();
-  }, [toast]);
+  }, [toast, selectedYear]);
 
   const allBusinessData = useMemo(() => {
     const businessDataMap = new Map<string, BusinessData>();
@@ -133,12 +139,12 @@ export const useBusinessReport = () => {
       });
     });
 
-    revenues.filter(r => r.year === parseInt(selectedYear)).forEach(r => {
+    revenues.forEach(r => {
       const entry = businessDataMap.get(`${r.year}-${r.month}`);
       if (entry) entry.revenue += r.vnd_revenue || 0;
     });
 
-    costs.filter(c => c.year === parseInt(selectedYear)).forEach(c => {
+    costs.forEach(c => {
       const entry = businessDataMap.get(`${c.year}-${c.month}`);
       if (entry) entry.cost += c.cost || 0;
     });
@@ -151,7 +157,6 @@ export const useBusinessReport = () => {
       if (salaryCostTypeId) {
         monthlySalaryCost = costs
           .filter(c => 
-            c.year === data.year && 
             c.month === data.monthNumber && 
             c.cost_type === salaryCostTypeId
           )
