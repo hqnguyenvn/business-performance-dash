@@ -47,12 +47,24 @@ async function startServer() {
   try {
     log("Starting server initialization...");
 
-    // Register all API routes first with error handling
+    // Add health endpoint first before route registration
+    app.get('/health', (req, res) => {
+      res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage()
+      });
+    });
+
+    // Register all API routes with comprehensive error handling
     try {
+      log("Registering API routes...");
       await registerRoutes(app);
       log("API routes registered successfully");
     } catch (routeError) {
-      log(`Route registration failed: ${routeError instanceof Error ? routeError.message : routeError}`);
+      log(`❌ Route registration failed: ${routeError instanceof Error ? routeError.message : routeError}`);
+      log(`Route error stack: ${routeError instanceof Error ? routeError.stack : 'No stack trace'}`);
       throw routeError;
     }
 
@@ -90,25 +102,33 @@ async function startServer() {
       }
     });
 
-    // Add startup health check
+    // Enhanced startup with health check and timeout
+    const startupTimeout = setTimeout(() => {
+      log("❌ Server startup timeout - forcing exit");
+      process.exit(1);
+    }, 45000); // 45 second timeout for deployment
+
     server.listen(port, "0.0.0.0", async () => {
-      log(`Server running on http://0.0.0.0:${port}`);
+      clearTimeout(startupTimeout);
+      log(`✅ Server running on http://0.0.0.0:${port}`);
       log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      log(`Process ID: ${process.pid}`);
       
-      // Verify server is responding with a delay to allow startup
+      // Immediate health check to verify server is responding
       setTimeout(async () => {
         try {
           const response = await fetch(`http://localhost:${port}/health`);
           if (response.ok) {
             const healthData = await response.json();
-            log("✅ Server health check passed:", JSON.stringify(healthData));
+            log("✅ Server health check passed - deployment ready");
+            log(`Health data: ${JSON.stringify(healthData)}`);
           } else {
-            log("⚠️ Server health check failed with status:", response.status);
+            log(`⚠️ Server health check failed with status: ${response.status}`);
           }
         } catch (healthError) {
-          log("⚠️ Server health check failed:", healthError instanceof Error ? healthError.message : healthError);
+          log(`⚠️ Server health check failed: ${healthError instanceof Error ? healthError.message : String(healthError)}`);
         }
-      }, 1000);
+      }, 2000); // Increased delay for stability
     });
 
   } catch (error) {

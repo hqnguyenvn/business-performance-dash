@@ -18,13 +18,58 @@ export async function registerRoutes(app: Express): Promise<void> {
   console.log("🔧 Starting route registration...");
 
   try {
-    // Health check route
-    app.get('/health', (req, res) => {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
-    });
+    // Wrap all route definitions in try-catch to prevent crashes
+    console.log("📝 Registering health and API routes...");
+
+    // Validate route patterns before registration to prevent path-to-regexp errors
+    const validateRoutePattern = (pattern: string): boolean => {
+      try {
+        // Basic validation for common path-to-regexp issues
+        if (pattern.includes('(') && !pattern.includes(')')) {
+          throw new Error(`Unmatched parentheses in route pattern: ${pattern}`);
+        }
+        if (pattern.includes('[') && !pattern.includes(']')) {
+          throw new Error(`Unmatched brackets in route pattern: ${pattern}`);
+        }
+        return true;
+      } catch (error) {
+        console.error(`Invalid route pattern: ${pattern}`, error);
+        return false;
+      }
+    };
+
+    // Safely register routes with validation
+    const safeRoute = (method: string, path: string, handler: any) => {
+      if (!validateRoutePattern(path)) {
+        throw new Error(`Invalid route pattern detected: ${path}`);
+      }
+      
+      try {
+        switch (method.toLowerCase()) {
+          case 'get':
+            app.get(path, handler);
+            break;
+          case 'post':
+            app.post(path, handler);
+            break;
+          case 'put':
+            app.put(path, handler);
+            break;
+          case 'delete':
+            app.delete(path, handler);
+            break;
+          default:
+            throw new Error(`Unsupported HTTP method: ${method}`);
+        }
+        console.log(`✅ Registered ${method.toUpperCase()} ${path}`);
+      } catch (routeError) {
+        console.error(`❌ Failed to register ${method.toUpperCase()} ${path}:`, routeError);
+        throw routeError;
+      }
+    };
 
   // Batch import route - must be defined before other revenue routes
-  app.post("/api/revenues/batch", async (req: Request, res: Response) => {
+  safeRoute("post", "/api/revenues/batch", async (req: Request, res: Response) => {
     console.log("🔥 Batch import endpoint được gọi!", req.method, req.path);
     console.log("📊 Request body:", req.body);
 
@@ -83,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Master data routes
-  app.get('/api/companies', async (req, res) => {
+  safeRoute("get", '/api/companies', async (req, res) => {
     try {
       const data = await db.select().from(companies).orderBy(companies.code);
       res.json(data);
@@ -92,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/companies', async (req, res) => {
+  safeRoute("post", '/api/companies', async (req, res) => {
     try {
       const validatedData = insertCompanySchema.parse(req.body);
       const [company] = await db.insert(companies).values(validatedData).returning();
@@ -102,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.put('/api/companies/:id', async (req, res) => {
+  safeRoute("put", '/api/companies/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCompanySchema.partial().parse(req.body);
@@ -116,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.delete('/api/companies/:id', async (req, res) => {
+  safeRoute("delete", '/api/companies/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(companies).where(eq(companies.id, id));
@@ -127,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Customers
-  app.get('/api/customers', async (req, res) => {
+  safeRoute("get", '/api/customers', async (req, res) => {
     try {
       const data = await db.select().from(customers).orderBy(customers.code);
       res.json(data);
@@ -136,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/customers', async (req, res) => {
+  safeRoute("post", '/api/customers', async (req, res) => {
     try {
       const validatedData = insertCustomerSchema.parse(req.body);
       const [customer] = await db.insert(customers).values(validatedData).returning();
@@ -146,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.put('/api/customers/:id', async (req, res) => {
+  safeRoute("put", '/api/customers/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCustomerSchema.partial().parse(req.body);
@@ -160,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.delete('/api/customers/:id', async (req, res) => {
+  safeRoute("delete", '/api/customers/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(customers).where(eq(customers.id, id));
@@ -171,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Divisions
-  app.get('/api/divisions', async (req, res) => {
+  safeRoute("get", '/api/divisions', async (req, res) => {
     try {
       const data = await db.select().from(divisions).orderBy(divisions.code);
       res.json(data);
@@ -180,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/divisions', async (req, res) => {
+  safeRoute("post", '/api/divisions', async (req, res) => {
     try {
       const validatedData = insertDivisionSchema.parse(req.body);
       const [division] = await db.insert(divisions).values(validatedData).returning();
@@ -191,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Projects
-  app.get('/api/projects', async (req, res) => {
+  safeRoute("get", '/api/projects', async (req, res) => {
     try {
       const data = await db.select().from(projects).orderBy(projects.code);
       res.json(data);
@@ -200,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/projects', async (req, res) => {
+  safeRoute("post", '/api/projects', async (req, res) => {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
       const [project] = await db.insert(projects).values(validatedData).returning();
@@ -211,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Project Types
-  app.get('/api/project-types', async (req, res) => {
+  safeRoute("get", '/api/project-types', async (req, res) => {
     try {
       const data = await db.select().from(projectTypes).orderBy(projectTypes.code);
       res.json(data);
@@ -220,7 +265,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/project-types', async (req, res) => {
+  safeRoute("post", '/api/project-types', async (req, res) => {
     try {
       const validatedData = insertProjectTypeSchema.parse(req.body);
       const [projectType] = await db.insert(projectTypes).values(validatedData).returning();
@@ -231,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Resources
-  app.get('/api/resources', async (req, res) => {
+  safeRoute("get", '/api/resources', async (req, res) => {
     try {
       const data = await db.select().from(resources).orderBy(resources.code);
       res.json(data);
@@ -240,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/resources', async (req, res) => {
+  safeRoute("post", '/api/resources', async (req, res) => {
     try {
       const validatedData = insertResourceSchema.parse(req.body);
       const [resource] = await db.insert(resources).values(validatedData).returning();
@@ -251,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Currencies
-  app.get('/api/currencies', async (req, res) => {
+  safeRoute("get", '/api/currencies', async (req, res) => {
     try {
       const data = await db.select().from(currencies).orderBy(currencies.code);
       res.json(data);
@@ -260,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/currencies', async (req, res) => {
+  safeRoute("post", '/api/currencies', async (req, res) => {
     try {
       const validatedData = insertCurrencySchema.parse(req.body);
       const [currency] = await db.insert(currencies).values(validatedData).returning();
@@ -271,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Cost Types
-  app.get('/api/cost-types', async (req, res) => {
+  safeRoute("get", '/api/cost-types', async (req, res) => {
     try {
       const data = await db.select().from(costTypes).orderBy(costTypes.code);
       res.json(data);
@@ -280,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/cost-types', async (req, res) => {
+  safeRoute("post", '/api/cost-types', async (req, res) => {
     try {
       const validatedData = insertCostTypeSchema.parse(req.body);
       const [costType] = await db.insert(costTypes).values(validatedData).returning();
@@ -291,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Exchange Rates
-  app.get('/api/exchange-rates', async (req, res) => {
+  safeRoute("get", '/api/exchange-rates', async (req, res) => {
     try {
       const data = await db.select().from(exchangeRates)
         .orderBy(desc(exchangeRates.year), desc(exchangeRates.month));
@@ -301,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/exchange-rates', async (req, res) => {
+  safeRoute("post", '/api/exchange-rates', async (req, res) => {
     try {
       const validatedData = insertExchangeRateSchema.parse(req.body);
       const [exchangeRate] = await db.insert(exchangeRates).values(validatedData).returning();
@@ -312,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Revenues
-  app.get('/api/revenues', async (req, res) => {
+  safeRoute("get", '/api/revenues', async (req, res) => {
     try {
       const { page = 1, pageSize = 50, year, months } = req.query;
       let query = db.select().from(revenues);
@@ -340,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/revenues', async (req, res) => {
+  safeRoute("post", '/api/revenues', async (req, res) => {
     try {
       const validatedData = insertRevenueSchema.parse(req.body);
       const [revenue] = await db.insert(revenues).values(validatedData).returning();
@@ -350,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.put('/api/revenues/:id', async (req, res) => {
+  safeRoute("put", '/api/revenues/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertRevenueSchema.partial().parse(req.body);
@@ -364,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.delete('/api/revenues/:id', async (req, res) => {
+  safeRoute("delete", '/api/revenues/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(revenues).where(eq(revenues.id, id));
@@ -375,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Costs
-  app.get('/api/costs', async (req, res) => {
+  safeRoute("get", '/api/costs', async (req, res) => {
     try {
       const { year, months } = req.query;
       let query = db.select().from(costs);
@@ -398,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/costs', async (req, res) => {
+  safeRoute("post", '/api/costs', async (req, res) => {
     try {
       const validatedData = insertCostSchema.parse(req.body);
       const [cost] = await db.insert(costs).values(validatedData).returning();
@@ -409,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Salary Costs
-  app.get('/api/salary-costs', async (req, res) => {
+  safeRoute("get", '/api/salary-costs', async (req, res) => {
     try {
       const { year, months } = req.query;
       let query = db.select().from(salaryCosts);
@@ -432,7 +477,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/salary-costs', async (req, res) => {
+  safeRoute("post", '/api/salary-costs', async (req, res) => {
     try {
       const validatedData = insertSalaryCostSchema.parse(req.body);
       const [salaryCost] = await db.insert(salaryCosts).values(validatedData).returning();
@@ -443,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Parameters
-  app.get('/api/parameters', async (req, res) => {
+  safeRoute("get", '/api/parameters', async (req, res) => {
     try {
       const { year } = req.query;
       let query = db.select().from(parameter);
@@ -459,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.post('/api/parameters', async (req, res) => {
+  safeRoute("post", '/api/parameters', async (req, res) => {
     try {
       const validatedData = insertParameterSchema.parse(req.body);
       const [param] = await db.insert(parameter).values(validatedData).returning();
@@ -470,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Bonus data
-  app.get('/api/bonus-by-division', async (req, res) => {
+  safeRoute("get", '/api/bonus-by-division', async (req, res) => {
     try {
       const { year } = req.query;
       let query = db.select().from(bonusByD);
@@ -486,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  app.get('/api/bonus-by-company', async (req, res) => {
+  safeRoute("get", '/api/bonus-by-company', async (req, res) => {
     try {
       const { year } = req.query;
       let query = db.select().from(bonusByC);
@@ -502,9 +547,12 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-    console.log("✅ All routes registered successfully, including: /api/revenues/batch");
+    console.log("✅ All routes registered successfully with safe registration method");
+    console.log("🔐 Route validation and error handling implemented");
+    console.log("📡 Health endpoint available at /health");
   } catch (error) {
     console.error("❌ Error during route registration:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : 'No stack available');
     throw new Error(`Route registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
