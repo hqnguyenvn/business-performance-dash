@@ -2,98 +2,100 @@
 
 ## Overview
 
-This is a comprehensive business performance dashboard built with React, TypeScript, and Supabase. The application provides financial reporting, cost tracking, and business analytics for organizations to monitor revenue, costs, and profitability across different dimensions (customers, companies, divisions).
+This is a comprehensive business performance dashboard built with React, TypeScript, and Supabase. The application provides detailed analytics for business operations including revenue tracking, cost management, salary cost analysis, and performance reporting across multiple dimensions (customers, companies, divisions).
 
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite for fast development and optimized builds
-- **Styling**: Tailwind CSS with Shadcn/ui component library
-- **State Management**: React hooks and context for local state, React Query for server state
-- **Routing**: React Router for navigation
-- **Form Handling**: React Hook Form with validation
+- **Framework**: React 18 with TypeScript using Vite as the build tool
+- **UI Framework**: Tailwind CSS with shadcn/ui component library
+- **Routing**: React Router for client-side navigation
+- **State Management**: React Query (TanStack Query) for server state management
+- **Form Handling**: React Hook Form with Zod validation
+- **Styling**: Tailwind CSS with CSS variables for theming
 
 ### Backend Architecture
-- **Database**: PostgreSQL via Supabase
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Authentication**: Supabase Auth with role-based access control
-- **API**: Supabase auto-generated REST API
-- **Real-time**: WebSocket support through Supabase
+- **Database**: Supabase (PostgreSQL) with Row Level Security (RLS)
+- **Authentication**: Supabase Auth with email/password
+- **Real-time**: Supabase real-time subscriptions (available but not extensively used)
+- **API**: Direct Supabase client calls (no separate backend API layer)
 
 ## Key Components
 
 ### Data Management
-- **Revenue Tracking**: Multi-currency revenue management with exchange rates
-- **Cost Management**: Overhead costs and salary costs tracking
-- **Master Data**: Customers, companies, divisions, projects, resources management
-- **Exchange Rates**: Currency conversion for multi-currency operations
+- **Revenue Management**: Track revenue by customer, company, division, project, and currency
+- **Cost Management**: Monitor various cost types including overhead and operational costs
+- **Salary Cost Tracking**: Manage employee-related expenses with company and division breakdown
+- **Exchange Rate Management**: Handle multi-currency revenue calculations
 
 ### Reporting System
-- **Business Reports**: Overall financial performance analysis
-- **Customer Reports**: Customer-specific profitability analysis
-- **Company Reports**: Company-level performance metrics
-- **Division Reports**: Division-wise financial analysis
+- **Business Report**: Overall performance metrics with profit/loss analysis
+- **Customer Report**: Performance analysis by customer segments
+- **Company Report**: Company-wise performance breakdown
+- **Division Report**: Division-level performance analytics
 
 ### User Management
-- **Role-Based Access Control**: Admin, Manager, User roles
-- **Authentication**: Email/password login with remember me functionality
-- **User Profiles**: User information and role management
+- **Role-Based Access Control**: Admin, Manager, and User roles with different permissions
+- **User Profile Management**: Profile information and role assignment
+- **Authentication System**: Secure login/logout with remember me functionality
+
+### Master Data Management
+- **Settings Module**: Comprehensive management of all reference data
+- **Data Import/Export**: CSV import/export functionality for bulk operations
+- **Parameter Management**: System-wide configuration parameters
 
 ## Data Flow
 
-1. **Data Entry**: Users input financial data (revenues, costs) through forms
-2. **Processing**: System calculates derived metrics (profit, percentages, VND conversion)
-3. **Storage**: Data persisted to PostgreSQL via Supabase
-4. **Retrieval**: React Query manages data fetching with caching
-5. **Presentation**: Data displayed in tables and summary cards with export capabilities
+1. **Authentication Flow**: Users authenticate through Supabase Auth, roles are checked via RLS policies
+2. **Data Fetching**: React Query manages server state with optimized caching and background updates
+3. **Real-time Updates**: Changes are reflected immediately through Supabase's real-time capabilities
+4. **Data Processing**: Complex calculations (profit margins, tax calculations) are performed client-side
+5. **Export Pipeline**: Data can be exported to CSV format with proper formatting and calculations
 
 ## External Dependencies
 
 ### Core Dependencies
-- **Supabase**: Backend-as-a-Service for database, auth, and API
-- **React Query**: Server state management and caching
-- **Radix UI**: Headless UI components for accessibility
-- **Shadcn/ui**: Pre-built component library
-- **Tailwind CSS**: Utility-first CSS framework
+- **@supabase/supabase-js**: Database and authentication client
+- **@tanstack/react-query**: Server state management
+- **@radix-ui/react-***: Headless UI components
+- **react-router-dom**: Client-side routing
+- **react-hook-form**: Form management
+- **@hookform/resolvers**: Form validation
+- **zod**: Schema validation
+- **date-fns**: Date manipulation
+- **lucide-react**: Icon library
 
-### Development Tools
-- **TypeScript**: Type safety and developer experience
-- **Vite**: Fast build tooling
-- **ESLint**: Code linting and formatting
-- **Drizzle Kit**: Database migration management
+### Development Dependencies
+- **Vite**: Build tool and development server
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Utility-first styling
+- **PostCSS**: CSS processing
+- **Autoprefixer**: CSS vendor prefixes
+
+### Database Dependencies
+- **Drizzle ORM**: Type-safe database operations (configured but not actively used)
+- **PostgreSQL**: Primary database through Supabase
 
 ## Deployment Strategy
 
 ### Environment Configuration
-- **Development**: Local development with Vite dev server
-- **Production**: Built with Vite and served as static files
-- **Database**: Hosted on Supabase cloud
-- **Deployment**: Configured for Replit autoscale deployment
+- **Development**: Local Vite server on port 5000
+- **Production**: Static build served through Vite preview
+- **Database**: Supabase hosted PostgreSQL instance
 
-### Database Schema
-- **Master Data Tables**: customers, companies, divisions, projects, etc.
-- **Transaction Tables**: revenues, costs, salary_costs
-- **Configuration Tables**: exchange_rates, parameters, user_roles
-- **Security**: Row Level Security (RLS) policies for data access control
+### Build Process
+1. TypeScript compilation and type checking
+2. Vite bundling with code splitting
+3. Tailwind CSS purging and optimization
+4. Asset optimization and compression
 
-### Port Configuration
-- **5000**: Main application port
-- **5001**: Alternative frontend port
-- **8080-8081**: Additional service ports
+### Hosting
+- **Platform**: Replit with autoscale deployment
+- **Ports**: Internal port 5000, external port 80
+- **Environment**: Node.js 20 with PostgreSQL 16 module
 
 ## Changelog
-
-- June 24, 2025: Completed deployment fixes - successfully resolved all startup and route registration issues
-  - Fixed path-to-regexp parameter validation by implementing safe route registration with pattern validation
-  - Added comprehensive error handling around route registration to prevent server crashes during startup
-  - Implemented health endpoint (/health) for deployment verification and monitoring
-  - Added graceful error handling for route definition issues with detailed logging
-  - Increased startup timeout to 45 seconds and added process stability measures
-  - Enhanced server initialization with proper port binding and crash loop prevention
-  - All API routes now use validated registration method preventing deployment crashes
-  - Server successfully responds to health checks and API requests
-- June 24, 2025: Initial setup
+- June 24, 2025. Initial setup
 
 ## User Preferences
 

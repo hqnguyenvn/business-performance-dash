@@ -7,28 +7,16 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "NODE_ENV=production npm start"]
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
 
 [[ports]]
-localPort = 5000
+internalPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5001
+internalPort = 5001
 externalPort = 3000
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
-
-[[ports]]
-localPort = 8081
-externalPort = 8081
-
-[[ports]]
-localPort = 24678
-externalPort = 3001
 
 [workflows]
 runButton = "Project"
