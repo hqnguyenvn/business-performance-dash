@@ -1,14 +1,14 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
-import { upsertSalaryCosts, deleteSalaryCosts, SalaryCostInsert, SalaryCost } from '@/services/salaryCostService';
+import { createSalaryCost, updateSalaryCost, deleteSalaryCost, batchCreateSalaryCosts, SalaryCostInsert, SalaryCost } from '@/services/salaryCostService';
 
 export const useSalaryCostsMutations = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const createSalaryCostMutation = useMutation({
-    mutationFn: (cost: SalaryCostInsert) => upsertSalaryCosts([cost]),
+    mutationFn: (cost: SalaryCostInsert) => createSalaryCost(cost),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['salaryCosts'] });
       toast({ title: "Success", description: "New salary cost created." });
@@ -17,7 +17,7 @@ export const useSalaryCostsMutations = () => {
   });
 
   const updateSalaryCostMutation = useMutation({
-    mutationFn: (cost: SalaryCost) => upsertSalaryCosts([cost]),
+    mutationFn: (cost: SalaryCost) => updateSalaryCost(cost.id, cost),
     onMutate: async (updatedCost: SalaryCost) => {
       await queryClient.cancelQueries({ queryKey: ['salaryCosts'] });
       const previousCosts = queryClient.getQueryData<SalaryCost[]>(['salaryCosts']);
@@ -38,7 +38,7 @@ export const useSalaryCostsMutations = () => {
   });
 
   const deleteSalaryCostMutation = useMutation({
-    mutationFn: (id: string) => deleteSalaryCosts([id]),
+    mutationFn: (id: string) => deleteSalaryCost(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['salaryCosts'] });
       toast({ title: "Success", description: "Salary cost deleted." });
@@ -47,7 +47,7 @@ export const useSalaryCostsMutations = () => {
   });
   
   const bulkCreateSalaryCostMutation = useMutation({
-    mutationFn: (costs: SalaryCostInsert[]) => upsertSalaryCosts(costs),
+    mutationFn: (costs: SalaryCostInsert[]) => batchCreateSalaryCosts(costs),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['salaryCosts'] });
       toast({ title: "Success", description: `${data?.length || 0} salary costs imported successfully.` });
@@ -56,7 +56,7 @@ export const useSalaryCostsMutations = () => {
   });
 
   const insertSalaryCostMutation = useMutation({
-    mutationFn: (cost: SalaryCostInsert) => upsertSalaryCosts([cost]),
+    mutationFn: (cost: SalaryCostInsert) => createSalaryCost(cost),
     onError: (error) => toast({ variant: "destructive", title: "Error", description: `Failed to insert cost: ${error.message}` }),
   });
 
