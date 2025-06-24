@@ -60,9 +60,9 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
   className,
 }) => {
   return (
-    <tr key={rate.id} className={`hover:bg-gray-50 ${className || ''}`}>
+    <tr key={rate.id} className={`hover:bg-gray-50 h-[40px] ${className || ''}`}>
       {/* No. */}
-      <td className="border border-gray-300 w-12 text-center">
+      <td className="border border-gray-300 w-12 text-center p-1">
         {idx + 1}
       </td>
       {/* Year */}
@@ -84,7 +84,7 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
             }}
           />
         ) : (
-          <span>{rate.year}</span>
+          <div className="h-8 flex items-center">{rate.year}</div>
         )}
       </td>
       {/* Month */}
@@ -104,7 +104,7 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
             </SelectContent>
           </Select>
         ) : (
-          <span>{rate.month}</span>
+          <div className="h-8 flex items-center">{rate.month}</div>
         )}
       </td>
       {/* Currency Code */}
@@ -124,10 +124,10 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
             </SelectContent>
           </Select>
         ) : (
-          <span>
+          <div className="h-8 flex items-center">
             {currencies.find((c) => c.code === rate.currencyID)?.code || ""}
             {currencies.find((c) => c.code === rate.currencyID)?.name ? ` - ${currencies.find((c) => c.code === rate.currencyID)?.name}` : ""}
-          </span>
+          </div>
         )}
       </td>
       {/* Exchange Rate */}
@@ -155,16 +155,16 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
             }}
           />
         ) : (
-          <span>{formatNumberWithDecimals(rate.exchangeRate, 2)}</span>
+          <div className="h-8 flex items-center justify-end pr-2">{formatNumberWithDecimals(rate.exchangeRate, 2)}</div>
         )}
       </td>
       {/* Actions */}
-      <td className="border border-gray-300 p-2 text-center w-32">
+      <td className="border border-gray-300 p-1 text-center w-32">
         <div className="flex items-center justify-center gap-1">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-6 w-6"
             title="Add row below"
             onClick={() => addRowBelow(rate.id)}
             tabIndex={0}
@@ -176,7 +176,7 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
               <Button
                 variant="destructive"
                 size="icon"
-                className="h-8 w-8"
+                className="h-6 w-6"
                 title="Delete"
               >
                 <Trash2 className="h-4 w-4" />

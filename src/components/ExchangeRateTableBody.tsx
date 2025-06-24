@@ -1,3 +1,4 @@
+
 import React from "react";
 import ExchangeRateTableRow from "./ExchangeRateTableRow";
 
@@ -56,7 +57,6 @@ const ExchangeRateTableBody: React.FC<ExchangeRateTableBodyProps> = ({
           addRowBelow={addRowBelow}
           currencies={currencies}
           MONTHS={MONTHS}
-          className="h-[40px]"
         />
       ))}
     </tbody>
