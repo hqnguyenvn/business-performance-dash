@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getSalaryCostsPaginated, SalaryCost, SalaryCostFilters } from '@/services/salaryCostService';
+import { getSalaryCosts, SalaryCost, SalaryCostFilters } from '@/services/salaryCostService';
 import { getMasterDatas, MasterData } from '@/services/masterDataService';
 
 export { type SalaryCost };
@@ -22,10 +22,12 @@ export const useSalaryCostsState = () => {
   // Simple filter approach like Cost Management
   const { data: paginatedData, isLoading: isLoadingCosts } = useQuery({
     queryKey: ['salaryCosts', selectedYear, selectedMonths, currentPage, pageSize],
-    queryFn: () => getSalaryCostsPaginated({
+    queryFn: () => getSalaryCosts({
       year: parseInt(selectedYear),
-      months: selectedMonths
-    }, currentPage, pageSize),
+      months: selectedMonths,
+      page: currentPage,
+      pageSize: pageSize
+    }),
     enabled: !!selectedYear && selectedMonths.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
