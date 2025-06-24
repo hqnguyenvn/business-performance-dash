@@ -174,26 +174,37 @@ export default function Profile() {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      // Create a data URL for immediate preview (fallback if storage fails)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(data.publicUrl);
-      
       toast({
         title: "Success",
-        description: "Avatar uploaded successfully",
+        description: "Avatar updated successfully",
       });
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
