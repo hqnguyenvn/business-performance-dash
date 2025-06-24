@@ -102,7 +102,10 @@ export const SalaryCostsTable = ({
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent, costId: string, field: keyof SalaryCost) => {
-    if (e.key === 'Enter' || e.key === 'Tab') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleInputBlur(costId, field);
+    } else if (e.key === 'Tab') {
       handleInputBlur(costId, field);
     }
   };

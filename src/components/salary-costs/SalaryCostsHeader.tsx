@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 export const SalaryCostsHeader = () => {
   return (
     <PageHeader
-      title="Salary Costs by Customer"
+      title="Cost allocated to customers"
       description="Record salary costs by customer"
       icon={Users}
     />

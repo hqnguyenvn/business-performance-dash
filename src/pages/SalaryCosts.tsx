@@ -84,7 +84,7 @@ const SalaryCosts = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>
-                Salary Cost Data ({totalRecords} total records, showing {filteredSalaryCosts.length} on page {currentPage})
+                Cost Per Customer ({totalRecords} total records, showing {filteredSalaryCosts.length} on page {currentPage})
               </CardTitle>
               <div className="flex items-center gap-2">
                  <Button variant="outline" onClick={importFromCSV}>
