@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -35,15 +36,15 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
   } = useTopCustomers(selectedYear, selectedMonths, 5);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card className="bg-white">
+    <div className="grid grid-cols-10 gap-6">
+      <Card className="bg-white col-span-7">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
-            Monthly Revenue
+            Monthly Revenue (Million VND)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-80 flex items-center justify-center text-gray-500">
+          <div className="h-96 flex items-center justify-center text-gray-500">
             {loading ? (
               <div>Loading chart...</div>
             ) : (
@@ -51,9 +52,11 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis />
+                  <YAxis 
+                    tickFormatter={(value) => formatNumber(value)}
+                  />
                   <Tooltip
-                    formatter={(value: any) => `${value}M VND`}
+                    formatter={(value: any) => [`${formatNumber(value)}M VND`, 'Revenue']}
                     labelFormatter={(label: string) => `Month: ${label}`}
                   />
                   <Bar dataKey="totalRevenue" fill="#4ade80" />
@@ -64,10 +67,10 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
         </CardContent>
       </Card>
       {/* Block Top Customers động */}
-      <Card className="bg-white">
+      <Card className="bg-white col-span-3">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
-            Top Customers
+            Top Customers (Revenues)
           </CardTitle>
         </CardHeader>
         <CardContent>

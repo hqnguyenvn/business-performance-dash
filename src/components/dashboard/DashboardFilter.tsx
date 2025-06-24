@@ -80,8 +80,8 @@ export const DashboardFilter: React.FC<DashboardFilterProps> = ({
           </div>
         </div>
       </div>
-      {/* Rate inputs */}
-      <div className="flex flex-wrap gap-6 items-center mt-2">
+      {/* Rate inputs - Hidden as requested */}
+      {/* <div className="flex flex-wrap gap-6 items-center mt-2">
         <div className="flex items-center space-x-2">
           <span className="text-base font-semibold">Income Tax Rate:</span>
           <input
@@ -106,7 +106,7 @@ export const DashboardFilter: React.FC<DashboardFilterProps> = ({
           />
           <span className="font-semibold text-base">%</span>
         </div>
-      </div>
+      </div> */}
     </div>
   </div>
 );
