@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/companies/:id', async (req, res) => {
+  app.put('/api/companies/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCompanySchema.partial().parse(req.body);
@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/companies/:id', async (req, res) => {
+  app.delete('/api/companies/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(companies).where(eq(companies.id, id));
@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/customers/:id', async (req, res) => {
+  app.put('/api/customers/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCustomerSchema.partial().parse(req.body);
@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/customers/:id', async (req, res) => {
+  app.delete('/api/customers/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(customers).where(eq(customers.id, id));
@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/revenues/:id', async (req, res) => {
+  app.put('/api/revenues/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertRevenueSchema.partial().parse(req.body);
@@ -364,7 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/revenues/:id', async (req, res) => {
+  app.delete('/api/revenues/:id(\\S+)', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(revenues).where(eq(revenues.id, id));
