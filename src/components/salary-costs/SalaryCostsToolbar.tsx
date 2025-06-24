@@ -1,4 +1,5 @@
 
+import React, { memo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MONTHS } from "@/hooks/useSalaryCosts";
@@ -11,7 +12,7 @@ interface SalaryCostsToolbarProps {
   handleMonthToggle: (monthValue: number) => void;
 }
 
-export const SalaryCostsToolbar = ({
+const SalaryCostsToolbar = memo(({
   selectedYear,
   handleYearChange,
   availableYears,
@@ -59,4 +60,8 @@ export const SalaryCostsToolbar = ({
       </div>
     </div>
   );
-};
+});
+
+SalaryCostsToolbar.displayName = "SalaryCostsToolbar";
+
+export { SalaryCostsToolbar };

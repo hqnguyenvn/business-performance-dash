@@ -50,7 +50,7 @@ const menuItems = [
     icon: Receipt,
   },
   {
-    title: "Cost To Customer",
+    title: "Customer Cost Management",
     url: "/salary-costs",
     icon: Users,
   },

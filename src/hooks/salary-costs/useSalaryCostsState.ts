@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSalaryCostsPaginated, SalaryCost, SalaryCostFilters } from '@/services/salaryCostService';
 import { getMasterDatas, MasterData } from '@/services/masterDataService';
@@ -63,13 +62,15 @@ export const useSalaryCostsState = () => {
   const getMonthNumber = (name: string) => MONTHS.find(m => m.name === name)?.id || 1;
 
 
-  const handleYearChange = (year: string) => setSelectedYear(year);
+  const handleYearChange = useCallback((year: string) => {
+    setSelectedYear(year);
+  }, [setSelectedYear]);
 
-  const handleMonthToggle = (monthId: number) => {
+  const handleMonthToggle = useCallback((monthId: number) => {
     setSelectedMonths(prev =>
       prev.includes(monthId) ? prev.filter(m => m !== monthId) : [...prev, monthId]
     );
-  };
+  }, [setSelectedMonths]);
 
   return {
     salaryCosts, setSalaryCosts,
