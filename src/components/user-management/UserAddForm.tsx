@@ -33,39 +33,17 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     }
     setAdding(true);
 
-    // Thử sử dụng admin client trước
-    let signUpData: any = null;
-    let signUpError: any = null;
-    
-    try {
-      const adminResult = await supabaseAdmin.auth.admin.createUser({
-        email: newEmail,
-        password: newPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: newFullName.trim() || null,
-          role: newRole
-        }
-      });
-      signUpData = adminResult.data;
-      signUpError = adminResult.error;
-    } catch (adminErr) {
-      console.warn("Admin client failed, falling back to regular signUp:", adminErr);
-      // Fallback to regular signUp
-      const result = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-          data: {
-            full_name: newFullName.trim() || null,
-            role: newRole
-          }
-        }
-      });
-      signUpData = result.data;
-      signUpError = result.error;
-    }
+    // Sử dụng admin client để tạo user
+    console.log("Creating user with admin client...");
+    const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      email: newEmail,
+      password: newPassword,
+      email_confirm: true, // Tự động xác nhận email
+      user_metadata: {
+        full_name: newFullName.trim() || null,
+        role: newRole
+      }
+    });
 
     if (signUpError) {
       console.error("SignUp Error:", signUpError);

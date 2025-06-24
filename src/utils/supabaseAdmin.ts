@@ -7,6 +7,10 @@ const SUPABASE_URL = "https://atkbmtrrqydguikmvmvj.supabase.co";
 // Service key từ Replit Secrets
 const SUPABASE_SERVICE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_KEY || "";
 
+if (!SUPABASE_SERVICE_KEY) {
+  console.warn("VITE_SUPABASE_SERVICE_KEY not found in environment variables");
+}
+
 export const supabaseAdmin = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_SERVICE_KEY,
