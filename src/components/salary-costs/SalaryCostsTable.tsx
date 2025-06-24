@@ -104,7 +104,7 @@ export const SalaryCostsTable = ({
   const handleInputKeyDown = (e: React.KeyboardEvent, costId: string, field: keyof SalaryCost) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleInputBlur(costId, field);
+      (e.target as HTMLInputElement).blur(); // Force blur to trigger save
     } else if (e.key === 'Tab') {
       handleInputBlur(costId, field);
     }
@@ -261,10 +261,19 @@ export const SalaryCostsTable = ({
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Input 
-                    value={getInputValue(cost.id, 'notes', cost.notes || '')} 
-                    onChange={(e) => handleInputChange(cost.id, 'notes', e.target.value)}
-                    onBlur={() => handleInputBlur(cost.id, 'notes')}
-                    onKeyDown={(e) => handleInputKeyDown(e, cost.id, 'notes')}
+                    defaultValue={cost.notes || ''} 
+                    onChange={(e) => {
+                      // Directly update without intermediate state for better performance
+                      cost.notes = e.target.value;
+                    }}
+                    onBlur={(e) => updateCost(cost.id, 'notes', e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        updateCost(cost.id, 'notes', (e.target as HTMLInputElement).value);
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
                     className="border-0 p-1 h-8" 
                   />
                 </TableCell>
