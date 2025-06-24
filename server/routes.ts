@@ -13,16 +13,21 @@ import {
   insertParameterSchema
 } from "../shared/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import express, { type Request, Response } from "express";
+import express, { type Request, Response, NextFunction } from "express";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log("🔧 Đang đăng ký routes...");
+
+  // Health check route
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // Batch import route - must be defined before other revenue routes
   app.post("/api/revenues/batch", async (req: Request, res: Response) => {
     console.log("🔥 Batch import endpoint được gọi!", req.method, req.path);
     console.log("📊 Request body:", req.body);
-    
+
     try {
       const { data: revenueArray } = req.body;
 
@@ -495,6 +500,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch company bonuses' });
     }
+  });
+
+  // Add basic error handling middleware
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   });
 
   const httpServer = createServer(app);
