@@ -42,7 +42,7 @@ export const BusinessReportFilters = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="flex items-start gap-8">
+          <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-4">
               <Select value={selectedYear} onValueChange={onYearChange}>
                 <SelectTrigger className="w-32">
@@ -56,28 +56,6 @@ export const BusinessReportFilters = ({
               </Select>
             </div>
 
-            <div className="flex-1">
-              <div className="grid grid-cols-6 gap-2">
-                {months.map((month) => (
-                  <div key={month.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`month-${month.value}`}
-                      checked={selectedMonths.includes(month.value)}
-                      onCheckedChange={() => onMonthToggle(month.value)}
-                    />
-                    <label
-                      htmlFor={`month-${month.value}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {month.short}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Income Tax Rate:</label>
               <div className="flex items-center gap-2">
@@ -90,6 +68,7 @@ export const BusinessReportFilters = ({
                 <span className="text-sm">%</span>
               </div>
             </div>
+
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Bonus Rate:</label>
               <div className="flex items-center gap-2">
@@ -103,9 +82,28 @@ export const BusinessReportFilters = ({
               </div>
             </div>
           </div>
+
+          <div className="flex-1">
+            <div className="grid grid-cols-6 gap-2">
+              {months.map((month) => (
+                <div key={month.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`month-${month.value}`}
+                    checked={selectedMonths.includes(month.value)}
+                    onCheckedChange={() => onMonthToggle(month.value)}
+                  />
+                  <label
+                    htmlFor={`month-${month.value}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {month.short}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 };
-
