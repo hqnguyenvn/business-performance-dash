@@ -19,15 +19,19 @@ export const useSalaryCostsState = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(25);
 
-  // Build filters
-  const filters: SalaryCostFilters = useMemo(() => ({
-    year: parseInt(selectedYear),
-    months: selectedMonths
-  }), [selectedYear, selectedMonths]);
-
+  // Simple filter approach like Cost Management
   const { data: paginatedData, isLoading: isLoadingCosts } = useQuery({
-    queryKey: ['salaryCosts', currentPage, pageSize, filters],
-    queryFn: () => getSalaryCostsPaginated(currentPage, pageSize, filters),
+    queryKey: ['salaryCosts', selectedYear, selectedMonths, currentPage, pageSize],
+    queryFn: () => getSalaryCostsPaginated({
+      year: parseInt(selectedYear),
+      months: selectedMonths
+    }, currentPage, pageSize),
+    enabled: !!selectedYear && selectedMonths.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({ queryKey: ['companies'], queryFn: () => getMasterDatas('companies') });
@@ -42,7 +46,7 @@ export const useSalaryCostsState = () => {
     }
   }, [paginatedData]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (simple approach like Cost Management)
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedYear, selectedMonths]);
