@@ -15,12 +15,13 @@ import { eq, and, desc, inArray } from "drizzle-orm";
 import express, { type Request, Response, NextFunction } from "express";
 
 export async function registerRoutes(app: Express): Promise<void> {
-  console.log("🔧 Đang đăng ký routes...");
+  console.log("🔧 Starting route registration...");
 
-  // Health check route
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
+  try {
+    // Health check route
+    app.get('/health', (req, res) => {
+      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
 
   // Batch import route - must be defined before other revenue routes
   app.post("/api/revenues/batch", async (req: Request, res: Response) => {
@@ -501,5 +502,9 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  console.log("✅ All routes registered successfully, including: /api/revenues/batch");
+    console.log("✅ All routes registered successfully, including: /api/revenues/batch");
+  } catch (error) {
+    console.error("❌ Error during route registration:", error);
+    throw new Error(`Route registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }

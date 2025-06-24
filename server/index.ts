@@ -47,9 +47,14 @@ async function startServer() {
   try {
     log("Starting server initialization...");
 
-    // Register all API routes first
-    await registerRoutes(app);
-    log("API routes registered successfully");
+    // Register all API routes first with error handling
+    try {
+      await registerRoutes(app);
+      log("API routes registered successfully");
+    } catch (routeError) {
+      log(`Route registration failed: ${routeError instanceof Error ? routeError.message : routeError}`);
+      throw routeError;
+    }
 
     // Create HTTP server instance
     const server = createServer(app);
@@ -72,7 +77,7 @@ async function startServer() {
       res.status(status).json({ message });
     });
 
-    // Start server with proper error handling
+    // Start server with proper error handling and health check
     const port = Number(process.env.PORT) || 5000;
     
     server.on('error', (error: any) => {
@@ -85,9 +90,25 @@ async function startServer() {
       }
     });
 
-    server.listen(port, "0.0.0.0", () => {
+    // Add startup health check
+    server.listen(port, "0.0.0.0", async () => {
       log(`Server running on http://0.0.0.0:${port}`);
       log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      // Verify server is responding with a delay to allow startup
+      setTimeout(async () => {
+        try {
+          const response = await fetch(`http://localhost:${port}/health`);
+          if (response.ok) {
+            const healthData = await response.json();
+            log("✅ Server health check passed:", JSON.stringify(healthData));
+          } else {
+            log("⚠️ Server health check failed with status:", response.status);
+          }
+        } catch (healthError) {
+          log("⚠️ Server health check failed:", healthError instanceof Error ? healthError.message : healthError);
+        }
+      }, 1000);
     });
 
   } catch (error) {
