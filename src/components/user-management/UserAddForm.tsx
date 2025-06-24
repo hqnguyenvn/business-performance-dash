@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/utils/supabaseAdmin";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -32,19 +33,42 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     }
     setAdding(true);
 
-    // Tạo user thông thường với signUp
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: newEmail,
-      password: newPassword,
-      options: {
-        emailRedirectTo: window.location.origin + "/auth",
-        data: {
-          full_name: newFullName.trim() || null
+    // Thử sử dụng admin client trước
+    let signUpData: any = null;
+    let signUpError: any = null;
+    
+    try {
+      const adminResult = await supabaseAdmin.auth.admin.createUser({
+        email: newEmail,
+        password: newPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: newFullName.trim() || null,
+          role: newRole
         }
-      }
-    });
+      });
+      signUpData = adminResult.data;
+      signUpError = adminResult.error;
+    } catch (adminErr) {
+      console.warn("Admin client failed, falling back to regular signUp:", adminErr);
+      // Fallback to regular signUp
+      const result = await supabase.auth.signUp({
+        email: newEmail,
+        password: newPassword,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth",
+          data: {
+            full_name: newFullName.trim() || null,
+            role: newRole
+          }
+        }
+      });
+      signUpData = result.data;
+      signUpError = result.error;
+    }
 
     if (signUpError) {
+      console.error("SignUp Error:", signUpError);
       toast({
         title: "Error",
         description:
@@ -56,7 +80,9 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
       return;
     }
 
+    console.log("SignUp Data:", signUpData);
     let userId: string | undefined = signUpData?.user?.id;
+    console.log("User ID:", userId);
 
     if (!userId) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
