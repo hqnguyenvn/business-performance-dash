@@ -93,10 +93,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear state immediately để tránh delay
+    setLoading(true);
     setSession(null);
     setUser(null);
     setRole(null);
+    
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("SignOut error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {

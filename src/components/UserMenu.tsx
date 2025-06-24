@@ -16,6 +16,7 @@ import React from "react";
 export const UserMenu = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isSigningOut, setIsSigningOut] = React.useState(false);
 
   const handleLogin = () => {
     navigate("/auth");
@@ -26,8 +27,18 @@ export const UserMenu = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    window.location.href = "/auth";
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      // Sử dụng React Router navigation thay vì window.location.href
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Fallback nếu có lỗi
+      navigate("/auth", { replace: true });
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   if (loading) {
@@ -55,8 +66,9 @@ export const UserMenu = () => {
             <DropdownMenuItem onClick={handleProfile}>
               <User className="mr-2 w-4 h-4" /> My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 w-4 h-4" /> Đăng xuất
+            <DropdownMenuItem onClick={handleSignOut} disabled={isSigningOut}>
+              <LogOut className="mr-2 w-4 h-4" /> 
+              {isSigningOut ? "Đang đăng xuất..." : "Đăng xuất"}
             </DropdownMenuItem>
           </>
         ) : (
