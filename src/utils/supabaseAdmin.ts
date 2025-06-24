@@ -18,7 +18,11 @@ export const supabaseAdmin = createClient<Database>(
     auth: {
       autoRefreshToken: false,
       persistSession: false,
-      storageKey: 'supabase-admin-auth-token' // Unique storage key
+      storage: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {}
+      }
     }
   }
 );
