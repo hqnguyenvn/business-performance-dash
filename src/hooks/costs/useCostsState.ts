@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getCosts, Cost as DbCost, CostSearchParams } from "@/services/costApi";
+import { getCosts, Cost as DbCost, CostSearchParams, CostResponse } from "@/services/costApi";
 import { costTypesService, MasterData } from "@/services/masterDataService";
 
 export type Cost = DbCost;
@@ -24,7 +24,7 @@ export const useCostsState = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(25);
   
-  const { data: paginatedResult, isLoading: isLoadingCosts } = useQuery({
+  const { data: paginatedResult, isLoading: isLoadingCosts } = useQuery<CostResponse>({
     queryKey: ["costs", selectedYear, selectedMonths, currentPage, pageSize],
     queryFn: () => getCosts({
       year: parseInt(selectedYear),
@@ -36,13 +36,13 @@ export const useCostsState = () => {
     gcTime: 10 * 60 * 1000, // 10 minutes - cache time
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    keepPreviousData: true, // Keep previous data while loading new page
+    placeholderData: (previousData) => previousData, // Replace keepPreviousData
     // Enable background refetch for better UX
     refetchInterval: 10 * 60 * 1000, // Background refetch every 10 minutes
     refetchIntervalInBackground: false,
   });
 
-  const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery({
+  const { data: costTypes = [], isLoading: isLoadingCostTypes } = useQuery<MasterData[]>({
     queryKey: ["cost_types"],
     queryFn: () => costTypesService.getAll(),
     staleTime: 15 * 60 * 1000, // 15 minutes - master data doesn't change often

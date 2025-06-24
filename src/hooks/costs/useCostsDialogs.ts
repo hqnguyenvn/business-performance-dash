@@ -73,7 +73,7 @@ export const useCostsDialogs = ({ costs, setCosts, updateCostMutation, deleteCos
     setIsDialogOpen(false);
 
     try {
-        await updateCostMutation.mutateAsync(selectedCost);
+        await updateCostMutation.mutateAsync({ id: selectedCost.id, cost: selectedCost });
         toast({ title: "Cost Updated", description: "Your changes have been saved." });
         queryClient.invalidateQueries({ queryKey: ['costs'] });
     } catch (error) {

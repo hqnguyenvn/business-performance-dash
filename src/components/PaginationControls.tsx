@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Pagination,
@@ -20,11 +21,11 @@ interface PaginationControlsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onNextPage: () => void;
-  onPreviousPage: () => void;
-  totalItems: number;
-  startIndex: number;
-  endIndex: number;
+  onNextPage?: () => void;
+  onPreviousPage?: () => void;
+  totalItems?: number;
+  startIndex?: number;
+  endIndex?: number;
   pageSize?: number | 'all';
   onPageSizeChange?: (pageSize: number | 'all') => void;
   position?: 'top' | 'bottom';
@@ -36,13 +37,30 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   onPageChange,
   onNextPage,
   onPreviousPage,
-  totalItems,
+  totalItems = 0,
   startIndex,
   endIndex,
   pageSize = 25,
   onPageSizeChange,
   position = 'bottom',
 }) => {
+  // Calculate default startIndex and endIndex if not provided
+  const calculatedStartIndex = startIndex ?? Math.max(1, (currentPage - 1) * (typeof pageSize === 'number' ? pageSize : 25) + 1);
+  const calculatedEndIndex = endIndex ?? Math.min(totalItems, currentPage * (typeof pageSize === 'number' ? pageSize : totalItems));
+
+  // Default navigation functions if not provided
+  const handleNextPage = onNextPage || (() => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
+  });
+
+  const handlePreviousPage = onPreviousPage || (() => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
+  });
+
   const getVisiblePages = () => {
     const delta = 2;
     const range = [];
@@ -79,7 +97,6 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
           >
             <SelectTrigger className="w-20">
-              {/* Custom rendering for SelectValue to show proper label */}
               <SelectValue>
                 {pageSize === 'all'
                   ? 'All'
@@ -100,21 +117,19 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 
       {position === 'bottom' && (
         <div className="text-sm text-gray-700">
-          Showing {startIndex} to {endIndex} of {totalItems} entries
+          Showing {calculatedStartIndex} to {calculatedEndIndex} of {totalItems} entries
         </div>
       )}
 
-      {/* Khi chọn All sẽ LUÔN hiển thị nút "All", làm active và không hiện số trang khác */}
       <Pagination>
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious 
-              onClick={pageSize === 'all' || currentPage <= 1 ? undefined : onPreviousPage}
+              onClick={pageSize === 'all' || currentPage <= 1 ? undefined : handlePreviousPage}
               className={pageSize === 'all' || currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
           {pageSize === 'all' ? (
-            // Luôn render nút All duy nhất khi pageSize === 'all'
             <PaginationItem>
               <PaginationLink 
                 isActive 
@@ -143,7 +158,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           )}
           <PaginationItem>
             <PaginationNext
-              onClick={pageSize === 'all' || currentPage >= totalPages ? undefined : onNextPage}
+              onClick={pageSize === 'all' || currentPage >= totalPages ? undefined : handleNextPage}
               className={pageSize === 'all' || currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>

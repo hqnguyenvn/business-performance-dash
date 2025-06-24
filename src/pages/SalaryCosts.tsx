@@ -11,7 +11,6 @@ import { SalaryCostDialogs } from "@/components/salary-costs/SalaryCostDialogs";
 import CloneSalaryCostDialog from "@/components/salary-costs/CloneSalaryCostDialog";
 import PaginationControls from "@/components/PaginationControls";
 
-
 const SalaryCosts = () => {
   const {
     salaryCosts,
@@ -63,6 +62,10 @@ const SalaryCosts = () => {
       </div>
     );
   }
+
+  // Calculate pagination values
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalRecords);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,6 +122,9 @@ const SalaryCosts = () => {
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
+                  totalItems={totalRecords}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
                 />
               </div>
             )}

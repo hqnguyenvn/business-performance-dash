@@ -1,6 +1,6 @@
 
 import { useToast } from "@/hooks/use-toast";
-import type { Cost, NewCost } from "@/services/costService";
+import type { Cost, NewCost } from "@/services/costApi";
 import type { MasterData } from "@/services/masterDataService";
 import type { useCostsMutations } from './useCostsMutations';
 import type { Cost as CostType } from './useCostsState';
@@ -127,7 +127,7 @@ export const useCostsActions = ({ costs, setCosts, costTypes, selectedYear, sele
       }
     } else {
       try {
-        await updateCostMutation.mutateAsync(updatedCost);
+        await updateCostMutation.mutateAsync({ id, cost: updatedCost });
         toast({ title: "Cost Updated", description: "Your changes have been saved automatically." });
       } catch (error) {
         setCosts(originalCosts);

@@ -60,6 +60,10 @@ const Costs = () => {
     );
   }
 
+  // Calculate pagination values
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalCount);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <CostsHeader />
@@ -117,6 +121,8 @@ const Costs = () => {
                 onPageChange={handlePageChange}
                 pageSize={pageSize}
                 totalItems={totalCount}
+                startIndex={startIndex}
+                endIndex={endIndex}
               />
             </div>
           )}
