@@ -32,18 +32,13 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     }
     setAdding(true);
 
-    const currentTime = new Date().toISOString();
-    
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Sử dụng admin API để tạo user với email đã được xác nhận
+    const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
       email: newEmail,
       password: newPassword,
-      options: {
-        emailRedirectTo: window.location.origin + "/auth",
-        data: {
-          email_confirmed_at: currentTime,
-          confirmation_sent_at: currentTime,
-          created_at: currentTime
-        }
+      email_confirm: true, // Tự động xác nhận email
+      user_metadata: {
+        full_name: newFullName.trim() || null
       }
     });
 
