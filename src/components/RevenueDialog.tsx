@@ -86,7 +86,7 @@ const RevenueDialog: React.FC<RevenueDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === 'view' ? 'View Revenue Record' : 'Edit Revenue Record'}
@@ -99,7 +99,7 @@ const RevenueDialog: React.FC<RevenueDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-6">
           <div>
             <Label>Year</Label>
             <Input
@@ -294,7 +294,7 @@ const RevenueDialog: React.FC<RevenueDialogProps> = ({
             />
           </div>
           
-          <div className="col-span-2">
+          <div className="col-span-3">
             <Label>Notes</Label>
             <Input
               value={editedRevenue.notes || ""}
