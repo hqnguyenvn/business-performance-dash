@@ -24,12 +24,12 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  
+
   // Profile form state
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  
+
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -41,7 +41,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -69,7 +69,7 @@ export default function Profile() {
 
   const updateProfile = async () => {
     if (!user || !profile) return;
-    
+
     setSaving(true);
     try {
       // Update profile in database
@@ -91,7 +91,7 @@ export default function Profile() {
         });
 
         if (emailError) throw emailError;
-        
+
         toast({
           title: "Email Update",
           description: "Please check your new email address for a confirmation link.",
