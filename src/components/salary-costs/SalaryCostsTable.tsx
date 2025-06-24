@@ -15,6 +15,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { SalaryCost, MONTHS } from "@/hooks/useSalaryCosts";
 import { MasterData } from "@/services/masterDataService";
 import { useTableFilter } from "@/hooks/useTableFilter";
+import { useState } from "react";
 
 interface SalaryCostsTableProps {
   costs: SalaryCost[];
@@ -40,6 +41,7 @@ export const SalaryCostsTable = ({
   customers
 }: SalaryCostsTableProps) => {
   const currentYear = new Date().getFullYear();
+  const [editingValues, setEditingValues] = useState<Record<string, any>>({});
   
   const { filteredData: tableFilteredCosts, setFilter, getActiveFilters } = useTableFilter(costs);
 
@@ -77,6 +79,37 @@ export const SalaryCostsTable = ({
     });
     
     return filterData;
+  };
+
+  const handleInputChange = (costId: string, field: keyof SalaryCost, value: any) => {
+    setEditingValues(prev => ({
+      ...prev,
+      [`${costId}-${field}`]: value
+    }));
+  };
+
+  const handleInputBlur = (costId: string, field: keyof SalaryCost) => {
+    const key = `${costId}-${field}`;
+    const value = editingValues[key];
+    if (value !== undefined) {
+      updateCost(costId, field, value);
+      setEditingValues(prev => {
+        const newState = { ...prev };
+        delete newState[key];
+        return newState;
+      });
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent, costId: string, field: keyof SalaryCost) => {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      handleInputBlur(costId, field);
+    }
+  };
+
+  const getInputValue = (costId: string, field: keyof SalaryCost, originalValue: any) => {
+    const key = `${costId}-${field}`;
+    return editingValues[key] !== undefined ? editingValues[key] : originalValue;
   };
 
   return (
@@ -174,8 +207,10 @@ export const SalaryCostsTable = ({
                 <TableCell className="border border-gray-300 text-center p-1">{index + 1}</TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Input
-                    value={cost.year.toString()}
-                    onChange={(e) => updateCost(cost.id, 'year', parseInt(e.target.value) || currentYear)}
+                    value={getInputValue(cost.id, 'year', cost.year).toString()}
+                    onChange={(e) => handleInputChange(cost.id, 'year', parseInt(e.target.value) || currentYear)}
+                    onBlur={() => handleInputBlur(cost.id, 'year')}
+                    onKeyDown={(e) => handleInputKeyDown(e, cost.id, 'year')}
                     className="border-0 p-1 h-8 text-center"
                     type="number"
                   />
@@ -213,10 +248,22 @@ export const SalaryCostsTable = ({
                   </Select>
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1 text-right">
-                  <NumberInput value={cost.amount} onChange={(v) => updateCost(cost.id, 'amount', v)} className="border-0 p-1 h-8 text-right" />
+                  <NumberInput 
+                    value={getInputValue(cost.id, 'amount', cost.amount)} 
+                    onChange={(v) => handleInputChange(cost.id, 'amount', v)}
+                    onBlur={() => handleInputBlur(cost.id, 'amount')}
+                    onKeyDown={(e) => handleInputKeyDown(e, cost.id, 'amount')}
+                    className="border-0 p-1 h-8 text-right" 
+                  />
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
-                  <Input value={cost.notes || ''} onChange={(e) => updateCost(cost.id, 'notes', e.target.value)} className="border-0 p-1 h-8" />
+                  <Input 
+                    value={getInputValue(cost.id, 'notes', cost.notes || '')} 
+                    onChange={(e) => handleInputChange(cost.id, 'notes', e.target.value)}
+                    onBlur={() => handleInputBlur(cost.id, 'notes')}
+                    onKeyDown={(e) => handleInputKeyDown(e, cost.id, 'notes')}
+                    className="border-0 p-1 h-8" 
+                  />
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <div className="flex gap-1 justify-center">
