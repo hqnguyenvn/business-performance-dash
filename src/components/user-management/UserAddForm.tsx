@@ -32,13 +32,15 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     }
     setAdding(true);
 
-    // Sử dụng admin API để tạo user với email đã được xác nhận
-    const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
+    // Tạo user thông thường với signUp
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: newEmail,
       password: newPassword,
-      email_confirm: true, // Tự động xác nhận email
-      user_metadata: {
-        full_name: newFullName.trim() || null
+      options: {
+        emailRedirectTo: window.location.origin + "/auth",
+        data: {
+          full_name: newFullName.trim() || null
+        }
       }
     });
 
@@ -59,6 +61,22 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     if (!userId) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } else {
+      // Cập nhật email_confirmed_at trong auth.users để user có thể đăng nhập ngay
+      try {
+        const { error: confirmError } = await supabase.rpc('confirm_user_email', {
+          user_id: userId
+        });
+        
+        if (confirmError) {
+          console.warn("Could not auto-confirm email:", confirmError);
+          toast({
+            title: "Warning", 
+            description: "User created but email confirmation may be required."
+          });
+        }
+      } catch (err) {
+        console.warn("Auto-confirm function not available:", err);
+      }
       // Thêm role cho user
       const { error: roleErr } = await supabase
         .from("user_roles")
