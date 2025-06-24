@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { 
@@ -15,7 +14,7 @@ import {
 import { eq, and, desc, inArray } from "drizzle-orm";
 import express, { type Request, Response, NextFunction } from "express";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   console.log("🔧 Đang đăng ký routes...");
 
   // Health check route
@@ -102,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/companies/:id(\\S+)', async (req, res) => {
+  app.put('/api/companies/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCompanySchema.partial().parse(req.body);
@@ -116,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/companies/:id(\\S+)', async (req, res) => {
+  app.delete('/api/companies/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(companies).where(eq(companies.id, id));
@@ -146,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/customers/:id(\\S+)', async (req, res) => {
+  app.put('/api/customers/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertCustomerSchema.partial().parse(req.body);
@@ -160,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/customers/:id(\\S+)', async (req, res) => {
+  app.delete('/api/customers/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(customers).where(eq(customers.id, id));
@@ -350,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/revenues/:id(\\S+)', async (req, res) => {
+  app.put('/api/revenues/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = insertRevenueSchema.partial().parse(req.body);
@@ -364,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/revenues/:id(\\S+)', async (req, res) => {
+  app.delete('/api/revenues/:id', async (req, res) => {
     try {
       const { id } = req.params;
       await db.delete(revenues).where(eq(revenues.id, id));
@@ -502,13 +501,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add basic error handling middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error('API Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  });
-
-  const httpServer = createServer(app);
-  console.log("✅ Tất cả routes đã được đăng ký, bao gồm: /api/revenues/batch");
-  return httpServer;
+  console.log("✅ All routes registered successfully, including: /api/revenues/batch");
 }
