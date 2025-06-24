@@ -94,6 +94,12 @@ export const useSalaryCostsActions = ({
     const originalCost = salaryCosts.find(c => c.id === id);
     if (!originalCost) return;
     
+    // Optimistic update cho UI
+    const updatedCosts = salaryCosts.map(cost => 
+      cost.id === id ? { ...cost, [field]: value } : cost
+    );
+    setSalaryCosts(updatedCosts);
+    
     const updatedCost = { ...originalCost, [field]: value };
     updateSalaryCostMutation.mutate(updatedCost);
   };
