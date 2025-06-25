@@ -1,5 +1,5 @@
 
-import { Home, DollarSign, Receipt, Users, BarChart3, Settings, TrendingUp, Building, Shield, User } from "lucide-react";
+import { Home, DollarSign, Receipt, Users, BarChart3, Settings, TrendingUp, Building, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -58,11 +58,6 @@ const menuItems = [
     title: "User Management",
     url: "/user-management",
     icon: Shield,
-  },
-  {
-    title: "My Profile",
-    url: "/profile",
-    icon: User,
   },
   {
     title: "Settings",
