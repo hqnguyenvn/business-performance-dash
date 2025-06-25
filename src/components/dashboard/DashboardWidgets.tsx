@@ -59,7 +59,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
                     formatter={(value: any) => [`${formatNumber(value)}M VND`, 'Revenue']}
                     labelFormatter={(label: string) => `Month: ${label}`}
                   />
-                  <Bar dataKey="totalRevenue" fill="#4ade80" />
+                  <Bar dataKey="totalRevenue" fill="#3b82f6" />
                 </BarChart>
               </ResponsiveContainer>
             )}
