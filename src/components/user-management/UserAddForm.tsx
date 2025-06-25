@@ -33,7 +33,6 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     setAdding(true);
 
     try {
-      // Sử dụng client thông thường để tạo user
       console.log("Creating user with standard client...");
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: newEmail,

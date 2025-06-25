@@ -7,9 +7,21 @@ export interface SalaryCost {
   month: number;
   customer_id?: string;
   company_id: string;
+  division_id?: string;
   amount: number;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface SalaryCostInsert {
+  year: number;
+  month: number;
+  customer_id?: string | null;
+  company_id: string | null;
+  division_id?: string | null;
+  amount: number;
+  notes?: string;
 }
 
 export interface SalaryCostFilters {
@@ -60,7 +72,7 @@ export const getSalaryCosts = async (params: SalaryCostSearchParams): Promise<Sa
   };
 };
 
-export const createSalaryCost = async (salaryCost: Omit<SalaryCost, 'id'>): Promise<SalaryCost> => {
+export const createSalaryCost = async (salaryCost: SalaryCostInsert): Promise<SalaryCost> => {
   const { data, error } = await supabase
     .from('salary_costs')
     .insert(salaryCost)
@@ -103,46 +115,26 @@ export const deleteSalaryCost = async (id: string): Promise<void> => {
   }
 };
 
-export const batchCreateSalaryCosts = async (salaryCosts: Omit<SalaryCost, 'id'>[]): Promise<{ success: number; failed: number; errors: any[] }> => {
+export const batchCreateSalaryCosts = async (salaryCosts: SalaryCostInsert[]): Promise<SalaryCost[]> => {
   try {
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: []
-    };
-
     const batchSize = 100;
+    const results: SalaryCost[] = [];
     
     for (let i = 0; i < salaryCosts.length; i += batchSize) {
       const batch = salaryCosts.slice(i, i + batchSize);
       
-      try {
-        const { data, error } = await supabase
-          .from('salary_costs')
-          .insert(batch)
-          .select();
+      const { data, error } = await supabase
+        .from('salary_costs')
+        .insert(batch)
+        .select();
 
-        if (error) {
-          console.error('Batch insert error:', error);
-          results.failed += batch.length;
-          batch.forEach((_, index) => {
-            results.errors.push({
-              index: i + index,
-              error: `Database error: ${error.message}`
-            });
-          });
-        } else {
-          results.success += data?.length || batch.length;
-        }
-      } catch (batchError) {
-        console.error('Batch processing error:', batchError);
-        results.failed += batch.length;
-        batch.forEach((_, index) => {
-          results.errors.push({
-            index: i + index,
-            error: `Batch error: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`
-          });
-        });
+      if (error) {
+        console.error('Batch insert error:', error);
+        throw error;
+      }
+      
+      if (data) {
+        results.push(...data);
       }
     }
 
