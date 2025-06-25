@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseAdmin } from "@/utils/supabaseAdmin";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
@@ -33,89 +32,88 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     }
     setAdding(true);
 
-    // Sử dụng admin client để tạo user
-    console.log("Creating user with admin client...");
-    const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-      email: newEmail,
-      password: newPassword,
-      email_confirm: true, // Tự động xác nhận email
-      user_metadata: {
-        full_name: newFullName.trim() || null,
-        role: newRole
-      }
-    });
+    try {
+      // Sử dụng client thông thường để tạo user
+      console.log("Creating user with standard client...");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: newEmail,
+        password: newPassword,
+        options: {
+          data: {
+            full_name: newFullName.trim() || null,
+            role: newRole
+          }
+        }
+      });
 
-    if (signUpError) {
-      console.error("SignUp Error:", signUpError);
-      toast({
-        title: "Error",
-        description:
-          signUpError.message === "User already registered"
+      if (signUpError) {
+        console.error("SignUp Error:", signUpError);
+        toast({
+          title: "Error",
+          description: signUpError.message === "User already registered"
             ? "User already exists, please use a different email."
             : signUpError.message,
-      });
-      setAdding(false);
-      return;
-    }
-
-    console.log("SignUp Data:", signUpData);
-    let userId: string | undefined = signUpData?.user?.id;
-    console.log("User ID:", userId);
-
-    if (!userId) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } else {
-      // Cập nhật email_confirmed_at trong auth.users để user có thể đăng nhập ngay
-      try {
-        const { error: confirmError } = await supabase.rpc('confirm_user_email', {
-          user_id: userId
         });
-        
-        if (confirmError) {
-          console.warn("Could not auto-confirm email:", confirmError);
-          toast({
-            title: "Warning", 
-            description: "User created but email confirmation may be required."
-          });
-        }
-      } catch (err) {
-        console.warn("Auto-confirm function not available:", err);
-      }
-      // Thêm role cho user
-      const { error: roleErr } = await supabase
-        .from("user_roles")
-        .update({ role: newRole, is_active: true })
-        .eq("user_id", userId);
-      if (roleErr) {
-        toast({ title: "Warning", description: "User created, but failed to update role: " + roleErr.message });
-        setAdding(false);
-        setNewEmail("");
-        setNewPassword("");
-        setNewFullName("");
-        setNewRole("User");
-        onUserAdded();
         return;
       }
-      
-      // Cập nhật full_name vào profiles (nếu có nhập)
-      if (newFullName.trim()) {
-        const { error: profileErr } = await supabase
-          .from("profiles")
-          .update({ full_name: newFullName.trim() })
-          .eq("id", userId);
-        if (profileErr) {
-          toast({ title: "Warning", description: "Failed to set full name: " + profileErr.message });
+
+      console.log("SignUp Data:", signUpData);
+      const userId = signUpData?.user?.id;
+      console.log("User ID:", userId);
+
+      if (userId) {
+        // Thêm role cho user
+        const { error: roleErr } = await supabase
+          .from("user_roles")
+          .upsert({ 
+            user_id: userId,
+            role: newRole,
+            is_active: true 
+          });
+        
+        if (roleErr) {
+          console.error("Role error:", roleErr);
+          toast({ 
+            title: "Warning", 
+            description: "User created, but failed to update role: " + roleErr.message 
+          });
+        }
+        
+        // Cập nhật full_name vào profiles (nếu có nhập)
+        if (newFullName.trim()) {
+          const { error: profileErr } = await supabase
+            .from("profiles")
+            .upsert({ 
+              id: userId,
+              full_name: newFullName.trim() 
+            });
+          
+          if (profileErr) {
+            console.error("Profile error:", profileErr);
+            toast({ 
+              title: "Warning", 
+              description: "Failed to set full name: " + profileErr.message 
+            });
+          }
         }
       }
-    }
 
-    toast({ title: "Success", description: "User created and activated successfully!" });
-    setNewEmail("");
-    setNewPassword("");
-    setNewFullName("");
-    setNewRole("User");
-    setAdding(false);
-    onUserAdded();
+      toast({ title: "Success", description: "User created successfully!" });
+      setNewEmail("");
+      setNewPassword("");
+      setNewFullName("");
+      setNewRole("User");
+      onUserAdded();
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
