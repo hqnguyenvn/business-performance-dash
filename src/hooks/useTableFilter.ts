@@ -8,8 +8,8 @@ export interface FilterState {
 export const useTableFilter = <T extends Record<string, any>>(data: T[]) => {
   const [filters, setFilters] = useState<FilterState>({});
 
-  // Reset filters only when completely new data is loaded (e.g., year/month change)
-  const dataHash = JSON.stringify(data.map(d => d.year + '-' + d.month).sort());
+  // Reset filters only when completely new data is loaded
+  const dataHash = JSON.stringify(data.map(d => d.id).sort());
   useEffect(() => {
     setFilters({});
   }, [dataHash]);
