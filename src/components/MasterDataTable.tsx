@@ -40,6 +40,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     addNewItem,
     deleteId,
     setDeleteId,
+    setIsEditing,
   } = useMasterDataTableLogic({
     data,
     setter,
@@ -79,6 +80,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 handleCellEdit={handleCellEdit}
                 deleteItem={deleteItem}
                 addRowBelow={addRowBelow}
+                setIsEditing={setIsEditing}
               />
             </TableBody>
           </Table>

@@ -32,6 +32,7 @@ interface MasterDataTableBodyProps {
   handleCellEdit: (id: string, field: keyof MasterData, value: string) => void;
   deleteItem: (id: string) => void;
   addRowBelow: (index: number) => void;
+  setIsEditing: (editing: boolean) => void;
 }
 
 const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
@@ -43,6 +44,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   handleCellEdit,
   deleteItem,
   addRowBelow,
+  setIsEditing,
 }) => {
   const [editingValues, setEditingValues] = React.useState<Record<string, any>>({});
 
@@ -51,7 +53,12 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
     setEditingValues(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleInputFocus = () => {
+    setIsEditing(true);
+  };
+
   const handleInputBlur = (id: string, field: keyof MasterData) => {
+    setIsEditing(false);
     const key = `${id}-${field}`;
     const value = editingValues[key];
     if (value !== undefined) {
@@ -67,12 +74,16 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent, id: string, field: keyof MasterData) => {
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
+      setIsEditing(false);
       handleInputBlur(id, field);
       // Focus next input if needed
       const currentElement = e.target as HTMLElement;
       const nextElement = currentElement.closest('td')?.nextElementSibling?.querySelector('input, select') as HTMLElement;
       if (nextElement) {
-        nextElement.focus();
+        setTimeout(() => {
+          nextElement.focus();
+          setIsEditing(true);
+        }, 0);
       }
     }
   };
@@ -93,6 +104,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
                 className="border-0 p-1 h-8 w-full"
                 value={getInputValue(item, 'company_id')}
                 onChange={(e) => handleInputChange(item.id, 'company_id', e.target.value)}
+                onFocus={handleInputFocus}
                 onBlur={() => handleInputBlur(item.id, 'company_id')}
                 onKeyDown={(e) => handleKeyDown(e, item.id, 'company_id')}
               >
@@ -111,6 +123,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
                 className="border-0 p-1 h-8 w-full"
                 value={getInputValue(item, 'customer_id')}
                 onChange={(e) => handleInputChange(item.id, 'customer_id', e.target.value)}
+                onFocus={handleInputFocus}
                 onBlur={() => handleInputBlur(item.id, 'customer_id')}
                 onKeyDown={(e) => handleKeyDown(e, item.id, 'customer_id')}
               >
@@ -128,6 +141,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
               className="border-0 p-1 h-8 w-full"
               value={getInputValue(item, 'code')}
               onChange={(e) => handleInputChange(item.id, 'code', e.target.value)}
+              onFocus={handleInputFocus}
               onBlur={() => handleInputBlur(item.id, 'code')}
               onKeyDown={(e) => handleKeyDown(e, item.id, 'code')}
             />
@@ -137,6 +151,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
               className="border-0 p-1 h-8 w-full"
               value={getInputValue(item, 'name')}
               onChange={(e) => handleInputChange(item.id, 'name', e.target.value)}
+              onFocus={handleInputFocus}
               onBlur={() => handleInputBlur(item.id, 'name')}
               onKeyDown={(e) => handleKeyDown(e, item.id, 'name')}
             />
@@ -146,6 +161,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
               className="border-0 p-1 h-8 w-full"
               value={getInputValue(item, 'description')}
               onChange={(e) => handleInputChange(item.id, 'description', e.target.value)}
+              onFocus={handleInputFocus}
               onBlur={() => handleInputBlur(item.id, 'description')}
               onKeyDown={(e) => handleKeyDown(e, item.id, 'description')}
             />

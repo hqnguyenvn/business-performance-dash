@@ -58,10 +58,13 @@ export const useMasterDataTableLogic = ({
   service
 }: MasterDataTableLogicProps) => {
   const { toast } = useToast();
+  
+  // State để track editing process
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Áp dụng sort trước khi lọc nếu có cột Customer, nhưng không sort khi đang có record tạm thời
+  // Áp dụng sort trước khi lọc nếu có cột Customer, nhưng không sort khi đang có record tạm thời hoặc đang editing
   const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
-  const sortedData = showCustomerColumn && customers?.length && !hasTempRecord
+  const sortedData = showCustomerColumn && customers?.length && !hasTempRecord && !isEditing
     ? sortByCustomerThenCode(data, customers)
     : data;
 
@@ -180,5 +183,6 @@ export const useMasterDataTableLogic = ({
     addNewItem,
     deleteItem,
     addRowBelow,
+    setIsEditing,
   };
 };
