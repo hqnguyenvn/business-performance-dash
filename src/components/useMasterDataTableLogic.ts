@@ -54,37 +54,22 @@ export const useMasterDataTableLogic = ({
   // State để track editing process
   const [isEditing, setIsEditing] = useState(false);
 
-  // State to freeze sorting
-  const [freezeSorting, setFreezeSorting] = useState(false);
-
   // Tính toán sortedData - chỉ sort khi không có temp record và không đang edit
   const sortedData = useMemo(() => {
     const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
 
-    console.log("=== SORTING DEBUG ===");
-    console.log("Data items:", data.map(d => ({ id: d.id, code: d.code, name: d.name })));
-    console.log("Has temp record:", hasTempRecord);
-    console.log("Is editing:", isEditing);
-    console.log("Show customer column:", showCustomerColumn);
-    console.log("Customers length:", customers?.length);
-
     // KHÔNG SORT nếu có temp record hoặc đang editing
-    if (hasTempRecord || isEditing || freezeSorting) {
-      console.log(">>> SKIPPING SORT - keeping original order");
+    if (hasTempRecord || isEditing) {
       return [...data]; // Return new array reference to avoid mutation
     }
 
     // Chỉ sort khi có cột Customer và có dữ liệu customers
     if (showCustomerColumn && customers?.length > 0) {
-      console.log(">>> APPLYING SORT by customer then code");
-      const sorted = sortByCustomerThenCode(data, customers);
-      console.log("Sorted result:", sorted.map(d => ({ id: d.id, code: d.code, name: d.name })));
-      return sorted;
+      return sortByCustomerThenCode(data, customers);
     }
 
-    console.log(">>> NO SORT CONDITIONS MET - keeping original order");
     return [...data]; // Return new array reference to avoid mutation
-  }, [data, isEditing, showCustomerColumn, customers, freezeSorting]);
+  }, [data, isEditing, showCustomerColumn, customers]);
 
   // Table filter
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(sortedData);
@@ -140,9 +125,6 @@ export const useMasterDataTableLogic = ({
 
   // Tạo row mới ở đầu danh sách
   const addNewItem = useCallback(() => {
-    // Freeze sorting để giữ nguyên vị trí
-    setFreezeSorting(true);
-
     const newItem: MasterData = {
       id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
       code: "",
@@ -246,8 +228,6 @@ export const useMasterDataTableLogic = ({
     } finally {
       // setLoading(false); // Assuming setLoading is defined elsewhere
       setIsEditing(false);
-       // Unfreeze sorting sau khi save xong
-       setFreezeSorting(false);
     }
   }, [service, setter, toast, setIsEditing]);
 
@@ -257,8 +237,6 @@ export const useMasterDataTableLogic = ({
       setter(prev => prev.filter(prevItem => prevItem.id !== item.id));
     }
     setIsEditing(false);
-     // Unfreeze sorting khi cancel
-     setFreezeSorting(false);
   }, [setter, setIsEditing]);
 
   return {
@@ -272,6 +250,5 @@ export const useMasterDataTableLogic = ({
     deleteItem,
     addRowBelow,
     setIsEditing,
-    freezeSorting,
   };
 };
