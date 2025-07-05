@@ -54,20 +54,32 @@ export const useMasterDataTableLogic = ({
   // State để track editing process
   const [isEditing, setIsEditing] = useState(false);
 
-  // Tính toán sortedData với useMemo để tránh re-render không cần thiết
+  // Tính toán sortedData - chỉ sort khi không có temp record và không đang edit
   const sortedData = useMemo(() => {
     const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
     
-    // Nếu đang editing hoặc có temp record, không sort để giữ nguyên vị trí
-    if (isEditing || hasTempRecord) {
+    console.log("=== SORTING DEBUG ===");
+    console.log("Data items:", data.map(d => ({ id: d.id, code: d.code, name: d.name })));
+    console.log("Has temp record:", hasTempRecord);
+    console.log("Is editing:", isEditing);
+    console.log("Show customer column:", showCustomerColumn);
+    console.log("Customers length:", customers?.length);
+    
+    // KHÔNG SORT nếu có temp record hoặc đang editing
+    if (hasTempRecord || isEditing) {
+      console.log(">>> SKIPPING SORT - keeping original order");
       return data;
     }
     
-    // Sort theo Customer nếu có cột Customer
-    if (showCustomerColumn && customers?.length) {
-      return sortByCustomerThenCode(data, customers);
+    // Chỉ sort khi có cột Customer và có dữ liệu customers
+    if (showCustomerColumn && customers?.length > 0) {
+      console.log(">>> APPLYING SORT by customer then code");
+      const sorted = sortByCustomerThenCode(data, customers);
+      console.log("Sorted result:", sorted.map(d => ({ id: d.id, code: d.code, name: d.name })));
+      return sorted;
     }
     
+    console.log(">>> NO SORT CONDITIONS MET - keeping original order");
     return data;
   }, [data, isEditing, showCustomerColumn, customers]);
 
