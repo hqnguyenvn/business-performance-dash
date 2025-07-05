@@ -58,16 +58,28 @@ export const useMasterDataTableLogic = ({
   const sortedData = useMemo(() => {
     const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
 
+    console.log("=== SORTING DEBUG ===");
+    console.log("Data items:", data.map(d => ({ id: d.id, code: d.code, name: d.name })));
+    console.log("Has temp record:", hasTempRecord);
+    console.log("Is editing:", isEditing);
+    console.log("Show customer column:", showCustomerColumn);
+    console.log("Customers length:", customers?.length);
+
     // KHÔNG SORT nếu có temp record hoặc đang editing
     if (hasTempRecord || isEditing) {
+      console.log(">>> SKIPPING SORT - keeping original order");
       return [...data]; // Return new array reference to avoid mutation
     }
 
     // Chỉ sort khi có cột Customer và có dữ liệu customers
     if (showCustomerColumn && customers?.length > 0) {
-      return sortByCustomerThenCode(data, customers);
+      console.log(">>> APPLYING SORT by customer then code");
+      const sorted = sortByCustomerThenCode(data, customers);
+      console.log("Sorted result:", sorted.map(d => ({ id: d.id, code: d.code, name: d.name })));
+      return sorted;
     }
 
+    console.log(">>> SKIPPING SORT - keeping original order");
     return [...data]; // Return new array reference to avoid mutation
   }, [data, isEditing, showCustomerColumn, customers]);
 
@@ -117,9 +129,12 @@ export const useMasterDataTableLogic = ({
         setter(prev => prev.map(item =>
           item.id === id ? { ...item, [field]: oldItem[field] } : item
         ));
+      } finally {
+        // Reset editing state sau khi hoàn thành
+        setIsEditing(false);
       }
     },
-    [data, service, setter, toast]
+    [data, service, setter, toast, setIsEditing]
   );
 
   // Tạo row mới ở đầu danh sách
