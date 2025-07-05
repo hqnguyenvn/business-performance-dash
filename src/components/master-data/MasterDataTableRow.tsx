@@ -102,7 +102,7 @@ export const MasterDataTableRow: React.FC<MasterDataTableRowProps> = ({
         />
       </TableCell>
 
-      <TableCell className="border border-gray-300">
+      <TableCell className="border border-gray-300 p-1 text-center">
         <RowActions
           onDelete={() => deleteItem(item.id)}
           onAddBelow={() => addRowBelow(index)}
