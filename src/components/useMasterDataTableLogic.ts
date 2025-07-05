@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { MasterData } from "@/hooks/useMasterDataEdit";
@@ -54,11 +54,22 @@ export const useMasterDataTableLogic = ({
   // State để track editing process
   const [isEditing, setIsEditing] = useState(false);
 
-  // Áp dụng sort trước khi lọc nếu có cột Customer, nhưng không sort khi đang có record tạm thời hoặc đang editing
-  const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
-  const sortedData = showCustomerColumn && customers?.length && !hasTempRecord && !isEditing
-    ? sortByCustomerThenCode(data, customers)
-    : data;
+  // Tính toán sortedData với useMemo để tránh re-render không cần thiết
+  const sortedData = useMemo(() => {
+    const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
+    
+    // Nếu đang editing hoặc có temp record, không sort để giữ nguyên vị trí
+    if (isEditing || hasTempRecord) {
+      return data;
+    }
+    
+    // Sort theo Customer nếu có cột Customer
+    if (showCustomerColumn && customers?.length) {
+      return sortByCustomerThenCode(data, customers);
+    }
+    
+    return data;
+  }, [data, isEditing, showCustomerColumn, customers]);
 
   // Table filter
   const { filteredData, setFilter, getActiveFilters } = useTableFilter(sortedData);
