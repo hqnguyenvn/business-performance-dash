@@ -178,35 +178,35 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
               >
                 <Plus className="h-4 w-4" />
               </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-6 w-6"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this item? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteItem(item.id)}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+               <AlertDialog>
+                 <AlertDialogTrigger asChild>
+                   <Button
+                     variant="destructive"
+                     size="icon"
+                     className="h-6 w-6"
+                     title="Delete"
+                   >
+                     <Trash2 className="h-4 w-4" />
+                   </Button>
+                 </AlertDialogTrigger>
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       Are you sure you want to delete this item? This action cannot be undone.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                     <AlertDialogAction
+                       onClick={() => deleteItem(item.id)}
+                       className="bg-red-600 hover:bg-red-700"
+                     >
+                       Delete
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
             </div>
           </td>
         </tr>
