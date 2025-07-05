@@ -194,8 +194,7 @@ export class ProjectsService {
   async getAll() {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
-      .order('code');
+      .select('*');
     
     if (error) {
       console.error('Error fetching projects:', error);
