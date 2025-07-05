@@ -13,6 +13,7 @@ interface MasterDataTableBodyProps {
   deleteItem: (id: string) => void;
   addRowBelow: (index: number) => void;
   setIsEditing: (editing: boolean) => void;
+  saveTempRecord: (tempRecord: MasterData) => Promise<boolean>;
 }
 
 const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
@@ -25,6 +26,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   deleteItem,
   addRowBelow,
   setIsEditing,
+  saveTempRecord,
 }) => {
   return (
     <>
@@ -41,6 +43,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
           deleteItem={deleteItem}
           addRowBelow={addRowBelow}
           setIsEditing={setIsEditing}
+          saveTempRecord={saveTempRecord}
         />
       ))}
     </>

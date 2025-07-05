@@ -82,39 +82,38 @@ export const useMasterDataTableLogic = ({
     async (id: string, field: keyof MasterData, value: string) => {
       const oldItem: MasterData | undefined = data.find(item => item.id === id);
       if (!oldItem) return;
+
+      // Chuẩn hóa value: convert empty string thành null cho UUID fields
+      const normalizedValue = (field.endsWith('_id') && value === '') ? null : value;
+
       // Update UI ngay lập tức
       setter(prev => prev.map(item => 
-        item.id === id ? { ...item, [field]: value } : item
+        item.id === id ? { ...item, [field]: normalizedValue } : item
       ));
 
       try {
         const isTemporaryId = id.startsWith("tmp-"); // id tạm
         if (!isTemporaryId) {
-          await service.update(id, { [field]: value });
+          // Update existing record
+          const updateData = { [field]: normalizedValue };
+          await service.update(id, updateData);
           toast({
             title: "Saved",
             description: "Data saved successfully.",
           });
         } else {
-          // Nếu là row mới => tạo mới. BỎ trường id ra khỏi payload!
-          const { id: _, ...toCreate } = { ...oldItem, [field]: value };
-          const created = await service.create(toCreate);
-          setter(prev =>
-            prev.map(item =>
-              item.id === id ? created : item
-            )
-          );
-          toast({
-            title: "Created",
-            description: "New item added and saved.",
-          });
+          // Đối với temp record, chỉ update UI, không save ngay
+          // Sẽ save khi user blur khỏi toàn bộ row hoặc nhấn Enter
+          console.log(`Updated temp record field ${field} with value:`, normalizedValue);
         }
       } catch (error) {
+        console.error('Save error:', error);
         toast({
           title: "Error",
           description: "Failed to save data.",
           variant: "destructive"
         });
+        // Revert UI change
         setter(prev => prev.map(item =>
           item.id === id ? { ...item, [field]: oldItem[field] } : item
         ));
@@ -158,6 +157,67 @@ export const useMasterDataTableLogic = ({
       });
     }
   }, [setter, toast, service]);
+
+  // Save temp record to database
+  const saveTempRecord = useCallback(async (tempRecord: MasterData) => {
+    try {
+      // Validate required fields
+      if (!tempRecord.code?.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Code is required",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Prepare data for creation (remove id and convert empty strings to null for UUID fields)
+      const { id: _, ...dataToCreate } = tempRecord;
+      const cleanedData = Object.entries(dataToCreate).reduce((acc, [key, value]) => {
+        // Convert empty strings to null for UUID fields and description
+        if ((key.endsWith('_id') || key === 'description') && value === '') {
+          acc[key] = null;
+        } else {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      console.log('Creating record with data:', cleanedData);
+      
+      const created = await service.create(cleanedData);
+      
+      // Replace temp record with created record
+      setter(prev =>
+        prev.map(item =>
+          item.id === tempRecord.id ? created : item
+        )
+      );
+
+      toast({
+        title: "Created",
+        description: "New item added and saved.",
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Create error:', error);
+      let errorMessage = "Failed to save data.";
+      
+      if (error.code === '23505') {
+        errorMessage = "Code already exists. Please use a different code.";
+      } else if (error.code === '22P02') {
+        errorMessage = "Invalid data format.";
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
+      return false;
+    }
+  }, [service, setter, toast]);
 
   // Thêm row dưới hàng hiện tại
   const addRowBelow = useCallback((index: number) => {
@@ -250,5 +310,6 @@ export const useMasterDataTableLogic = ({
     deleteItem,
     addRowBelow,
     setIsEditing,
+    saveTempRecord,
   };
 };

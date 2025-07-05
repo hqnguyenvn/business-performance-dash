@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -42,6 +41,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     deleteId,
     setDeleteId,
     setIsEditing,
+    saveTempRecord,
   } = useMasterDataTableLogic({
     data,
     setter,
@@ -82,6 +82,7 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
                 deleteItem={deleteItem}
                 addRowBelow={addRowBelow}
                 setIsEditing={setIsEditing}
+                saveTempRecord={saveTempRecord}
               />
             </TableBody>
           </Table>
