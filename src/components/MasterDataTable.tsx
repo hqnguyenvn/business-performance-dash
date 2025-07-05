@@ -66,6 +66,8 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
               data={data}
               setFilter={setFilter}
               getActiveFilters={getActiveFilters}
+              onAddNewItem={addNewItem}
+              title={title}
             />
             <TableBody>
               <MasterDataTableBody

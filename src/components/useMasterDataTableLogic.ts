@@ -59,8 +59,9 @@ export const useMasterDataTableLogic = ({
 }: MasterDataTableLogicProps) => {
   const { toast } = useToast();
 
-  // Áp dụng sort trước khi lọc nếu có cột Customer
-  const sortedData = showCustomerColumn && customers?.length
+  // Áp dụng sort trước khi lọc nếu có cột Customer, nhưng không sort khi đang có record tạm thời
+  const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
+  const sortedData = showCustomerColumn && customers?.length && !hasTempRecord
     ? sortByCustomerThenCode(data, customers)
     : data;
 
@@ -116,7 +117,7 @@ export const useMasterDataTableLogic = ({
     [data, service, setter, toast]
   );
 
-  // Tạo row mới
+  // Tạo row mới ở đầu danh sách
   const addNewItem = useCallback(() => {
     const newItem: MasterData = {
       id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
@@ -126,7 +127,7 @@ export const useMasterDataTableLogic = ({
       ...(showCompanyColumn && { company_id: "" }),
       ...(showCustomerColumn && { customer_id: "" }),
     };
-    setter(prev => [...prev, newItem]);
+    setter(prev => [newItem, ...prev]);
   }, [setter, showCompanyColumn, showCustomerColumn]);
 
   // Xóa
