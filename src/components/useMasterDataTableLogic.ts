@@ -68,7 +68,7 @@ export const useMasterDataTableLogic = ({
     // KHÔNG SORT nếu có temp record hoặc đang editing
     if (hasTempRecord || isEditing) {
       console.log(">>> SKIPPING SORT - keeping original order");
-      return data;
+      return [...data]; // Return new array reference to avoid mutation
     }
     
     // Chỉ sort khi có cột Customer và có dữ liệu customers
@@ -80,7 +80,7 @@ export const useMasterDataTableLogic = ({
     }
     
     console.log(">>> NO SORT CONDITIONS MET - keeping original order");
-    return data;
+    return [...data]; // Return new array reference to avoid mutation
   }, [data, isEditing, showCustomerColumn, customers]);
 
   // Table filter
