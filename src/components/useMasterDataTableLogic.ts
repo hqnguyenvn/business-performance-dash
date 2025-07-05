@@ -1,15 +1,7 @@
 import { useCallback, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useTableFilter } from "@/hooks/useTableFilter";
-
-export interface MasterData {
-  id: string;
-  code: string;
-  name: string;
-  description?: string;
-  company_id?: string;
-  customer_id?: string;
-}
+import { MasterData } from "@/hooks/useMasterDataEdit";
 
 export interface MasterDataService {
   create: (item: Omit<MasterData, 'id'>) => Promise<MasterData>;

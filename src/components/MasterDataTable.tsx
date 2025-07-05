@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/table";
 import MasterDataTableHead from "./MasterDataTableHead";
 import MasterDataTableBody from "./MasterDataTableBody";
-import { useMasterDataTableLogic, MasterData, MasterDataService } from "./useMasterDataTableLogic";
+import { useMasterDataTableLogic, MasterDataService } from "./useMasterDataTableLogic";
+import { MasterData } from "@/hooks/useMasterDataEdit";
 
 interface MasterDataTableProps {
   data: MasterData[];
