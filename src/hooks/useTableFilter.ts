@@ -9,7 +9,7 @@ export const useTableFilter = <T extends Record<string, any>>(data: T[]) => {
   const [filters, setFilters] = useState<FilterState>({});
 
   // Reset filters only when completely new data is loaded
-  const dataHash = JSON.stringify(data.map(d => d.id).sort());
+  const dataHash = JSON.stringify(data.map(d => d.id));
   useEffect(() => {
     setFilters({});
   }, [dataHash]);
