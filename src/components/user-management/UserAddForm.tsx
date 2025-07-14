@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,32 +33,48 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     setAdding(true);
 
     try {
-      console.log("Creating user with Admin function...");
-      
-      const result = await createUserWithAdmin({
-        email: newEmail,
-        password: newPassword,
-        full_name: newFullName.trim() || null,
-        role: newRole
+      // For now, show a message that admin user creation needs server-side setup
+      toast({
+        title: "Feature Not Available",
+        description: "User creation requires server-side admin setup. Please contact your system administrator.",
+        variant: "destructive",
       });
 
-      console.log("User created successfully:", result);
-      const userId = result.user?.id;
+      return;
 
-      
+      // When server-side is properly set up, uncomment below:
+      /*
+      await createUserWithAdmin({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.fullName,
+        role: formData.role,
+      });
 
-      toast({ title: "Success", description: "User created successfully!" });
-      setNewEmail("");
-      setNewPassword("");
-      setNewFullName("");
-      setNewRole("User");
-      onUserAdded();
-    } catch (error) {
-      console.error("Unexpected error:", error);
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+
+      // Reset form
+      setFormData({
+        email: "",
+        password: "",
+        fullName: "",
+        role: "User",
+      });
+
+      // Refresh user list if callback provided
+      if (onUserAdded) {
+        onUserAdded();
+      }
+      */
+    } catch (error: any) {
+      console.error("Error creating user:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
+        description: error.message || "Failed to create user",
+        variant: "destructive",
       });
     } finally {
       setAdding(false);
