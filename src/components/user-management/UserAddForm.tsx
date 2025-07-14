@@ -33,23 +33,25 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     setAdding(true);
 
     try {
-      // For now, show a message that admin user creation needs server-side setup
-      toast({
-        title: "Feature Not Available",
-        description: "User creation requires server-side admin setup. Please contact your system administrator.",
-        variant: "destructive",
+      // Gọi API server-side để tạo user
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newEmail,
+          password: newPassword,
+          full_name: newFullName,
+          role: newRole,
+        }),
       });
 
-      return;
+      const result = await response.json();
 
-      // When server-side is properly set up, uncomment below:
-      /*
-      await createUserWithAdmin({
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.fullName,
-        role: formData.role,
-      });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create user');
+      }
 
       toast({
         title: "Success",
@@ -57,18 +59,13 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
       });
 
       // Reset form
-      setFormData({
-        email: "",
-        password: "",
-        fullName: "",
-        role: "User",
-      });
+      setNewEmail("");
+      setNewPassword("");
+      setNewFullName("");
+      setNewRole("User");
 
-      // Refresh user list if callback provided
-      if (onUserAdded) {
-        onUserAdded();
-      }
-      */
+      // Refresh user list
+      onUserAdded();
     } catch (error: any) {
       console.error("Error creating user:", error);
       toast({
