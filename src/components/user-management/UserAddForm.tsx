@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { createUserWithAdmin } from "@/utils/supabaseAdmin";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -33,69 +34,19 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     setAdding(true);
 
     try {
-      console.log("Creating user with standard client...");
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      console.log("Creating user with Admin function...");
+      
+      const result = await createUserWithAdmin({
         email: newEmail,
         password: newPassword,
-        options: {
-          data: {
-            full_name: newFullName.trim() || null,
-            role: newRole
-          }
-        }
+        full_name: newFullName.trim() || null,
+        role: newRole
       });
 
-      if (signUpError) {
-        console.error("SignUp Error:", signUpError);
-        toast({
-          title: "Error",
-          description: signUpError.message === "User already registered"
-            ? "User already exists, please use a different email."
-            : signUpError.message,
-        });
-        return;
-      }
+      console.log("User created successfully:", result);
+      const userId = result.user?.id;
 
-      console.log("SignUp Data:", signUpData);
-      const userId = signUpData?.user?.id;
-      console.log("User ID:", userId);
-
-      if (userId) {
-        // Thêm role cho user
-        const { error: roleErr } = await supabase
-          .from("user_roles")
-          .upsert({ 
-            user_id: userId,
-            role: newRole,
-            is_active: true 
-          });
-        
-        if (roleErr) {
-          console.error("Role error:", roleErr);
-          toast({ 
-            title: "Warning", 
-            description: "User created, but failed to update role: " + roleErr.message 
-          });
-        }
-        
-        // Cập nhật full_name vào profiles (nếu có nhập)
-        if (newFullName.trim()) {
-          const { error: profileErr } = await supabase
-            .from("profiles")
-            .upsert({ 
-              id: userId,
-              full_name: newFullName.trim() 
-            });
-          
-          if (profileErr) {
-            console.error("Profile error:", profileErr);
-            toast({ 
-              title: "Warning", 
-              description: "Failed to set full name: " + profileErr.message 
-            });
-          }
-        }
-      }
+      
 
       toast({ title: "Success", description: "User created successfully!" });
       setNewEmail("");
