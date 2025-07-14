@@ -33,25 +33,13 @@ export function UserAddForm({ onUserAdded, roleOptions }: UserAddFormProps) {
     setAdding(true);
 
     try {
-      // Gọi API server-side để tạo user
-      const response = await fetch('/api/create-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: newEmail,
-          password: newPassword,
-          full_name: newFullName,
-          role: newRole,
-        }),
+      // Tạo user trực tiếp với admin client
+      await createUserWithAdmin({
+        email: newEmail,
+        password: newPassword,
+        full_name: newFullName,
+        role: newRole,
       });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create user');
-      }
 
       toast({
         title: "Success",
