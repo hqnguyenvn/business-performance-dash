@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { Input } from "@/components/ui/input";
-import { Edit, X, Trash2 } from "lucide-react";
+import { Edit, X, Trash2, KeyRound } from "lucide-react";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -30,6 +30,7 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<UserRowType>>({});
   const [saving, setSaving] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const handleEdit = () => {
     setEditing(true);
@@ -97,6 +98,27 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
     setTimeout(() => {
       onChange();
     }, 300);
+  };
+
+  const handleResetPassword = async () => {
+    if (!user.email) {
+      toast({ title: "Error", description: "User does not have an email address." });
+      return;
+    }
+    if (!window.confirm(`Send password reset email to ${user.email}?`)) return;
+    setResettingPassword(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    setResettingPassword(false);
+    if (error) {
+      toast({ title: "Error", description: error.message });
+      return;
+    }
+    toast({
+      title: "Success",
+      description: `Password reset email has been sent to ${user.email}.`,
+    });
   };
 
   const handleDelete = async () => {
@@ -186,10 +208,13 @@ export function UserRow({ user, roleOptions, onChange, index }: UserRowProps) {
           </div>
         ) : (
           <div className="flex gap-1">
-            <Button size="sm" variant="outline" onClick={handleEdit} className="h-6 w-6 p-0">
+            <Button size="sm" variant="outline" onClick={handleEdit} className="h-6 w-6 p-0" title="Edit user">
               <Edit className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" onClick={handleDelete} className="h-6 w-6 p-0 text-red-600 hover:text-red-700">
+            <Button size="sm" variant="outline" onClick={handleResetPassword} disabled={resettingPassword} className="h-6 w-6 p-0 text-blue-600 hover:text-blue-700" title="Reset password">
+              <KeyRound className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleDelete} className="h-6 w-6 p-0 text-red-600 hover:text-red-700" title="Delete user">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
