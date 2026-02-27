@@ -3,13 +3,14 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Parameter, parameterService } from "@/services/parameterService";
 import { ParameterRow } from "./ParameterRow";
 import { useParameterEdit } from "./useParameterEdit";
 import { useParameterFilter } from "./useParameterFilter";
 import { TableFilter } from "@/components/ui/table-filter";
+import { exportToCsv } from "@/utils/exportCsv";
 
 interface ParameterTableProps {
   data: Parameter[];
@@ -134,10 +135,23 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Parameter List</CardTitle>
-          <Button onClick={addNewRow} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Parameter
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => {
+              exportToCsv(data, "Parameters", [
+                { key: "year", header: "Year" },
+                { key: "code", header: "Code" },
+                { key: "value", header: "Value" },
+                { key: "descriptions", header: "Descriptions" },
+              ]);
+            }} className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={addNewRow} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Parameter
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

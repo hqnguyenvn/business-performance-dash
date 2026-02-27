@@ -1,10 +1,13 @@
 
 import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import ExchangeRateTableHead from "./ExchangeRateTableHead";
 import ExchangeRateTableBody from "./ExchangeRateTableBody";
+import { exportToCsv } from "@/utils/exportCsv";
 
 interface MasterData {
   id: string;
@@ -133,11 +136,24 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   // Nhấn Enter/Escape ngoài cell: lưu/huỷ
   const handleBlurCell = useCallback(() => setEditingCell(null), []);
 
+  const handleExport = () => {
+    exportToCsv(exchangeRates, "Exchange_Rates", [
+      { key: "year", header: "Year" },
+      { key: "month", header: "Month" },
+      { key: "currencyID", header: "Currency" },
+      { key: "exchangeRate", header: "Exchange Rate" },
+    ]);
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Exchange Rate List</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
         </div>
       </CardHeader>
       <CardContent>

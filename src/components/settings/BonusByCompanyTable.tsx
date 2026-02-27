@@ -8,13 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
 import { BonusByCompany, bonusByCompanyService } from "@/services/bonusByCompanyService";
 import { useBonusByCompanyFilter } from "./useBonusByCompanyFilter";
 import BonusByCompanyRow from "./BonusByCompanyRow";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/utils/exportCsv";
 
 interface BonusByCompanyTableProps {
   data: BonusByCompany[];
@@ -136,10 +137,29 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
 
   const filteredData = filterRows(data);
 
+  const handleExport = () => {
+    const exportData = data.map((row) => ({
+      ...row,
+      company_name: companies.find((c) => c.id === row.company_id)?.name || "",
+    }));
+    exportToCsv(exportData, "Bonus_by_Company", [
+      { key: "year", header: "Year" },
+      { key: "company_name", header: "Company" },
+      { key: "bn_bmm", header: "BN_BMM" },
+      { key: "notes", header: "Notes" },
+    ]);
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Bonus by Company</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Bonus by Company</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

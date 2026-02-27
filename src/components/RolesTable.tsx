@@ -9,13 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { roleService } from "@/services/roleService";
 import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { useState, useCallback, useRef } from "react";
+import { exportToCsv } from "@/utils/exportCsv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface RolesTableProps {
@@ -277,10 +278,23 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
     return editingCell?.id === id && editingCell.field === field;
   };
 
+  const handleExport = () => {
+    exportToCsv(data, "Roles", [
+      { key: "code", header: "Code" },
+      { key: "description", header: "Description" },
+    ]);
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Roles</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Roles</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

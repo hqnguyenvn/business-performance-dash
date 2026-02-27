@@ -8,13 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
 import { BonusByDivision, bonusByDivisionService } from "@/services/bonusByDivisionService";
 import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
 import BonusByDivisionRow from "./BonusByDivisionRow";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/utils/exportCsv";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -136,10 +137,29 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 
   const filteredData = filterRows(data);
 
+  const handleExport = () => {
+    const exportData = data.map((row) => ({
+      ...row,
+      division_name: divisions.find((d) => d.id === row.division_id)?.name || "",
+    }));
+    exportToCsv(exportData, "Bonus_by_Division", [
+      { key: "year", header: "Year" },
+      { key: "division_name", header: "Division" },
+      { key: "bn_bmm", header: "BN_BMM" },
+      { key: "notes", header: "Notes" },
+    ]);
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
-        <CardTitle>Bonus by Division</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Bonus by Division</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

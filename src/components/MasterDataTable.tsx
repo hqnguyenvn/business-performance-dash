@@ -5,10 +5,13 @@ import {
   Table,
   TableBody
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import MasterDataTableHead from "./MasterDataTableHead";
 import MasterDataTableBody from "./MasterDataTableBody";
 import { useMasterDataTableLogic, MasterDataService } from "./useMasterDataTableLogic";
 import { MasterData } from "@/hooks/useMasterDataEdit";
+import { exportToCsv } from "@/utils/exportCsv";
 
 interface MasterDataTableProps {
   data: MasterData[];
@@ -52,11 +55,40 @@ const MasterDataTable: React.FC<MasterDataTableProps> = ({
     service,
   });
 
+  const handleExport = () => {
+    const columns: { key: string; header: string }[] = [
+      { key: "code", header: "Code" },
+      { key: "name", header: "Name" },
+      { key: "description", header: "Description" },
+    ];
+    if (showCompanyColumn) {
+      columns.push({ key: "company_name", header: "Company" });
+    }
+    if (showCustomerColumn) {
+      columns.push({ key: "customer_name", header: "Customer" });
+    }
+    const exportData = data.map((item) => ({
+      ...item,
+      company_name: showCompanyColumn
+        ? companies.find((c) => c.id === item.company_id)?.name || ""
+        : undefined,
+      customer_name: showCustomerColumn
+        ? customers.find((c) => c.id === item.customer_id)?.name || ""
+        : undefined,
+    }));
+    const filename = title.replace(/\s+/g, "_");
+    exportToCsv(exportData, filename, columns);
+  };
+
   return (
     <Card className="bg-white">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{title}</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
