@@ -47,10 +47,10 @@ const SalaryCosts = () => {
     importFromCSV,
     cloneSalaryCosts,
     confirmDelete,
-    // Pagination
     currentPage,
     setCurrentPage,
     pageSize,
+    handlePageSizeChange,
     totalRecords,
     totalPages,
   } = useSalaryCosts();
@@ -64,9 +64,9 @@ const SalaryCosts = () => {
     );
   }
 
-  // Calculate pagination values
-  const startIndex = (currentPage - 1) * pageSize + 1;
-  const endIndex = Math.min(currentPage * pageSize, totalRecords);
+  const effectivePageSize = typeof pageSize === 'number' ? pageSize : totalRecords;
+  const startIndex = totalRecords > 0 ? (currentPage - 1) * effectivePageSize + 1 : 0;
+  const endIndex = pageSize === 'all' ? totalRecords : Math.min(currentPage * effectivePageSize, totalRecords);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,6 +89,17 @@ const SalaryCosts = () => {
                 Cost Per Customer ({totalRecords} total records)
               </CardTitle>
               <div className="flex items-center gap-2">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  totalItems={totalRecords}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange}
+                  position="top"
+                />
                  <Button variant="outline" onClick={importFromCSV}>
                   <Import className="h-4 w-4 mr-2" />
                   Import CSV
@@ -118,18 +129,16 @@ const SalaryCosts = () => {
               customers={customers}
             />
             
-            {totalPages > 1 && (
-              <div className="mt-4">
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                  totalItems={totalRecords}
-                  startIndex={startIndex}
-                  endIndex={endIndex}
-                />
-              </div>
-            )}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalItems={totalRecords}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              pageSize={pageSize}
+              position="bottom"
+            />
           </CardContent>
         </Card>
       </div>

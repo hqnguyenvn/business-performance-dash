@@ -29,6 +29,7 @@ export const useSalaryCosts = () => {
     currentPage,
     setCurrentPage,
     pageSize,
+    handlePageSizeChange,
     totalRecords,
     totalPages,
   } = useSalaryCostsState();
@@ -101,6 +102,7 @@ export const useSalaryCosts = () => {
     currentPage,
     setCurrentPage,
     pageSize,
+    handlePageSizeChange,
     totalRecords,
     totalPages,
   };

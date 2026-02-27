@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, Loader2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useDivisionReportData, MONTHS, YEARS, type GroupedDivisionData } from "@/hooks/useDivisionReportData";
+import PaginationControls from "@/components/PaginationControls";
 
 const DivisionReport = () => {
   const { toast } = useToast();
@@ -18,6 +19,30 @@ const DivisionReport = () => {
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1));
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
+  const [filteredCount, setFilteredCount] = useState(0);
+
+  const handleFilteredCountChange = useCallback((count: number) => {
+    setFilteredCount(count);
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePageSizeChange = useCallback((newPageSize: number | 'all') => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  }, []);
+
+  const totalItems = filteredCount;
+  const effectivePageSize = typeof pageSize === 'number' ? pageSize : totalItems;
+  const totalPagesDivision = pageSize === 'all' ? 1 : Math.ceil(totalItems / (effectivePageSize || 1));
+  const startIndex = totalItems > 0 ? (currentPage - 1) * effectivePageSize + 1 : 0;
+  const endIndex = pageSize === 'all' ? totalItems : Math.min(currentPage * effectivePageSize, totalItems);
 
   // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
@@ -90,15 +115,28 @@ const DivisionReport = () => {
                 Division Report
                 {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               </CardTitle>
-              <ReportFilter
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-                selectedMonths={selectedMonths}
-                setSelectedMonths={setSelectedMonths}
-                months={MONTHS}
-                years={YEARS}
-                onExport={exportToCSV}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPagesDivision}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange}
+                  position="top"
+                />
+                <ReportFilter
+                  selectedYear={selectedYear}
+                  setSelectedYear={setSelectedYear}
+                  selectedMonths={selectedMonths}
+                  setSelectedMonths={setSelectedMonths}
+                  months={MONTHS}
+                  years={YEARS}
+                  onExport={exportToCSV}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -112,18 +150,30 @@ const DivisionReport = () => {
                 data={mappedData as any}
                 loading={loading}
                 paginatedData={mappedData as any}
-                currentPage={1}
-                totalPages={1}
-                goToPage={() => {}}
-                goToNextPage={() => {}}
-                goToPreviousPage={() => {}}
-                totalItems={mappedData.length}
-                startIndex={1}
-                endIndex={mappedData.length}
+                currentPage={currentPage}
+                totalPages={totalPagesDivision}
+                goToPage={handlePageChange}
+                goToNextPage={() => { if (currentPage < totalPagesDivision) handlePageChange(currentPage + 1); }}
+                goToPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1); }}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
                 bonusRate={0}
                 companyLabel="Division"
+                onFilteredCountChange={handleFilteredCountChange}
               />
             )}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPagesDivision}
+              onPageChange={handlePageChange}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              pageSize={pageSize}
+              position="bottom"
+            />
           </CardContent>
         </Card>
       </div>

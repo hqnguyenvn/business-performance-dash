@@ -15,17 +15,15 @@ export const useSalaryCostsState = () => {
   const defaultSelectedMonths = Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1);
   const [selectedMonths, setSelectedMonths] = useState<number[]>(defaultSelectedMonths);
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(25);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
 
-  // Simple filter approach like Cost Management
   const { data: paginatedData, isLoading: isLoadingCosts } = useQuery({
     queryKey: ['salaryCosts', selectedYear, selectedMonths, currentPage, pageSize],
     queryFn: () => getSalaryCosts({
       year: parseInt(selectedYear),
       months: selectedMonths,
-      page: currentPage,
+      page: pageSize === 'all' ? undefined : currentPage,
       pageSize: pageSize
     }),
     enabled: !!selectedYear && selectedMonths.length > 0,
@@ -90,7 +88,11 @@ export const useSalaryCostsState = () => {
     // Pagination data
     currentPage, setCurrentPage,
     pageSize,
+    handlePageSizeChange: (newPageSize: number | 'all') => {
+      setPageSize(newPageSize);
+      setCurrentPage(1);
+    },
     totalRecords: paginatedData?.total || 0,
-    totalPages: Math.ceil((paginatedData?.total || 0) / pageSize)
+    totalPages: pageSize === 'all' ? 1 : Math.ceil((paginatedData?.total || 0) / (typeof pageSize === 'number' ? pageSize : 25))
   };
 };

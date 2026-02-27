@@ -37,6 +37,7 @@ interface ReportTableProps {
   endIndex: number;
   bonusRate: number;
   companyLabel?: string;
+  pageSize?: number | 'all';
   onFilteredDataChange?: (filteredData: any[]) => void;
   onTotalsChange?: (totals: {
     totalRevenue: number;
@@ -46,6 +47,7 @@ interface ReportTableProps {
     totalProfit: number;
     totalProfitPercent: number;
   }) => void;
+  onFilteredCountChange?: (count: number) => void;
 }
 
 // Hàm lấy dữ liệu filter cho từng trường
@@ -75,8 +77,11 @@ export function ReportTable({
   data,
   bonusRate,
   companyLabel,
+  currentPage = 1,
+  pageSize = 'all',
   onFilteredDataChange,
   onTotalsChange,
+  onFilteredCountChange,
 }: ReportTableProps) {
   // Sử dụng useTableFilter để filter cột
   const {
@@ -122,21 +127,28 @@ export function ReportTable({
     };
   }, [filteredData]);
 
-  // Notify parent when filtered data changes
+  const paginatedSlice = useMemo(() => {
+    if (pageSize === 'all') return filteredData;
+    const start = (currentPage - 1) * (typeof pageSize === 'number' ? pageSize : 25);
+    const end = start + (typeof pageSize === 'number' ? pageSize : 25);
+    return filteredData.slice(start, end);
+  }, [filteredData, currentPage, pageSize]);
+
   useEffect(() => {
-    console.log('🔄 ReportTable: filteredData changed, length =', filteredData.length);
     if (onFilteredDataChange) {
       onFilteredDataChange(filteredData);
-      console.log('📤 ReportTable: Called onFilteredDataChange with', filteredData.length, 'items');
     }
   }, [filteredData, onFilteredDataChange]);
 
-  // Notify parent when totals change
   useEffect(() => {
-    console.log('🧮 ReportTable: Totals changed, sending to parent');
+    if (onFilteredCountChange) {
+      onFilteredCountChange(filteredData.length);
+    }
+  }, [filteredData.length, onFilteredCountChange]);
+
+  useEffect(() => {
     if (onTotalsChange) {
       onTotalsChange(totals);
-      console.log('📤 ReportTable: Called onTotalsChange with totals');
     }
   }, [totals, onTotalsChange]);
 
@@ -202,7 +214,7 @@ export function ReportTable({
               </TableCell>
             </TableRow>
           ) : (
-            filteredData.map((data, idx) => {
+            paginatedSlice.map((data, idx) => {
               const salaryCost = data.salaryCost ?? 0;
               const bonusValue = data.bonusValue || 0;
               const overheadCost = data.overheadCost ?? 0;
@@ -211,12 +223,13 @@ export function ReportTable({
               const profit = revenue - totalCost;
               const percentProfit = revenue !== 0 ? (profit / revenue) * 100 : 0;
               const negativeProfit = profit < 0;
+              const rowNumber = pageSize === 'all' ? idx + 1 : (currentPage - 1) * (typeof pageSize === 'number' ? pageSize : 25) + idx + 1;
               return (
                 <TableRow
                   key={`${data.year}_${data.month}_${data.customer_id ?? ""}_${data.company_id ?? ""}`}
                   className="hover:bg-gray-50"
                 >
-                  <TableCell className="border border-gray-300 p-2 text-center">{idx + 1}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-center">{rowNumber}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</TableCell>
                   <TableCell className="border border-gray-300 p-2">{data.company_code}</TableCell>
                   {!isCompanyReport && (

@@ -31,7 +31,7 @@ export interface SalaryCostFilters {
 
 export interface SalaryCostSearchParams extends SalaryCostFilters {
   page?: number;
-  pageSize?: number;
+  pageSize?: number | 'all';
 }
 
 export interface SalaryCostResponse {
@@ -50,8 +50,7 @@ export const getSalaryCosts = async (params: SalaryCostSearchParams): Promise<Sa
     query = query.in('month', params.months);
   }
   
-  // Apply pagination
-  if (params.pageSize && params.page) {
+  if (params.pageSize && params.pageSize !== 'all' && params.page) {
     const from = (params.page - 1) * params.pageSize;
     const to = from + params.pageSize - 1;
     query = query.range(from, to);

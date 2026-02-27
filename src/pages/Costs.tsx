@@ -35,6 +35,7 @@ const Costs = () => {
     totalCount,
     totalPages,
     handlePageChange,
+    handlePageSizeChange,
     addNewRow,
     updateCost,
     openDialog,
@@ -61,9 +62,9 @@ const Costs = () => {
     );
   }
 
-  // Calculate pagination values
-  const startIndex = (currentPage - 1) * pageSize + 1;
-  const endIndex = Math.min(currentPage * pageSize, totalCount);
+  const effectivePageSize = typeof pageSize === 'number' ? pageSize : totalCount;
+  const startIndex = totalCount > 0 ? (currentPage - 1) * effectivePageSize + 1 : 0;
+  const endIndex = pageSize === 'all' ? totalCount : Math.min(currentPage * effectivePageSize, totalCount);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -88,6 +89,17 @@ const Costs = () => {
               Cost Data ({totalCount} total records, showing {filteredCosts.length})
             </h2>
             <div className="flex items-center gap-2">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={totalCount}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
+                position="top"
+              />
               <Button variant="outline" onClick={importFromCSV}>
                 <Import className="h-4 w-4 mr-2" />
                 Import CSV
@@ -115,19 +127,16 @@ const Costs = () => {
             cloneRow={cloneRow}
           />
           
-          {totalPages > 1 && (
-            <div className="mt-4">
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                pageSize={pageSize}
-                totalItems={totalCount}
-                startIndex={startIndex}
-                endIndex={endIndex}
-              />
-            </div>
-          )}
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            pageSize={pageSize}
+            totalItems={totalCount}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            position="bottom"
+          />
         </div>
       </div>
 

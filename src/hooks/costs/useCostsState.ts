@@ -23,16 +23,15 @@ export const useCostsState = () => {
     Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1)
   );
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(25);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
   
   const { data: paginatedResult, isLoading: isLoadingCosts } = useQuery<CostResponse>({
     queryKey: ["costs", selectedYear, selectedMonths, currentPage, pageSize],
     queryFn: () => getCosts({
       year: parseInt(selectedYear),
       months: selectedMonths,
-      page: currentPage,
+      page: pageSize === 'all' ? undefined : currentPage,
       pageSize: pageSize
     } as CostSearchParams),
     staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
@@ -66,10 +65,9 @@ export const useCostsState = () => {
     return Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
   }, []);
 
-  // Since data is already filtered server-side, filteredCosts = costs
   const filteredCosts = costs;
   const totalCount = paginatedResult?.total || 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalCount / (typeof pageSize === 'number' ? pageSize : 25));
   
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
@@ -88,6 +86,11 @@ export const useCostsState = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number | 'all') => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
   };
 
   const getMonthName = (monthNumber: number) => {
@@ -132,6 +135,7 @@ export const useCostsState = () => {
     handleYearChange,
     handleMonthToggle,
     handlePageChange,
+    handlePageSizeChange,
     getMonthName,
     getCostTypeName,
     getMonthNumber,

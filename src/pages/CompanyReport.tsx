@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useCompanyReportData, MONTHS, YEARS, GroupedCompanyData } from "@/hooks/useCompanyReportData";
+import PaginationControls from "@/components/PaginationControls";
 
 const CompanyReport = () => {
   const { toast } = useToast();
@@ -19,6 +20,10 @@ const CompanyReport = () => {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1)
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
+  const [filteredCount, setFilteredCount] = useState(0);
+
   const [tableFilteredData, setTableFilteredData] = useState<GroupedCompanyData[]>([]);
   const [totals, setTotals] = useState({
     totalRevenue: 0,
@@ -37,15 +42,33 @@ const CompanyReport = () => {
   // Show loading indicator when data is being fetched
   const isDataLoading = loading || (groupedData.length === 0 && loading);
 
-  // Callback để nhận dữ liệu đã filter từ ReportTable
-  const handleFilteredDataChange = (filtered: any[]) => {
+  const handleFilteredDataChange = useCallback((filtered: any[]) => {
     setTableFilteredData(filtered as GroupedCompanyData[]);
-  };
+  }, []);
 
-  // Callback để nhận totals từ ReportTable
-  const handleTotalsChange = (newTotals: typeof totals) => {
+  const handleTotalsChange = useCallback((newTotals: typeof totals) => {
     setTotals(newTotals);
-  };
+  }, []);
+
+  const handleFilteredCountChange = useCallback((count: number) => {
+    setFilteredCount(count);
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePageSizeChange = useCallback((newPageSize: number | 'all') => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  }, []);
+
+  const totalItems = filteredCount;
+  const effectivePageSize = typeof pageSize === 'number' ? pageSize : totalItems;
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalItems / (effectivePageSize || 1));
+  const startIndex = totalItems > 0 ? (currentPage - 1) * effectivePageSize + 1 : 0;
+  const endIndex = pageSize === 'all' ? totalItems : Math.min(currentPage * effectivePageSize, totalItems);
 
   const exportToCSV = () => {
     if (groupedData.length === 0) {
@@ -97,15 +120,28 @@ const CompanyReport = () => {
                 Company Report
                 {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               </CardTitle>
-              <ReportFilter
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-                selectedMonths={selectedMonths}
-                setSelectedMonths={setSelectedMonths}
-                months={MONTHS}
-                years={YEARS}
-                onExport={exportToCSV}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange}
+                  position="top"
+                />
+                <ReportFilter
+                  selectedYear={selectedYear}
+                  setSelectedYear={setSelectedYear}
+                  selectedMonths={selectedMonths}
+                  setSelectedMonths={setSelectedMonths}
+                  months={MONTHS}
+                  years={YEARS}
+                  onExport={exportToCSV}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -119,20 +155,32 @@ const CompanyReport = () => {
                 data={groupedData as any}
                 loading={loading}
                 paginatedData={groupedData as any}
-                currentPage={1}
-                totalPages={1}
-                goToPage={() => {}}
-                goToNextPage={() => {}}
-                goToPreviousPage={() => {}}
-                totalItems={groupedData.length}
-                startIndex={1}
-                endIndex={groupedData.length}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                goToPage={handlePageChange}
+                goToNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1); }}
+                goToPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1); }}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
                 bonusRate={0}
                 companyLabel="Company"
                 onFilteredDataChange={handleFilteredDataChange}
                 onTotalsChange={handleTotalsChange}
+                onFilteredCountChange={handleFilteredCountChange}
               />
             )}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalItems={totalItems}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              pageSize={pageSize}
+              position="bottom"
+            />
           </CardContent>
         </Card>
       </div>
