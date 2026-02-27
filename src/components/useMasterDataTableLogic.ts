@@ -50,27 +50,27 @@ export const useMasterDataTableLogic = ({
   service
 }: MasterDataTableLogicProps) => {
   const { toast } = useToast();
-
+  
   // State để track editing process
   const [isEditing, setIsEditing] = useState(false);
 
   // Tính toán sortedData - chỉ sort khi không có temp record và không đang edit
   const sortedData = useMemo(() => {
     const hasTempRecord = data.some(item => item.id.startsWith("tmp-"));
-
+    
     console.log("=== SORTING DEBUG ===");
     console.log("Data items:", data.map(d => ({ id: d.id, code: d.code, name: d.name })));
     console.log("Has temp record:", hasTempRecord);
     console.log("Is editing:", isEditing);
     console.log("Show customer column:", showCustomerColumn);
     console.log("Customers length:", customers?.length);
-
+    
     // KHÔNG SORT nếu có temp record hoặc đang editing
     if (hasTempRecord || isEditing) {
       console.log(">>> SKIPPING SORT - keeping original order");
       return [...data]; // Return new array reference to avoid mutation
     }
-
+    
     // Chỉ sort khi có cột Customer và có dữ liệu customers
     if (showCustomerColumn && customers?.length > 0) {
       console.log(">>> APPLYING SORT by customer then code");
@@ -78,8 +78,8 @@ export const useMasterDataTableLogic = ({
       console.log("Sorted result:", sorted.map(d => ({ id: d.id, code: d.code, name: d.name })));
       return sorted;
     }
-
-    console.log(">>> SKIPPING SORT - keeping original order");
+    
+    console.log(">>> NO SORT CONDITIONS MET - keeping original order");
     return [...data]; // Return new array reference to avoid mutation
   }, [data, isEditing, showCustomerColumn, customers]);
 
@@ -94,47 +94,45 @@ export const useMasterDataTableLogic = ({
     async (id: string, field: keyof MasterData, value: string) => {
       const oldItem: MasterData | undefined = data.find(item => item.id === id);
       if (!oldItem) return;
-
-      // Chuẩn hóa value: convert empty string thành null cho UUID fields
-      const normalizedValue = (field.endsWith('_id') && value === '') ? null : value;
-
       // Update UI ngay lập tức
       setter(prev => prev.map(item => 
-        item.id === id ? { ...item, [field]: normalizedValue } : item
+        item.id === id ? { ...item, [field]: value } : item
       ));
 
       try {
         const isTemporaryId = id.startsWith("tmp-"); // id tạm
         if (!isTemporaryId) {
-          // Update existing record
-          const updateData = { [field]: normalizedValue };
-          await service.update(id, updateData);
+          await service.update(id, { [field]: value });
           toast({
             title: "Saved",
             description: "Data saved successfully.",
           });
         } else {
-          // Đối với temp record, chỉ update UI, không save ngay
-          // Sẽ save khi user blur khỏi toàn bộ row hoặc nhấn Enter
-          console.log(`Updated temp record field ${field} with value:`, normalizedValue);
+          // Nếu là row mới => tạo mới. BỎ trường id ra khỏi payload!
+          const { id: _, ...toCreate } = { ...oldItem, [field]: value };
+          const created = await service.create(toCreate);
+          setter(prev =>
+            prev.map(item =>
+              item.id === id ? created : item
+            )
+          );
+          toast({
+            title: "Created",
+            description: "New item added and saved.",
+          });
         }
       } catch (error) {
-        console.error('Save error:', error);
         toast({
           title: "Error",
           description: "Failed to save data.",
           variant: "destructive"
         });
-        // Revert UI change
         setter(prev => prev.map(item =>
           item.id === id ? { ...item, [field]: oldItem[field] } : item
         ));
-      } finally {
-        // Reset editing state sau khi hoàn thành
-        setIsEditing(false);
       }
     },
-    [data, service, setter, toast, setIsEditing]
+    [data, service, setter, toast]
   );
 
   // Tạo row mới ở đầu danh sách
@@ -173,67 +171,6 @@ export const useMasterDataTableLogic = ({
     }
   }, [setter, toast, service]);
 
-  // Save temp record to database
-  const saveTempRecord = useCallback(async (tempRecord: MasterData) => {
-    try {
-      // Validate required fields
-      if (!tempRecord.code?.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "Code is required",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // Prepare data for creation (remove id and convert empty strings to null for UUID fields)
-      const { id: _, ...dataToCreate } = tempRecord;
-      const cleanedData = Object.entries(dataToCreate).reduce((acc, [key, value]) => {
-        // Convert empty strings to null for UUID fields and description
-        if ((key.endsWith('_id') || key === 'description') && value === '') {
-          acc[key] = null;
-        } else {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
-
-      console.log('Creating record with data:', cleanedData);
-      
-      const created = await service.create(cleanedData);
-      
-      // Replace temp record with created record
-      setter(prev =>
-        prev.map(item =>
-          item.id === tempRecord.id ? created : item
-        )
-      );
-
-      toast({
-        title: "Created",
-        description: "New item added and saved.",
-      });
-      
-      return true;
-    } catch (error: any) {
-      console.error('Create error:', error);
-      let errorMessage = "Failed to save data.";
-      
-      if (error.code === '23505') {
-        errorMessage = "Code already exists. Please use a different code.";
-      } else if (error.code === '22P02') {
-        errorMessage = "Invalid data format.";
-      }
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-      return false;
-    }
-  }, [service, setter, toast]);
-
   // Thêm row dưới hàng hiện tại
   const addRowBelow = useCallback((index: number) => {
     const newItem: MasterData = {
@@ -251,69 +188,6 @@ export const useMasterDataTableLogic = ({
     });
   }, [setter, showCompanyColumn, showCustomerColumn]);
 
-    const handleSave = useCallback(async (item: MasterData): Promise<boolean> => {
-    try {
-      // setLoading(true); // Assuming setLoading is defined elsewhere
-      const isTemp = item.id.startsWith("tmp-");
-
-      if (isTemp) {
-        // Create new item
-        const { id, ...itemData } = item;
-        const newItem = await service.create(itemData);
-
-        // Replace temp item with new item in the list
-        setter(prevData =>
-          prevData.map(prevItem =>
-            prevItem.id === item.id ? newItem : prevItem
-          )
-        );
-
-        toast({
-          title: "Success",
-          description: "Item created successfully",
-        });
-
-        return true;
-      } else {
-        // Update existing item
-        const updatedItem = await service.update(item.id, item);
-
-        // Update item in the list
-        setter(prevData =>
-          prevData.map(prevItem =>
-            prevItem.id === item.id ? updatedItem : prevItem
-          )
-        );
-
-        toast({
-          title: "Success",
-          description: "Item updated successfully",
-        });
-
-        return true;
-      }
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save item",
-        variant: "destructive"
-      });
-      return false;
-    } finally {
-      // setLoading(false); // Assuming setLoading is defined elsewhere
-      setIsEditing(false);
-    }
-  }, [service, setter, toast, setIsEditing]);
-
-    const handleCancel = useCallback((item: MasterData) => {
-    if (item.id.startsWith("tmp-")) {
-      // Remove temp item
-      setter(prev => prev.filter(prevItem => prevItem.id !== item.id));
-    }
-    setIsEditing(false);
-  }, [setter, setIsEditing]);
-
   return {
     filteredData,
     setFilter,
@@ -325,6 +199,5 @@ export const useMasterDataTableLogic = ({
     deleteItem,
     addRowBelow,
     setIsEditing,
-    saveTempRecord,
   };
 };

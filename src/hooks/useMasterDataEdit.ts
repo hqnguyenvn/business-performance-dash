@@ -27,6 +27,7 @@ export const useMasterDataEdit = ({ handleCellEdit, setIsEditing }: UseMasterDat
   }, [setIsEditing]);
 
   const handleInputBlur = useCallback((id: string, field: keyof MasterData) => {
+    setIsEditing(false);
     const key = `${id}-${field}`;
     const value = editingValues[key];
     if (value !== undefined) {
@@ -36,15 +37,13 @@ export const useMasterDataEdit = ({ handleCellEdit, setIsEditing }: UseMasterDat
         delete newValues[key];
         return newValues;
       });
-    } else {
-      // Nếu không có thay đổi, vẫn cần reset editing state
-      setIsEditing(false);
     }
   }, [editingValues, handleCellEdit, setIsEditing]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, id: string, field: keyof MasterData) => {
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
+      setIsEditing(false);
       handleInputBlur(id, field);
       // Focus next input if needed
       const currentElement = e.target as HTMLElement;
