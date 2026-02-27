@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -30,6 +30,21 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   currencies,
 }) => {
   const { toast } = useToast();
+  const [userModified, setUserModified] = useState(false);
+
+  const MONTH_ORDER: Record<string, number> = {
+    Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+    Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,
+  };
+
+  const sortedRates = useMemo(() => {
+    if (userModified) return exchangeRates;
+    return [...exchangeRates].sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return (MONTH_ORDER[b.month] || 0) - (MONTH_ORDER[a.month] || 0);
+    });
+  }, [exchangeRates, userModified]);
+
   // Track editing cell: {id, field}
   const [editingCell, setEditingCell] = useState<{
     id: string;
@@ -38,6 +53,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
 
   // Add row BELOW given id, or append if id === null
   const addExchangeRateBelow = useCallback((afterId: string | null) => {
+    setUserModified(true);
     const newRate: ExchangeRateDisplay = {
       id: Date.now().toString(),
       year: new Date().getFullYear(),
@@ -161,7 +177,7 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
           <table className="w-full border-collapse text-sm">
             <ExchangeRateTableHead />
             <ExchangeRateTableBody
-              data={exchangeRates}
+              data={sortedRates}
               setEditingCell={setEditingCell}
               editingCell={editingCell}
               onEditCell={handleEditCell}

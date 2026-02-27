@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ interface ParameterTableProps {
 
 export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) => {
   const { toast } = useToast();
+  const [userModified, setUserModified] = useState(false);
+
+  const sortedData = useMemo(() => {
+    if (userModified) return data;
+    return [...data].sort((a, b) => b.year - a.year);
+  }, [data, userModified]);
+
   const { editingCell, onEditCell, onBlurCell } = useParameterEdit();
   const {
     filteredData,
@@ -28,7 +35,7 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
     setCodeFilter,
     availableYears,
     availableCodes,
-  } = useParameterFilter(data);
+  } = useParameterFilter(sortedData);
 
   const saveCell = async (id: string, field: keyof Parameter, value: any) => {
     try {
@@ -50,6 +57,7 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
   };
 
   const addNewRow = async () => {
+    setUserModified(true);
     try {
       const currentYear = new Date().getFullYear();
       const newRow = await parameterService.add({
@@ -74,6 +82,7 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
   };
 
   const addRowAfter = async (afterId: string) => {
+    setUserModified(true);
     try {
       const afterRow = data.find(row => row.id === afterId);
       const newRow = await parameterService.add({

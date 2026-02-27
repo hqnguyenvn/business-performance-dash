@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -31,12 +31,19 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   divisions,
 }) => {
   const { toast } = useToast();
+  const [userModified, setUserModified] = useState(false);
+
+  const sortedData = useMemo(() => {
+    if (userModified) return data;
+    return [...data].sort((a, b) => b.year - a.year);
+  }, [data, userModified]);
+
   const {
     setFilter,
     getActiveFilters,
     filterData,
     filterRows,
-  } = useBonusByDivisionFilter(data, divisions);
+  } = useBonusByDivisionFilter(sortedData, divisions);
 
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof BonusByDivision } | null>(null);
 
@@ -49,6 +56,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   }, []);
 
   const handleAddRow = useCallback(() => {
+    setUserModified(true);
     const newId = `new-${Date.now()}`;
     const newRow: BonusByDivision = {
       id: newId,
@@ -64,6 +72,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
   }, [setter, divisions, handleEditCell]);
 
   const handleAddRowAfter = useCallback((afterId: string) => {
+    setUserModified(true);
     const anchorRow = data.find(r => r.id === afterId);
     if (!anchorRow) return;
 
@@ -135,7 +144,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     }
   }, [data, setter, toast]);
 
-  const filteredData = filterRows(data);
+  const filteredData = filterRows(sortedData);
 
   const handleExport = () => {
     const exportData = data.map((row) => ({

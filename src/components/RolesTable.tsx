@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { roleService } from "@/services/roleService";
 import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { exportToCsv } from "@/utils/exportCsv";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -26,7 +26,16 @@ interface RolesTableProps {
 
 const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
   const { toast } = useToast();
-  const { filteredData, setFilter, getActiveFilters } = useTableFilter(data);
+  const [userModified, setUserModified] = useState(false);
+
+  const sortedData = useMemo(() => {
+    if (userModified) return [...data];
+    return [...data].sort((a, b) =>
+      (a.code || "").toLowerCase().localeCompare((b.code || "").toLowerCase(), undefined, { sensitivity: 'base' })
+    );
+  }, [data, userModified]);
+
+  const { filteredData, setFilter, getActiveFilters } = useTableFilter(sortedData);
   const [editingCell, setEditingCell] = useState<{ id: string; field: keyof Role } | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, any>>({});
   const tableRef = useRef<HTMLTableElement>(null);
@@ -201,6 +210,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
 
   // Add new role
   const addNewRole = useCallback(() => {
+    setUserModified(true);
     const newRole: Role = {
       id: "tmp-" + Date.now().toString() + Math.random().toString(36).slice(2, 6),
       code: "",
@@ -216,6 +226,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
 
   // Insert row below
   const insertRowBelow = useCallback((id: string) => {
+    setUserModified(true);
     const index = data.findIndex(role => role.id === id);
     if (index !== -1) {
       const newRole: Role = {
