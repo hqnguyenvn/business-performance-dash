@@ -301,10 +301,16 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Roles</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={addNewRole} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Role
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

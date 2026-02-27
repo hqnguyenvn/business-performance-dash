@@ -164,10 +164,16 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Bonus by Company</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={handleAddRow} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Bonus
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
