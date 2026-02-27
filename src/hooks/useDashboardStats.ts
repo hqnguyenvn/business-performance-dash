@@ -32,20 +32,17 @@ export function useDashboardStats({
   incomeTaxRate,
   bonusRate,
 }: DashboardStatsArgs): DashboardStats {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [revenues, setRevenues] = useState<any[]>([]);
   const [costs, setCosts] = useState<any[]>([]);
   const [costTypes, setCostTypes] = useState<any[]>([]);
   const [prevRevenues, setPrevRevenues] = useState<any[]>([]);
   const [prevCosts, setPrevCosts] = useState<any[]>([]);
-  // We can't get customers info directly from stat cards, but for dashboard show count of unique revenue.customer_id
 
-  // Lấy kỳ trước: cùng tháng năm trước
   const prevPeriod = useMemo(() => getPreviousPeriod(year, months), [year, months]);
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
 
       // get all revenues and costs for the filter
       const queries = [
@@ -73,7 +70,7 @@ export function useDashboardStats({
         setPrevRevenues([]);
         setPrevCosts([]);
       }
-      setLoading(false);
+      setInitialLoading(false);
     }
     fetchData();
     // eslint-disable-next-line
@@ -128,7 +125,7 @@ export function useDashboardStats({
   }
 
   const stats = useMemo(() => {
-    if (loading) {
+    if (initialLoading) {
       return {
         totalRevenue: { value: 0, prevValue: null, percentChange: null },
         totalCost: { value: 0, prevValue: null, percentChange: null },
@@ -172,7 +169,7 @@ export function useDashboardStats({
       loading: false,
     };
   }, [
-    revenues, costs, costTypes, loading,
+    revenues, costs, costTypes, initialLoading,
     bonusRate, incomeTaxRate, months, year,
     prevPeriod, prevRevenues, prevCosts,
   ]);

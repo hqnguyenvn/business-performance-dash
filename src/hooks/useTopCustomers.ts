@@ -10,11 +10,12 @@ export interface TopCustomer {
 
 export function useTopCustomers(year: number, months: number[], topN: number = 5) {
   const [data, setData] = useState<TopCustomer[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     async function fetchTopCustomers() {
-      setLoading(true);
+      if (!hasFetched) setLoading(true);
 
       // 1. Lấy dữ liệu revenues đã lọc
       const { data: revenues, error } = await supabase
@@ -27,6 +28,7 @@ export function useTopCustomers(year: number, months: number[], topN: number = 5
       if (error || !revenues) {
         setData([]);
         setLoading(false);
+        setHasFetched(true);
         return;
       }
 
@@ -69,6 +71,7 @@ export function useTopCustomers(year: number, months: number[], topN: number = 5
 
       setData(result);
       setLoading(false);
+      setHasFetched(true);
     }
     fetchTopCustomers();
   }, [year, months.join(","), topN]);

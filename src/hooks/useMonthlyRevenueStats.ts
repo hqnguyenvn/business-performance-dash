@@ -9,11 +9,12 @@ interface MonthlyRevenueStat {
 
 export function useMonthlyRevenueStats(year: number, months: number[]) {
   const [data, setData] = useState<MonthlyRevenueStat[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     async function fetchMonthlyRevenues() {
-      setLoading(true);
+      if (!hasFetched) setLoading(true);
       // Query: Lấy revenue của các tháng trong năm được chọn
       const { data: revenues, error } = await supabase
         .from("revenues")
@@ -24,6 +25,7 @@ export function useMonthlyRevenueStats(year: number, months: number[]) {
       if (error) {
         setData([]);
         setLoading(false);
+        setHasFetched(true);
         return;
       }
       // Tính tổng revenue theo từng tháng
@@ -41,6 +43,7 @@ export function useMonthlyRevenueStats(year: number, months: number[]) {
       }));
       setData(chartData);
       setLoading(false);
+      setHasFetched(true);
     }
     fetchMonthlyRevenues();
   }, [year, months.join(",")]);

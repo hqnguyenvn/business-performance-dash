@@ -1,6 +1,16 @@
 
 import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { NumberInput } from "@/components/ui/number-input";
 
 interface MonthOption {
   value: number;
@@ -34,62 +44,89 @@ export const DashboardFilter: React.FC<DashboardFilterProps> = ({
   bonusRate,
   setBonusRate,
 }) => (
-  <div className="rounded-xl border bg-white p-6">
-    <div className="text-2xl font-bold mb-4">Data Filter</div>
-    <div className="flex flex-col gap-4">
-      {/* Year and Month selectors */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        {/* Year dropdown */}
-        <div>
-          <select
-            value={selectedYear}
-            onChange={e => setSelectedYear(Number(e.target.value))}
-            className="border border-gray-300 rounded px-3 py-2 w-24 text-base"
-          >
-            {years.map(year => (
-              <option value={year} key={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-        {/* Select All / Clear All */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
-            Select All
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
-            Clear All
-          </Button>
-        </div>
-        {/* Months checkboxes */}
-        <div className="flex flex-wrap gap-x-8 gap-y-2 ml-0 md:ml-4">
-          <div className="flex flex-wrap">
-            {months.slice(0, 6).map(m => (
-              <label key={m.value} className="inline-flex items-center space-x-2 cursor-pointer font-medium mr-5 mb-2">
-                <input
-                  type="checkbox"
+  <Card className="mb-6">
+    <CardHeader>
+      <CardTitle>Filter Dashboard Data</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Year:</label>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(val) => setSelectedYear(Number(val))}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map(year => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Months:</label>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+                Select All
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+                Clear All
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-start gap-3 flex-1">
+            {months.map((m) => (
+              <div key={m.value} className="flex items-center space-x-1">
+                <Checkbox
+                  id={`dash-month-${m.value}`}
                   checked={selectedMonths.includes(m.value)}
-                  onChange={() => onMonthToggle(m.value)}
-                  className="form-checkbox h-5 w-5 text-blue-900 border-gray-400 focus:ring-blue-900"
+                  onCheckedChange={() => onMonthToggle(m.value)}
                 />
-                <span className="text-base">{m.label}</span>
-              </label>
+                <label
+                  htmlFor={`dash-month-${m.value}`}
+                  className="text-sm cursor-pointer whitespace-nowrap"
+                >
+                  {m.label}
+                </label>
+              </div>
             ))}
           </div>
-          <div className="flex flex-wrap">
-            {months.slice(6, 12).map(m => (
-              <label key={m.value} className="inline-flex items-center space-x-2 cursor-pointer font-medium mr-5 mb-2">
-                <input
-                  type="checkbox"
-                  checked={selectedMonths.includes(m.value)}
-                  onChange={() => onMonthToggle(m.value)}
-                  className="form-checkbox h-5 w-5 text-blue-900 border-gray-400 focus:ring-blue-900"
-                />
-                <span className="text-base">{m.label}</span>
-              </label>
-            ))}
+        </div>
+
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Income Tax Rate:</label>
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={incomeTaxRate}
+                onChange={setIncomeTaxRate}
+                className="w-20"
+                placeholder="Tax"
+              />
+              <span className="text-sm">%</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Bonus Rate:</label>
+            <div className="flex items-center gap-2">
+              <NumberInput
+                value={bonusRate}
+                onChange={setBonusRate}
+                className="w-20"
+                placeholder="Bonus"
+              />
+              <span className="text-sm">%</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    </CardContent>
+  </Card>
 );

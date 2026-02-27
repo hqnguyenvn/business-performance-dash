@@ -123,25 +123,21 @@ const Index = () => {
       <div className="p-6">
         <StatCards stats={statCardsData} />
 
-        <div className="mx-0 mt-6">
-          <DashboardFilter
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            years={years}
-            months={months}
-            selectedMonths={selectedMonths}
-            setSelectedMonths={setSelectedMonths}
-            onMonthToggle={handleMonthToggle}
-            incomeTaxRate={incomeTaxRate ?? 5}
-            setIncomeTaxRate={setIncomeTaxRate}
-            bonusRate={bonusRate ?? 15}
-            setBonusRate={setBonusRate}
-          />
-        </div>
+        <DashboardFilter
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          years={years}
+          months={months}
+          selectedMonths={selectedMonths}
+          setSelectedMonths={setSelectedMonths}
+          onMonthToggle={handleMonthToggle}
+          incomeTaxRate={incomeTaxRate ?? 5}
+          setIncomeTaxRate={setIncomeTaxRate}
+          bonusRate={bonusRate ?? 15}
+          setBonusRate={setBonusRate}
+        />
 
-        <div className="mt-6">
-          <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
-        </div>
+        <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
       </div>
     </div>
   );
