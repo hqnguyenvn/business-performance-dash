@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
 import { BonusByCompany, bonusByCompanyService } from "@/services/bonusByCompanyService";
@@ -16,6 +16,7 @@ import { useBonusByCompanyFilter } from "./useBonusByCompanyFilter";
 import BonusByCompanyRow from "./BonusByCompanyRow";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/utils/exportCsv";
+import ImportCsvDialog from "@/components/ImportCsvDialog";
 
 interface BonusByCompanyTableProps {
   data: BonusByCompany[];
@@ -146,6 +147,8 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
 
   const filteredData = filterRows(sortedData);
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const handleExport = () => {
     const exportData = data.map((row) => ({
       ...row,
@@ -159,6 +162,51 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
     ]);
   };
 
+  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const row of rows) {
+      const year = parseInt(row["Year"] || "");
+      const companyName = (row["Company"] || "").trim();
+      const bn_bmm = parseFloat(row["BN_BMM"] || "0");
+      const notes = (row["Notes"] || "").trim();
+
+      if (!year || !companyName) {
+        errors.push(`Skipped invalid row: Year=${row["Year"]}, Company=${companyName}`);
+        continue;
+      }
+
+      const company = companies.find(
+        (c) => c.name.toLowerCase() === companyName.toLowerCase() || c.code.toLowerCase() === companyName.toLowerCase()
+      );
+      if (!company) {
+        errors.push(`Company "${companyName}" not found.`);
+        continue;
+      }
+
+      const existing = data.find(
+        (item) => item.year === year && item.company_id === company.id
+      );
+
+      try {
+        if (existing) {
+          const updatedItem = await bonusByCompanyService.update(existing.id, { bn_bmm, notes });
+          setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
+          updated++;
+        } else {
+          const newItem = await bonusByCompanyService.add({ year, company_id: company.id, bn_bmm, notes });
+          setter((prev) => [newItem, ...prev]);
+          created++;
+        }
+      } catch (error: any) {
+        errors.push(`Year=${year}, Company=${companyName}: ${error.message || "Unknown error"}`);
+      }
+    }
+    return { created, updated, errors };
+  }, [data, companies, setter]);
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -169,6 +217,10 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
             <Button onClick={handleAddRow} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Bonus
@@ -176,6 +228,13 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
           </div>
         </div>
       </CardHeader>
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Bonus by Company"
+        expectedColumns={["Year", "Company", "BN_BMM", "Notes"]}
+        onImport={handleImport}
+      />
       <CardContent>
         <div className="overflow-x-auto">
           <Table>

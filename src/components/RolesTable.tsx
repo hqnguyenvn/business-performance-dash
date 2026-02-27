@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Download } from "lucide-react";
+import { Trash2, Plus, Download, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { roleService } from "@/services/roleService";
@@ -17,6 +17,7 @@ import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { useState, useCallback, useRef, useMemo } from "react";
 import { exportToCsv } from "@/utils/exportCsv";
+import ImportCsvDialog from "./ImportCsvDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface RolesTableProps {
@@ -289,12 +290,43 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
     return editingCell?.id === id && editingCell.field === field;
   };
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const handleExport = () => {
     exportToCsv(data, "Roles", [
       { key: "code", header: "Code" },
       { key: "description", header: "Description" },
     ]);
   };
+
+  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const row of rows) {
+      const code = (row["Code"] || "").trim();
+      if (!code) { errors.push("Skipped row with empty Code."); continue; }
+      const description = (row["Description"] || "").trim();
+
+      const existing = data.find((item) => item.code.toLowerCase() === code.toLowerCase());
+
+      try {
+        if (existing) {
+          const updatedItem = await roleService.update(existing.id, { description });
+          setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
+          updated++;
+        } else {
+          const newItem = await roleService.create({ code, description });
+          setter((prev) => [newItem, ...prev]);
+          created++;
+        }
+      } catch (error: any) {
+        errors.push(`Code "${code}": ${error.message || "Unknown error"}`);
+      }
+    }
+    return { created, updated, errors };
+  }, [data, setter]);
 
   return (
     <Card className="bg-white">
@@ -306,6 +338,10 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
             <Button onClick={addNewRole} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Role
@@ -313,6 +349,13 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
           </div>
         </div>
       </CardHeader>
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Roles"
+        expectedColumns={["Code", "Description"]}
+        onImport={handleImport}
+      />
       <CardContent>
         <div className="overflow-x-auto">
           <Table ref={tableRef}>

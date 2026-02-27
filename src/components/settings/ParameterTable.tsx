@@ -1,9 +1,9 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Parameter, parameterService } from "@/services/parameterService";
 import { ParameterRow } from "./ParameterRow";
@@ -11,6 +11,7 @@ import { useParameterEdit } from "./useParameterEdit";
 import { useParameterFilter } from "./useParameterFilter";
 import { TableFilter } from "@/components/ui/table-filter";
 import { exportToCsv } from "@/utils/exportCsv";
+import ImportCsvDialog from "@/components/ImportCsvDialog";
 
 interface ParameterTableProps {
   data: Parameter[];
@@ -139,6 +140,45 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
     setCodeFilter(values);
   };
 
+  const [importOpen, setImportOpen] = useState(false);
+
+  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const row of rows) {
+      const year = parseInt(row["Year"] || "");
+      const code = (row["Code"] || "").trim();
+      const value = parseFloat(row["Value"] || "0");
+      const descriptions = (row["Descriptions"] || "").trim();
+
+      if (!year || !code) {
+        errors.push(`Skipped invalid row: Year=${row["Year"]}, Code=${code}`);
+        continue;
+      }
+
+      const existing = data.find(
+        (item) => item.year === year && item.code.toLowerCase() === code.toLowerCase()
+      );
+
+      try {
+        if (existing) {
+          const updatedItem = await parameterService.update(existing.id, { value, descriptions });
+          setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
+          updated++;
+        } else {
+          const newItem = await parameterService.add({ year, code, value, descriptions });
+          setter((prev) => [newItem, ...prev]);
+          created++;
+        }
+      } catch (error: any) {
+        errors.push(`Year=${year}, Code=${code}: ${error.message || "Unknown error"}`);
+      }
+    }
+    return { created, updated, errors };
+  }, [data, setter]);
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -156,6 +196,10 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
             <Button onClick={addNewRow} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Parameter
@@ -163,6 +207,13 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
           </div>
         </div>
       </CardHeader>
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Parameters"
+        expectedColumns={["Year", "Code", "Value", "Descriptions"]}
+        onImport={handleImport}
+      />
       <CardContent>
         <div className="overflow-x-auto">
           <Table>

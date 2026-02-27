@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MasterData } from "@/services/masterDataService";
 import { BonusByDivision, bonusByDivisionService } from "@/services/bonusByDivisionService";
@@ -16,6 +16,7 @@ import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
 import BonusByDivisionRow from "./BonusByDivisionRow";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/utils/exportCsv";
+import ImportCsvDialog from "@/components/ImportCsvDialog";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -146,6 +147,8 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 
   const filteredData = filterRows(sortedData);
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const handleExport = () => {
     const exportData = data.map((row) => ({
       ...row,
@@ -159,6 +162,51 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
     ]);
   };
 
+  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const row of rows) {
+      const year = parseInt(row["Year"] || "");
+      const divisionName = (row["Division"] || "").trim();
+      const bn_bmm = parseFloat(row["BN_BMM"] || "0");
+      const notes = (row["Notes"] || "").trim();
+
+      if (!year || !divisionName) {
+        errors.push(`Skipped invalid row: Year=${row["Year"]}, Division=${divisionName}`);
+        continue;
+      }
+
+      const division = divisions.find(
+        (d) => d.name.toLowerCase() === divisionName.toLowerCase() || d.code.toLowerCase() === divisionName.toLowerCase()
+      );
+      if (!division) {
+        errors.push(`Division "${divisionName}" not found.`);
+        continue;
+      }
+
+      const existing = data.find(
+        (item) => item.year === year && item.division_id === division.id
+      );
+
+      try {
+        if (existing) {
+          const updatedItem = await bonusByDivisionService.update(existing.id, { bn_bmm, notes });
+          setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
+          updated++;
+        } else {
+          const newItem = await bonusByDivisionService.add({ year, division_id: division.id, bn_bmm, notes });
+          setter((prev) => [newItem, ...prev]);
+          created++;
+        }
+      } catch (error: any) {
+        errors.push(`Year=${year}, Division=${divisionName}: ${error.message || "Unknown error"}`);
+      }
+    }
+    return { created, updated, errors };
+  }, [data, divisions, setter]);
+
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -169,6 +217,10 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
             <Button onClick={handleAddRow} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Bonus
@@ -176,6 +228,13 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
           </div>
         </div>
       </CardHeader>
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Bonus by Division"
+        expectedColumns={["Year", "Division", "BN_BMM", "Notes"]}
+        onImport={handleImport}
+      />
       <CardContent>
         <div className="overflow-x-auto">
           <Table>

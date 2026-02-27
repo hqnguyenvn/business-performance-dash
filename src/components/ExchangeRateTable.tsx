@@ -2,12 +2,13 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Plus } from "lucide-react";
+import { Download, Plus, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import ExchangeRateTableHead from "./ExchangeRateTableHead";
 import ExchangeRateTableBody from "./ExchangeRateTableBody";
 import { exportToCsv } from "@/utils/exportCsv";
+import ImportCsvDialog from "./ImportCsvDialog";
 
 interface MasterData {
   id: string;
@@ -152,6 +153,8 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   // Nhấn Enter/Escape ngoài cell: lưu/huỷ
   const handleBlurCell = useCallback(() => setEditingCell(null), []);
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const handleExport = () => {
     exportToCsv(exchangeRates, "Exchange_Rates", [
       { key: "year", header: "Year" },
@@ -160,6 +163,43 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
       { key: "exchangeRate", header: "Exchange Rate" },
     ]);
   };
+
+  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const row of rows) {
+      const year = parseInt(row["Year"] || "");
+      const month = (row["Month"] || "").trim();
+      const currency = (row["Currency"] || "").trim();
+      const exchangeRate = parseFloat(row["Exchange Rate"] || "");
+
+      if (!year || !month || !currency || isNaN(exchangeRate)) {
+        errors.push(`Skipped invalid row: Year=${row["Year"]}, Month=${month}, Currency=${currency}`);
+        continue;
+      }
+
+      const existing = exchangeRates.find(
+        (item) => item.year === year && item.month === month && item.currencyID.toLowerCase() === currency.toLowerCase()
+      );
+
+      try {
+        if (existing) {
+          const updatedItem = await exchangeRateService.update(existing.id, { exchangeRate });
+          setExchangeRates((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
+          updated++;
+        } else {
+          const newItem = await exchangeRateService.create({ year, month, currencyID: currency, exchangeRate });
+          setExchangeRates((prev) => [newItem, ...prev]);
+          created++;
+        }
+      } catch (error: any) {
+        errors.push(`Year=${year}, Month=${month}, Currency=${currency}: ${error.message || "Unknown error"}`);
+      }
+    }
+    return { created, updated, errors };
+  }, [exchangeRates, setExchangeRates]);
 
   return (
     <Card className="bg-white">
@@ -171,6 +211,10 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
               <Download className="h-4 w-4" />
               Export
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+              <Upload className="h-4 w-4" />
+              Import
+            </Button>
             <Button onClick={() => addExchangeRateBelow(null)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Exchange Rate
@@ -178,6 +222,13 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
           </div>
         </div>
       </CardHeader>
+      <ImportCsvDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        title="Exchange Rates"
+        expectedColumns={["Year", "Month", "Currency", "Exchange Rate"]}
+        onImport={handleImport}
+      />
       <CardContent>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
