@@ -223,19 +223,7 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
                   Notes
                 </TableHead>
                 <TableHead className="border border-gray-300 text-center w-28">
-                  <div className="flex items-center justify-center gap-1">
-                    <span>Actions</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="ml-1 h-6 w-6 p-0"
-                      onClick={handleAddRow}
-                      title="Add new row"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>

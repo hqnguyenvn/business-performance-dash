@@ -12,7 +12,6 @@ interface MasterDataTableHeadProps {
   data: any[];  
   setFilter: (field: string, values: string[]) => void;
   getActiveFilters: (field: string) => string[];
-  onAddNewItem?: () => void;
   title?: string;
 }
 
@@ -22,7 +21,6 @@ const MasterDataTableHead: React.FC<MasterDataTableHeadProps> = ({
   data,
   setFilter,
   getActiveFilters,
-  onAddNewItem,
   title
 }) => {
   const getColumnName = (field: string) => {
@@ -94,18 +92,7 @@ const MasterDataTableHead: React.FC<MasterDataTableHeadProps> = ({
         Description
       </TableHead>
       <TableHead className="border border-gray-300 text-center">
-        <div className="flex items-center justify-center gap-2">
-          <span>Actions</span>
-          {onAddNewItem && (
-            <button
-              onClick={onAddNewItem}
-              className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-blue-600 transition-colors"
-              title="Add new record at top"
-            >
-              +
-            </button>
-          )}
-        </div>
+        Actions
       </TableHead>
     </TableRow>
   </TableHeader>

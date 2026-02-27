@@ -322,19 +322,7 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
                 <TableHead className="border border-gray-300 text-center">Code</TableHead>
                 <TableHead className="border border-gray-300">Description</TableHead>
                 <TableHead className="border border-gray-300 text-center w-28">
-                  <div className="flex items-center justify-center gap-1">
-                    <span>Actions</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="ml-1 h-6 w-6 p-0"
-                      onClick={addNewRole}
-                      title="Add new row"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
+                  Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
