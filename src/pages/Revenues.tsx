@@ -19,8 +19,9 @@ import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueUpdate } from "@/hooks/useRevenueUpdate";
 import { useRevenueCreation } from "@/hooks/useRevenueCreation";
 import { exportRevenueCSV } from "@/utils/csvExport";
+import { getRevenues } from "@/services/revenueApi";
 import { Revenue } from "@/types/revenue";
-import { MasterData } from "@/services/masterDataService"; // Added MasterData import
+import { MasterData } from "@/services/masterDataService";
 import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
 import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
 
@@ -151,10 +152,15 @@ const Revenues = () => {
     handleCellEdit(id, field, value, handleCellEditDb as any);
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
+      const allData = await getRevenues({
+        year: searchParams.year,
+        months: searchParams.months,
+        pageSize: 'all',
+      });
       exportRevenueCSV({
-        revenues: filteredRevenues,
+        revenues: allData.data,
         customers,
         companies,
         divisions,
@@ -167,7 +173,7 @@ const Revenues = () => {
       });
       toast({
         title: "CSV exported successfully!",
-        description: "Revenue data has been downloaded as CSV file.",
+        description: `Exported ${allData.data.length} revenue records as CSV file.`,
       });
     } catch (error) {
       console.error("Error exporting CSV:", error);

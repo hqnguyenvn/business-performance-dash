@@ -1,6 +1,7 @@
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { costService, NewCost } from "@/services/costService";
+import { getCosts } from "@/services/costApi";
 import type { Cost } from "./useCostsState";
 import type { MasterData } from "@/services/masterDataService";
 import { exportCostsCSV as exportCSVUtil } from "@/utils/csvExport";
@@ -17,9 +18,11 @@ interface UseCostsIOProps {
   getMonthName: (month: number) => string;
   getMonthNumber: (name: string) => number;
   getCostTypeId: (code: string) => string;
+  selectedYear: string;
+  selectedMonths: number[];
 }
 
-export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, batchCreateCostMutation, getMonthName, getMonthNumber, getCostTypeId }: UseCostsIOProps) => {
+export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, batchCreateCostMutation, getMonthName, getMonthNumber, getCostTypeId, selectedYear, selectedMonths }: UseCostsIOProps) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -71,18 +74,31 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, batch
         }
       };
 
-    const exportToCSV = () => {
-        exportCSVUtil({
-          costs: filteredCosts,
-          costTypes,
-          getMonthName,
-        });
-        toast({
-          title: "Export Initiated",
-          description: filteredCosts.length > 0
-            ? `An export of ${filteredCosts.length} cost records has started.`
-            : "Exported empty cost list with headers only.",
-        });
+    const exportToCSV = async () => {
+        try {
+          const allData = await getCosts({
+            year: parseInt(selectedYear),
+            months: selectedMonths,
+            pageSize: 'all',
+          });
+          exportCSVUtil({
+            costs: allData.data,
+            costTypes,
+            getMonthName,
+          });
+          toast({
+            title: "Export Initiated",
+            description: allData.data.length > 0
+              ? `An export of ${allData.data.length} cost records has started.`
+              : "Exported empty cost list with headers only.",
+          });
+        } catch (error) {
+          toast({
+            title: "Export Failed",
+            description: "An error occurred while exporting cost data.",
+            variant: "destructive",
+          });
+        }
     };
 
     const importFromCSV = () => {

@@ -62,6 +62,8 @@ export const useSalaryCosts = () => {
     getMonthNumber,
     getMasterDataName,
     getMasterDataId,
+    selectedYear,
+    selectedMonths,
   });
 
   return {

@@ -74,6 +74,8 @@ export const useCosts = () => {
     getMonthName,
     getMonthNumber,
     getCostTypeId,
+    selectedYear,
+    selectedMonths,
   });
 
   return {

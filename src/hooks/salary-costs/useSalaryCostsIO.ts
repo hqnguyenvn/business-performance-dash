@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import { useToast } from "@/hooks/use-toast";
-import { SalaryCost, SalaryCostInsert } from '@/services/salaryCostService';
+import { SalaryCost, SalaryCostInsert, getSalaryCosts } from '@/services/salaryCostService';
 import { MasterData } from '@/services/masterDataService';
 import { useSalaryCostsMutations } from './useSalaryCostsMutations';
 
@@ -13,6 +13,8 @@ interface UseSalaryCostsIOProps {
   getMonthNumber: (name: string) => number;
   getMasterDataName: (id: string | null, data: MasterData[], field?: 'code' | 'name') => string;
   getMasterDataId: (code: string, data: MasterData[]) => string | null;
+  selectedYear: string;
+  selectedMonths: number[];
 }
 
 export const useSalaryCostsIO = ({
@@ -24,53 +26,65 @@ export const useSalaryCostsIO = ({
   getMonthNumber,
   getMasterDataName,
   getMasterDataId,
+  selectedYear,
+  selectedMonths,
 }: UseSalaryCostsIOProps) => {
   const { toast } = useToast();
   const { bulkCreateSalaryCostMutation } = useSalaryCostsMutations();
 
-  const exportToCSV = () => {
-    // Khai báo headers rõ ràng
-    const headers = [
-      'Year',
-      'Month',
-      'Company',
-      'Division',
-      'Customer',
-      'Amount',
-      'Notes',
-    ];
+  const exportToCSV = async () => {
+    try {
+      const allData = await getSalaryCosts({
+        year: parseInt(selectedYear),
+        months: selectedMonths,
+        pageSize: 'all',
+      });
 
-    // Luôn luôn có header dù không có dữ liệu
-    const dataToExport = filteredSalaryCosts.length > 0
-      ? filteredSalaryCosts.map(cost => ({
-          Year: cost.year,
-          Month: getMonthName(cost.month),
-          Company: getMasterDataName(cost.company_id, companies, 'code'),
-          Division: getMasterDataName(cost.division_id, divisions, 'code'),
-          Customer: getMasterDataName(cost.customer_id, customers, 'code'),
-          Amount: cost.amount,
-          Notes: cost.notes,
-        }))
-      : [];
+      const headers = [
+        'Year',
+        'Month',
+        'Company',
+        'Division',
+        'Customer',
+        'Amount',
+        'Notes',
+      ];
 
-    // Sử dụng papaparse xây dựng csv với header luôn có ngay cả khi data rỗng
-    // Nếu dataToExport rỗng thì truyền vào mảng chỉ chứa header
-    let csv = '';
-    if (dataToExport.length === 0) {
-      csv = Papa.unparse([headers], { header: false }); // chỉ header
-    } else {
-      csv = Papa.unparse(dataToExport, { columns: headers, header: true });
+      const dataToExport = allData.data.length > 0
+        ? allData.data.map(cost => ({
+            Year: cost.year,
+            Month: getMonthName(cost.month),
+            Company: getMasterDataName(cost.company_id, companies, 'code'),
+            Division: getMasterDataName(cost.division_id, divisions, 'code'),
+            Customer: getMasterDataName(cost.customer_id, customers, 'code'),
+            Amount: cost.amount,
+            Notes: cost.notes,
+          }))
+        : [];
+
+      let csv = '';
+      if (dataToExport.length === 0) {
+        csv = Papa.unparse([headers], { header: false });
+      } else {
+        csv = Papa.unparse(dataToExport, { columns: headers, header: true });
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `salary_costs_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Success", description: `Exported ${allData.data.length} salary cost records to CSV.` });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "An error occurred while exporting salary cost data.",
+        variant: "destructive",
+      });
     }
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `salary_costs_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast({ title: "Success", description: "Salary costs exported to CSV." });
   };
 
   const importFromCSV = () => {
