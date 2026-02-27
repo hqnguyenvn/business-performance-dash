@@ -2,7 +2,9 @@
 import { useState, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { BarChart3, Loader2, Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useParameterValues } from "@/hooks/useParameterValues";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
@@ -23,6 +25,7 @@ const DivisionReport = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(25);
   const [filteredCount, setFilteredCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleFilteredCountChange = useCallback((count: number) => {
     setFilteredCount(count);
@@ -108,14 +111,38 @@ const DivisionReport = () => {
           totalProfitPercent={totalProfitPercent}
         />
 
+        <ReportFilter
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          selectedMonths={selectedMonths}
+          setSelectedMonths={setSelectedMonths}
+          months={MONTHS}
+          years={YEARS}
+          title="Filter Division Report"
+        />
+
         <Card className="bg-white">
           <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle className="flex items-center gap-2">
-                Division Report
-                {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              </CardTitle>
-              <div className="flex items-center gap-2 flex-wrap">
+            <CardTitle className="flex items-center gap-2">
+              Division Report
+              {isDataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+              <div className="flex gap-2 md:w-1/3">
+                <Input
+                  type="search"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={() => setSearchTerm(searchTerm)}>
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 flex-wrap">
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPagesDivision}
@@ -127,19 +154,12 @@ const DivisionReport = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
-                <ReportFilter
-                  selectedYear={selectedYear}
-                  setSelectedYear={setSelectedYear}
-                  selectedMonths={selectedMonths}
-                  setSelectedMonths={setSelectedMonths}
-                  months={MONTHS}
-                  years={YEARS}
-                  onExport={exportToCSV}
-                />
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
             {isDataLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mr-2" />
@@ -161,6 +181,7 @@ const DivisionReport = () => {
                 pageSize={pageSize}
                 bonusRate={0}
                 companyLabel="Division"
+                searchTerm={searchTerm}
                 onFilteredCountChange={handleFilteredCountChange}
               />
             )}

@@ -38,6 +38,7 @@ interface ReportTableProps {
   bonusRate: number;
   companyLabel?: string;
   pageSize?: number | 'all';
+  searchTerm?: string;
   onFilteredDataChange?: (filteredData: any[]) => void;
   onTotalsChange?: (totals: {
     totalRevenue: number;
@@ -79,17 +80,30 @@ export function ReportTable({
   companyLabel,
   currentPage = 1,
   pageSize = 'all',
+  searchTerm = '',
   onFilteredDataChange,
   onTotalsChange,
   onFilteredCountChange,
 }: ReportTableProps) {
-  // Sử dụng useTableFilter để filter cột
   const {
-    filteredData,
+    filteredData: columnFilteredData,
     setFilter,
     getActiveFilters,
     clearAllFilters
   } = useTableFilter(data);
+
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return columnFilteredData;
+    const lower = searchTerm.trim().toLowerCase();
+    return columnFilteredData.filter((row) => {
+      const monthStr = (MONTH_MAP[row.month as keyof typeof MONTH_MAP] || String(row.month)).toLowerCase();
+      return (
+        monthStr.includes(lower) ||
+        (row.company_code && row.company_code.toLowerCase().includes(lower)) ||
+        (row.customer_code && row.customer_code.toLowerCase().includes(lower))
+      );
+    });
+  }, [columnFilteredData, searchTerm]);
 
   // Check if this is Company Report (no customer_code field) 
   const isCompanyReport = !data[0]?.customer_code;

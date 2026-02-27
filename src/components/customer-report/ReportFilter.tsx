@@ -1,7 +1,14 @@
 
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ReportFilterProps {
   selectedYear: string;
@@ -10,9 +17,10 @@ interface ReportFilterProps {
   setSelectedMonths: (months: number[]) => void;
   months: { value: number; label: string; short: string }[];
   years: number[];
-  onExport: () => void;
+  onExport?: () => void;
   bonusRate?: number;
   setBonusRate?: (rate: number) => void;
+  title?: string;
 }
 
 export function ReportFilter({
@@ -22,7 +30,7 @@ export function ReportFilter({
   setSelectedMonths,
   months,
   years,
-  onExport,
+  title = "Filter Report Data",
 }: ReportFilterProps) {
   const handleMonthChange = (value: number) => {
     setSelectedMonths(
@@ -33,51 +41,62 @@ export function ReportFilter({
   };
 
   return (
-    <div className="p-4 bg-white rounded-md border">
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        {/* Year select */}
-        <div>
-          <select
-            value={selectedYear}
-            onChange={e => setSelectedYear(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-24 text-base"
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Year:</label>
+              <Select
+                value={selectedYear}
+                onValueChange={setSelectedYear}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Select All / Clear All */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
-            Select All
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
-            Clear All
-          </Button>
-        </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Months:</label>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+                  Select All
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+                  Clear All
+                </Button>
+              </div>
+            </div>
 
-        {/* Months checkboxes */}
-        <div className="flex flex-wrap gap-x-8 gap-y-2">
-          {months.map((m) => (
-            <label key={m.value} className="inline-flex items-center space-x-2 cursor-pointer">
-              <Checkbox
-                checked={selectedMonths.includes(m.value)}
-                onCheckedChange={() => handleMonthChange(m.value)}
-                id={`month-check-${m.value}`}
-              />
-              <span className="font-semibold text-base">{m.short}</span>
-            </label>
-          ))}
+            <div className="flex flex-wrap items-center justify-start gap-3 flex-1">
+              {months.map((m) => (
+                <div key={m.value} className="flex items-center space-x-1">
+                  <Checkbox
+                    checked={selectedMonths.includes(m.value)}
+                    onCheckedChange={() => handleMonthChange(m.value)}
+                    id={`month-check-${m.value}`}
+                  />
+                  <label
+                    htmlFor={`month-check-${m.value}`}
+                    className="text-sm cursor-pointer whitespace-nowrap"
+                  >
+                    {m.short}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-
-        {/* Export button */}
-        <Button variant="outline" onClick={onExport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

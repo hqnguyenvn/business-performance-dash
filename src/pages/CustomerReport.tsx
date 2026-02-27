@@ -2,7 +2,9 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useParameterValues } from "@/hooks/useParameterValues";
@@ -56,6 +58,7 @@ const CustomerReport = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | 'all'>(25);
   const [filteredCount, setFilteredCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [tableFilteredData, setTableFilteredData] = useState<CustomerReportData[]>([]);
   const [totals, setTotals] = useState({
@@ -517,11 +520,35 @@ const CustomerReport = () => {
           totalProfitPercent={totalProfitPercent}
         />
 
+        <ReportFilter
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          selectedMonths={selectedMonths}
+          setSelectedMonths={setSelectedMonths}
+          months={MONTHS}
+          years={years}
+          title="Filter Customer Report"
+        />
+
         <Card className="bg-white">
           <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <CardTitle>Customer Report</CardTitle>
-              <div className="flex items-center gap-2 flex-wrap">
+            <CardTitle>Customer Report</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+              <div className="flex gap-2 md:w-1/3">
+                <Input
+                  type="search"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={() => setSearchTerm(searchTerm)}>
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-4 flex-wrap">
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -533,19 +560,12 @@ const CustomerReport = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
-                <ReportFilter
-                  selectedYear={selectedYear}
-                  setSelectedYear={setSelectedYear}
-                  selectedMonths={selectedMonths}
-                  setSelectedMonths={setSelectedMonths}
-                  months={MONTHS}
-                  years={years}
-                  onExport={exportToCSV}
-                />
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
             <ReportTable
               data={groupedData}
               loading={loading}
@@ -560,6 +580,7 @@ const CustomerReport = () => {
               endIndex={endIndex}
               pageSize={pageSize}
               bonusRate={0}
+              searchTerm={searchTerm}
               onFilteredDataChange={handleFilteredDataChange}
               onTotalsChange={handleTotalsChange}
               onFilteredCountChange={handleFilteredCountChange}
