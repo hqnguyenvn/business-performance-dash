@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { NumberInput } from "@/components/ui/number-input";
+import { Button } from "@/components/ui/button";
 
 interface Month {
     value: number;
@@ -16,6 +17,7 @@ interface BusinessReportFiltersProps {
   onYearChange: (value: string) => void;
   selectedMonths: number[];
   onMonthToggle: (month: number) => void;
+  setSelectedMonths: (months: number[]) => void;
   incomeTaxRate: number;
   onIncomeTaxRateChange: (value: number) => void;
   bonusRate: number;
@@ -29,6 +31,7 @@ export const BusinessReportFilters = ({
   onYearChange,
   selectedMonths,
   onMonthToggle,
+  setSelectedMonths,
   incomeTaxRate,
   onIncomeTaxRateChange,
   bonusRate,
@@ -83,23 +86,33 @@ export const BusinessReportFilters = ({
             </div>
           </div>
 
-          <div className="flex-1">
-            <div className="grid grid-cols-6 gap-2">
-              {months.map((month) => (
-                <div key={month.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`month-${month.value}`}
-                    checked={selectedMonths.includes(month.value)}
-                    onCheckedChange={() => onMonthToggle(month.value)}
-                  />
-                  <label
-                    htmlFor={`month-${month.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {month.short}
-                  </label>
-                </div>
-              ))}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+                Select All
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+                Clear All
+              </Button>
+            </div>
+            <div className="flex-1">
+              <div className="grid grid-cols-6 gap-2">
+                {months.map((month) => (
+                  <div key={month.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`month-${month.value}`}
+                      checked={selectedMonths.includes(month.value)}
+                      onCheckedChange={() => onMonthToggle(month.value)}
+                    />
+                    <label
+                      htmlFor={`month-${month.value}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {month.short}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

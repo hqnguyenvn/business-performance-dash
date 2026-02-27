@@ -12,6 +12,7 @@ const BusinessReport = () => {
     availableYears,
     handleYearChange,
     selectedMonths,
+    setSelectedMonths,
     handleMonthToggle,
     incomeTaxRate,
     setIncomeTaxRate,
@@ -55,6 +56,7 @@ const BusinessReport = () => {
           onYearChange={handleYearChange}
           selectedMonths={selectedMonths}
           onMonthToggle={handleMonthToggle}
+          setSelectedMonths={setSelectedMonths}
           incomeTaxRate={incomeTaxRate ?? 5}
           onIncomeTaxRateChange={setIncomeTaxRate}
           bonusRate={bonusRate ?? 15}

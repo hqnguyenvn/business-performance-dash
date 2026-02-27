@@ -16,6 +16,7 @@ const Costs = () => {
     costs,
     selectedYear,
     selectedMonths,
+    setSelectedMonths,
     isDialogOpen,
     setIsDialogOpen,
     selectedCost,
@@ -75,6 +76,7 @@ const Costs = () => {
           availableYears={availableYears}
           selectedMonths={selectedMonths}
           handleMonthToggle={handleMonthToggle}
+          setSelectedMonths={setSelectedMonths}
         />
 
         <div className="bg-white p-4 rounded-lg shadow">

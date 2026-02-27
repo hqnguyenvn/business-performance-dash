@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 
 interface MonthOption {
   value: number;
@@ -50,7 +51,16 @@ export const DashboardFilter: React.FC<DashboardFilterProps> = ({
             ))}
           </select>
         </div>
-        {/* Months checkboxes, two rows */}
+        {/* Select All / Clear All */}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+            Select All
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+            Clear All
+          </Button>
+        </div>
+        {/* Months checkboxes */}
         <div className="flex flex-wrap gap-x-8 gap-y-2 ml-0 md:ml-4">
           <div className="flex flex-wrap">
             {months.slice(0, 6).map(m => (
@@ -80,33 +90,6 @@ export const DashboardFilter: React.FC<DashboardFilterProps> = ({
           </div>
         </div>
       </div>
-      {/* Rate inputs - Hidden as requested */}
-      {/* <div className="flex flex-wrap gap-6 items-center mt-2">
-        <div className="flex items-center space-x-2">
-          <span className="text-base font-semibold">Income Tax Rate:</span>
-          <input
-            type="number"
-            value={incomeTaxRate}
-            onChange={e => setIncomeTaxRate(Number(e.target.value))}
-            min={0}
-            max={100}
-            className="border border-gray-300 rounded px-3 py-1 w-20 text-right text-base"
-          />
-          <span className="font-semibold text-base">%</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-base font-semibold">Bonus Rate:</span>
-          <input
-            type="number"
-            value={bonusRate}
-            onChange={e => setBonusRate(Number(e.target.value))}
-            min={0}
-            max={100}
-            className="border border-gray-300 rounded px-3 py-1 w-20 text-right text-base"
-          />
-          <span className="font-semibold text-base">%</span>
-        </div>
-      </div> */}
     </div>
   </div>
 );

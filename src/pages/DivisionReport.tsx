@@ -17,7 +17,7 @@ const DivisionReport = () => {
   const currentMonth = new Date().getMonth() + 1;
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
-  const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1));
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1));
 
   // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));

@@ -1,4 +1,5 @@
 
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -8,6 +9,7 @@ interface CostsToolbarProps {
   availableYears: number[];
   selectedMonths: number[];
   handleMonthToggle: (monthValue: number) => void;
+  setSelectedMonths: (months: number[]) => void;
 }
 
 export const CostsToolbar = ({
@@ -16,6 +18,7 @@ export const CostsToolbar = ({
   availableYears,
   selectedMonths,
   handleMonthToggle,
+  setSelectedMonths,
 }: CostsToolbarProps) => {
   const MONTHS = [
     { value: 1, label: "Jan" }, { value: 2, label: "Feb" }, { value: 3, label: "Mar" },
@@ -41,6 +44,14 @@ export const CostsToolbar = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+              Select All
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+              Clear All
+            </Button>
           </div>
           <div className="flex-1">
             <div className="grid grid-cols-6 md:grid-cols-12 gap-x-6 gap-y-2">

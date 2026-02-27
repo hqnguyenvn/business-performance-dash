@@ -13,7 +13,7 @@ export const useSalaryCosts = () => {
     salaryCosts,
     setSalaryCosts,
     selectedYear,
-    selectedMonths,
+    selectedMonths, setSelectedMonths,
     isLoading,
     companies,
     divisions,
@@ -66,7 +66,7 @@ export const useSalaryCosts = () => {
   return {
     salaryCosts,
     selectedYear,
-    selectedMonths,
+    selectedMonths, setSelectedMonths,
     isDialogOpen,
     setIsDialogOpen,
     selectedCost,

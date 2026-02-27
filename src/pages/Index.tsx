@@ -35,7 +35,7 @@ const Index = () => {
   // Filter states
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
-    Array.from({ length: currentMonth }, (_, idx) => idx + 1)
+    Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, idx) => idx + 1)
   );
   
   // Get parameter values from database
