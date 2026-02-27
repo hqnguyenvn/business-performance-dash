@@ -1,4 +1,5 @@
 import React, { memo } from "react";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MONTHS } from "@/hooks/useSalaryCosts";
@@ -9,6 +10,7 @@ interface SalaryCostsToolbarProps {
   availableYears: number[];
   selectedMonths: number[];
   handleMonthToggle: (monthValue: number) => void;
+  setSelectedMonths: (months: number[]) => void;
 }
 
 const SalaryCostsToolbar = memo(({
@@ -17,6 +19,7 @@ const SalaryCostsToolbar = memo(({
   availableYears,
   selectedMonths,
   handleMonthToggle,
+  setSelectedMonths,
 }: SalaryCostsToolbarProps) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow mb-6">
@@ -35,6 +38,14 @@ const SalaryCostsToolbar = memo(({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+              Select All
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+              Clear All
+            </Button>
           </div>
           <div className="flex-1">
             <div className="grid grid-cols-6 md:grid-cols-12 gap-x-6 gap-y-2">

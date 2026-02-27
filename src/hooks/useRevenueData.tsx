@@ -26,9 +26,9 @@ export const useRevenueData = () => {
   const [currencies, setCurrencies] = useState<MasterData[]>([]);
   const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   
-  // Default to months 1 to current month
+  // Default to months 1 to previous month
   const currentMonth = new Date().getMonth() + 1;
-  const defaultMonths = Array.from({ length: currentMonth }, (_, i) => i + 1);
+  const defaultMonths = Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1);
   
   const [searchParams, setSearchParams] = useState<RevenueSearchParams>({
     year: new Date().getFullYear(),

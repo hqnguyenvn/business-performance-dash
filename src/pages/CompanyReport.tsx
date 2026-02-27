@@ -17,7 +17,7 @@ const CompanyReport = () => {
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
-    Array.from({ length: currentMonth }, (_, i) => i + 1)
+    Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1)
   );
   const [tableFilteredData, setTableFilteredData] = useState<GroupedCompanyData[]>([]);
   const [totals, setTotals] = useState({

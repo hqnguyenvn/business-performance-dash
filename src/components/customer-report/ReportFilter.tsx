@@ -48,9 +48,19 @@ export function ReportFilter({
           </select>
         </div>
 
+        {/* Select All / Clear All */}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([1,2,3,4,5,6,7,8,9,10,11,12])}>
+            Select All
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSelectedMonths([])}>
+            Clear All
+          </Button>
+        </div>
+
         {/* Months checkboxes */}
         <div className="flex flex-wrap gap-x-8 gap-y-2">
-          {months.map((m, idx) => (
+          {months.map((m) => (
             <label key={m.value} className="inline-flex items-center space-x-2 cursor-pointer">
               <Checkbox
                 checked={selectedMonths.includes(m.value)}

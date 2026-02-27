@@ -63,7 +63,7 @@ export const useBusinessReport = () => {
   const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
-    Array.from({ length: currentMonth }, (_, i) => i + 1)
+    Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1)
   );
 
   // Get parameter values from database
@@ -249,6 +249,7 @@ export const useBusinessReport = () => {
     availableYears,
     handleYearChange,
     selectedMonths,
+    setSelectedMonths,
     handleMonthToggle,
     incomeTaxRate,
     setIncomeTaxRate,

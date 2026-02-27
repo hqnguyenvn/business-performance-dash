@@ -12,7 +12,7 @@ export const useSalaryCostsState = () => {
 
   // Mặc định chọn các tháng từ tháng 1 đến tháng hiện tại
   const currentMonth = new Date().getMonth() + 1;
-  const defaultSelectedMonths = Array.from({ length: currentMonth }, (_, i) => i + 1);
+  const defaultSelectedMonths = Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1);
   const [selectedMonths, setSelectedMonths] = useState<number[]>(defaultSelectedMonths);
 
   // Pagination state
@@ -80,7 +80,7 @@ export const useSalaryCostsState = () => {
 
   return {
     salaryCosts, setSalaryCosts,
-    selectedYear, handleYearChange,
+    selectedYear, handleYearChange, setSelectedMonths,
     selectedMonths, handleMonthToggle,
     isLoading,
     companies, divisions, customers,

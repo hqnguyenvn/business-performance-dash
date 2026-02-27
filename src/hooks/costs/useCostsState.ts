@@ -17,8 +17,11 @@ export const useCostsState = () => {
   const [costs, setCosts] = useState<Cost[]>([]);
   const currentYear = new Date().getFullYear();
   
+  const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(
+    Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1)
+  );
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

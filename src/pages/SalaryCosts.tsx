@@ -17,6 +17,7 @@ const SalaryCosts = () => {
     selectedYear,
     handleYearChange,
     selectedMonths,
+    setSelectedMonths,
     handleMonthToggle,
     availableYears,
     filteredSalaryCosts,
@@ -78,6 +79,7 @@ const SalaryCosts = () => {
           availableYears={availableYears}
           selectedMonths={selectedMonths}
           handleMonthToggle={handleMonthToggle}
+          setSelectedMonths={setSelectedMonths}
         />
 
         <Card className="bg-white">
