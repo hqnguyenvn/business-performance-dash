@@ -59,6 +59,26 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
       </td>
       <td className="border border-gray-300 p-1">
         <input
+          type="number"
+          className="border-0 p-1 h-8 w-full"
+          value={getValue("year")}
+          onChange={(e) => handleChange("year", e.target.value)}
+          onBlur={() => handleBlur("year")}
+        />
+      </td>
+      <td className="border border-gray-300 p-1">
+        <input
+          type="number"
+          className="border-0 p-1 h-8 w-full"
+          min={1}
+          max={12}
+          value={getValue("month")}
+          onChange={(e) => handleChange("month", e.target.value)}
+          onBlur={() => handleBlur("month")}
+        />
+      </td>
+      <td className="border border-gray-300 p-1">
+        <input
           className="border-0 p-1 h-8 w-full"
           value={getValue("username")}
           onChange={(e) => handleChange("username", e.target.value)}
@@ -131,6 +151,16 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+      </td>
+      <td className="border border-gray-300 p-1">
+        <input
+          type="number"
+          className="border-0 p-1 h-8 w-full"
+          min={0}
+          value={getValue("working_day")}
+          onChange={(e) => handleChange("working_day", e.target.value)}
+          onBlur={() => handleBlur("working_day")}
+        />
       </td>
       <RowActions
         onAddRowBelow={() => addRowBelow(index)}

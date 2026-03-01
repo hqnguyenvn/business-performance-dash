@@ -67,6 +67,7 @@ export function useEmployeeData() {
   );
 
   const addNewItem = useCallback(() => {
+    const now = new Date();
     const newItem: Employee = {
       id: "tmp-" + Date.now() + Math.random().toString(36).slice(2, 6),
       username: "",
@@ -76,11 +77,15 @@ export function useEmployeeData() {
       role_id: null,
       category: "",
       status: "Working",
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      working_day: 0,
     };
     setEmployees((prev) => [newItem, ...prev]);
   }, []);
 
   const addRowBelow = useCallback((index: number) => {
+    const now = new Date();
     const newItem: Employee = {
       id: "tmp-" + Date.now() + Math.random().toString(36).slice(2, 6),
       username: "",
@@ -90,6 +95,9 @@ export function useEmployeeData() {
       role_id: null,
       category: "",
       status: "Working",
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      working_day: 0,
     };
     setEmployees((prev) => {
       const next = [...prev];

@@ -333,36 +333,45 @@ export type Database = {
           created_at: string | null
           division_id: string | null
           id: string
+          month: number
           name: string
           role_id: string | null
           status: string
           type: string
           updated_at: string | null
           username: string
+          working_day: number
+          year: number
         }
         Insert: {
           category?: string
           created_at?: string | null
           division_id?: string | null
           id?: string
+          month?: number
           name?: string
           role_id?: string | null
           status?: string
           type?: string
           updated_at?: string | null
           username?: string
+          working_day?: number
+          year?: number
         }
         Update: {
           category?: string
           created_at?: string | null
           division_id?: string | null
           id?: string
+          month?: number
           name?: string
           role_id?: string | null
           status?: string
           type?: string
           updated_at?: string | null
           username?: string
+          working_day?: number
+          year?: number
         }
         Relationships: [
           {
