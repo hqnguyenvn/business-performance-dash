@@ -327,6 +327,60 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          category: string
+          created_at: string | null
+          division_id: string | null
+          id: string
+          name: string
+          role_id: string | null
+          status: string
+          type: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          division_id?: string | null
+          id?: string
+          name?: string
+          role_id?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          division_id?: string | null
+          id?: string
+          name?: string
+          role_id?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchange_rates: {
         Row: {
           created_at: string | null
