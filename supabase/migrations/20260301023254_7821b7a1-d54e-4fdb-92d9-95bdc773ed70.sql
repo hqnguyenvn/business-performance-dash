@@ -1,0 +1,5 @@
+
+ALTER TABLE public.employees
+ADD COLUMN year integer NOT NULL DEFAULT EXTRACT(YEAR FROM now()),
+ADD COLUMN month integer NOT NULL DEFAULT EXTRACT(MONTH FROM now()),
+ADD COLUMN working_day numeric NOT NULL DEFAULT 0;

@@ -7,6 +7,9 @@ export interface Employee {
   role_id: string | null;
   category: string;
   status: string;
+  year: number;
+  month: number;
+  working_day: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -22,6 +22,8 @@ export function EmployeeTable() {
 
   const handleExport = () => {
     const columns = [
+      { key: "year", header: "Year" },
+      { key: "month", header: "Month" },
       { key: "username", header: "User name" },
       { key: "name", header: "Name" },
       { key: "type", header: "Type" },
@@ -29,6 +31,7 @@ export function EmployeeTable() {
       { key: "role_name", header: "Role" },
       { key: "category", header: "Category" },
       { key: "status", header: "Status" },
+      { key: "working_day", header: "Working Day" },
     ];
     const exportData = employees.map((e) => ({
       ...e,
@@ -70,6 +73,8 @@ export function EmployeeTable() {
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
+                <TableHead className="border border-gray-300">Year</TableHead>
+                <TableHead className="border border-gray-300">Month</TableHead>
                 <TableHead className="border border-gray-300">User name</TableHead>
                 <TableHead className="border border-gray-300">Name</TableHead>
                 <TableHead className="border border-gray-300">Type</TableHead>
@@ -77,13 +82,14 @@ export function EmployeeTable() {
                 <TableHead className="border border-gray-300">Role</TableHead>
                 <TableHead className="border border-gray-300">Category</TableHead>
                 <TableHead className="border border-gray-300">Status</TableHead>
+                <TableHead className="border border-gray-300">Working Day</TableHead>
                 <TableHead className="border border-gray-300 text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {employees.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-4 text-center text-gray-500">
+                  <td colSpan={12} className="p-4 text-center text-gray-500">
                     No employees found.
                   </td>
                 </tr>
