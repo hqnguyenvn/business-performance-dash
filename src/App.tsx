@@ -21,6 +21,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleBasedRoute from "./components/RoleBasedRoute";
 import UserManagement from "./pages/UserManagement";
+import Employees from "./pages/Employees";
 
 // Create QueryClient with default options
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const AppRoutes = () => {
             <Route path="/customer-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><CustomerReport /></RoleBasedRoute>} />
             <Route path="/company-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><CompanyReport /></RoleBasedRoute>} />
             <Route path="/division-report" element={<RoleBasedRoute allowedRoles={['Admin', 'Manager', 'User']}><DivisionReport /></RoleBasedRoute>} />
+            <Route path="/employees" element={<RoleBasedRoute allowedRoles={['Admin']}><Employees /></RoleBasedRoute>} />
             <Route path="/user-management" element={<RoleBasedRoute allowedRoles={['Admin']}><UserManagement /></RoleBasedRoute>} />
             <Route path="/settings" element={<RoleBasedRoute allowedRoles={['Admin']}><Settings /></RoleBasedRoute>} />
             <Route path="/profile" element={<Profile />} />

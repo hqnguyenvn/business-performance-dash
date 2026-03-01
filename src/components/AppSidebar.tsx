@@ -55,6 +55,11 @@ const menuItems = [
     icon: Users,
   },
   {
+    title: "Employee",
+    url: "/employees",
+    icon: Users,
+  },
+  {
     title: "User Management",
     url: "/user-management",
     icon: Shield,
