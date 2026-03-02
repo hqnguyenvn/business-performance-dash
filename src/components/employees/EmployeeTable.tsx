@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import ImportCsvDialog from "@/components/ImportCsvDialog";
 import { employeeService } from "@/services/employeeService";
 import RevenueFilters from "@/components/RevenueFilters";
 import RevenueSearch from "@/components/RevenueSearch";
+import PaginationControls from "@/components/PaginationControls";
 
 const IMPORT_COLUMNS = ["Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
 
@@ -37,6 +38,8 @@ export function EmployeeTable() {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(getDefaultMonths());
   const [searchTerm, setSearchTerm] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number | 'all'>(25);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
@@ -54,6 +57,19 @@ export function EmployeeTable() {
       return true;
     });
   }, [employees, selectedYear, selectedMonths, appliedSearch, divisions, roles]);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [selectedYear, selectedMonths, appliedSearch]);
+
+  const totalItems = filteredEmployees.length;
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(totalItems / pageSize);
+  const paginatedEmployees = useMemo(() => {
+    if (pageSize === 'all') return filteredEmployees;
+    const start = (currentPage - 1) * pageSize;
+    return filteredEmployees.slice(start, start + pageSize);
+  }, [filteredEmployees, currentPage, pageSize]);
+  const startIndex = pageSize === 'all' ? 1 : (currentPage - 1) * (pageSize as number) + 1;
+  const endIndex = pageSize === 'all' ? totalItems : Math.min(currentPage * (pageSize as number), totalItems);
 
   const handleExport = () => {
     const columns = [
@@ -162,7 +178,18 @@ export function EmployeeTable() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            position="top"
+          />
+          <div className="overflow-x-auto mt-4">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
@@ -181,18 +208,18 @@ export function EmployeeTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.length === 0 ? (
+                {paginatedEmployees.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="p-4 text-center text-muted-foreground">
                       No employees found.
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployees.map((emp, idx) => (
+                  paginatedEmployees.map((emp, idx) => (
                     <EmployeeTableRow
                       key={emp.id}
                       item={emp}
-                      index={idx}
+                      index={startIndex - 1 + idx}
                       divisions={divisions}
                       roles={roles}
                       handleCellEdit={handleCellEdit}
@@ -204,6 +231,16 @@ export function EmployeeTable() {
               </TableBody>
             </Table>
           </div>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            pageSize={pageSize}
+            position="bottom"
+          />
         </CardContent>
 
         <ImportCsvDialog
