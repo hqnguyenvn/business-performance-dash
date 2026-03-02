@@ -43,6 +43,8 @@ export function EmployeeTable() {
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
+      const isTmp = emp.id.startsWith("tmp-");
+      if (isTmp) return true;
       if (emp.year !== selectedYear) return false;
       if (selectedMonths.length > 0 && !selectedMonths.includes(emp.month)) return false;
       if (appliedSearch) {
@@ -183,7 +185,11 @@ export function EmployeeTable() {
                 <Download className="h-4 w-4" />
                 Export CSV
               </Button>
-              <Button onClick={addNewItem} className="flex items-center gap-2">
+              <Button onClick={() => {
+                const month = selectedMonths.length > 0 ? Math.max(...selectedMonths) : new Date().getMonth() + 1;
+                addNewItem(selectedYear, month);
+                setCurrentPage(1);
+              }} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Add New
               </Button>
