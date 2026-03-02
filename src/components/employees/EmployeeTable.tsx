@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHeader, TableRow, TableHead } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,15 @@ import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH
 import { exportToCsv } from "@/utils/exportCsv";
 import ImportCsvDialog from "@/components/ImportCsvDialog";
 import { employeeService } from "@/services/employeeService";
+import RevenueFilters from "@/components/RevenueFilters";
+import RevenueSearch from "@/components/RevenueSearch";
 
 const IMPORT_COLUMNS = ["Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
+
+function getDefaultMonths(): number[] {
+  const currentMonth = new Date().getMonth(); // 0-indexed
+  return Array.from({ length: currentMonth }, (_, i) => i + 1);
+}
 
 export function EmployeeTable() {
   const {
@@ -26,6 +33,27 @@ export function EmployeeTable() {
   } = useEmployeeData();
 
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonths, setSelectedMonths] = useState<number[]>(getDefaultMonths());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  const filteredEmployees = useMemo(() => {
+    return employees.filter((emp) => {
+      if (emp.year !== selectedYear) return false;
+      if (selectedMonths.length > 0 && !selectedMonths.includes(emp.month)) return false;
+      if (appliedSearch) {
+        const term = appliedSearch.toLowerCase();
+        const divName = divisions.find((d) => d.id === emp.division_id)?.name || "";
+        const roleName = roles.find((r) => r.id === emp.role_id)?.code || "";
+        const searchable = [emp.username, emp.name, emp.type, emp.category, emp.status, divName, roleName]
+          .join(" ")
+          .toLowerCase();
+        if (!searchable.includes(term)) return false;
+      }
+      return true;
+    });
+  }, [employees, selectedYear, selectedMonths, appliedSearch, divisions, roles]);
 
   const handleExport = () => {
     const columns = [
@@ -40,7 +68,7 @@ export function EmployeeTable() {
       { key: "status", header: "Status" },
       { key: "working_day", header: "Working Day" },
     ];
-    const exportData = employees.map((e) => ({
+    const exportData = filteredEmployees.map((e) => ({
       ...e,
       month: MONTH_LABELS[(e.month || 1) - 1] || e.month,
       division_name: divisions.find((d) => d.id === e.division_id)?.name || "",
@@ -56,16 +84,13 @@ export function EmployeeTable() {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       try {
-        // Resolve month from label
         const monthStr = (row["Month"] || "").trim().toUpperCase();
         const monthIndex = MONTH_LABELS.findIndex((m) => m === monthStr);
         const month = monthIndex >= 0 ? monthIndex + 1 : parseInt(row["Month"]) || 1;
 
-        // Resolve division by name
         const divName = (row["Division"] || "").trim();
         const div = divisions.find((d) => d.name.toLowerCase() === divName.toLowerCase());
 
-        // Resolve role by code
         const roleCode = (row["Role"] || "").trim();
         const role = roles.find((r) => r.code.toLowerCase() === roleCode.toLowerCase());
 
@@ -103,78 +128,92 @@ export function EmployeeTable() {
   }
 
   return (
-    <Card className="bg-card">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Employee List</CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
-              <Upload className="h-4 w-4" />
-              Import
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-            <Button onClick={addNewItem} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Employee
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="border border-border w-12 text-center">No.</TableHead>
-                <TableHead className="border border-border">Year</TableHead>
-                <TableHead className="border border-border">Month</TableHead>
-                <TableHead className="border border-border">User name</TableHead>
-                <TableHead className="border border-border">Name</TableHead>
-                <TableHead className="border border-border">Type</TableHead>
-                <TableHead className="border border-border">Division</TableHead>
-                <TableHead className="border border-border">Role</TableHead>
-                <TableHead className="border border-border">Category</TableHead>
-                <TableHead className="border border-border">Status</TableHead>
-                <TableHead className="border border-border">Working Day</TableHead>
-                <TableHead className="border border-border text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="p-4 text-center text-muted-foreground">
-                    No employees found.
-                  </td>
-                </tr>
-              ) : (
-                employees.map((emp, idx) => (
-                  <EmployeeTableRow
-                    key={emp.id}
-                    item={emp}
-                    index={idx}
-                    divisions={divisions}
-                    roles={roles}
-                    handleCellEdit={handleCellEdit}
-                    deleteItem={deleteItem}
-                    addRowBelow={addRowBelow}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-
-      <ImportCsvDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        title="Employees"
-        expectedColumns={IMPORT_COLUMNS}
-        onImport={handleImport}
+    <div className="space-y-4">
+      <RevenueFilters
+        selectedYear={selectedYear}
+        selectedMonths={selectedMonths}
+        onYearChange={setSelectedYear}
+        onMonthChange={setSelectedMonths}
       />
-    </Card>
+
+      <Card className="bg-card">
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle>Employee List</CardTitle>
+            <div className="flex items-center gap-2">
+              <RevenueSearch
+                searchTerm={searchTerm}
+                onSearchTermChange={setSearchTerm}
+                onSearch={() => setAppliedSearch(searchTerm)}
+              />
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
+                <Upload className="h-4 w-4" />
+                Import
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+              <Button onClick={addNewItem} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Employee
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="border border-border w-12 text-center">No.</TableHead>
+                  <TableHead className="border border-border">Year</TableHead>
+                  <TableHead className="border border-border">Month</TableHead>
+                  <TableHead className="border border-border">User name</TableHead>
+                  <TableHead className="border border-border">Name</TableHead>
+                  <TableHead className="border border-border">Type</TableHead>
+                  <TableHead className="border border-border">Division</TableHead>
+                  <TableHead className="border border-border">Role</TableHead>
+                  <TableHead className="border border-border">Category</TableHead>
+                  <TableHead className="border border-border">Status</TableHead>
+                  <TableHead className="border border-border">Working Day</TableHead>
+                  <TableHead className="border border-border text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="p-4 text-center text-muted-foreground">
+                      No employees found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((emp, idx) => (
+                    <EmployeeTableRow
+                      key={emp.id}
+                      item={emp}
+                      index={idx}
+                      divisions={divisions}
+                      roles={roles}
+                      handleCellEdit={handleCellEdit}
+                      deleteItem={deleteItem}
+                      addRowBelow={addRowBelow}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+
+        <ImportCsvDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          title="Employees"
+          expectedColumns={IMPORT_COLUMNS}
+          onImport={handleImport}
+        />
+      </Card>
+    </div>
   );
 }
