@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus, Upload } from "lucide-react";
 import { useEmployeeData } from "@/hooks/useEmployeeData";
 import { EmployeeTableRow } from "./EmployeeTableRow";
-import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH_LABELS } from "@/types/employee";
+import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH_LABELS, getConvertFactor } from "@/types/employee";
 import { exportToCsv } from "@/utils/exportCsv";
 import ImportCsvDialog from "@/components/ImportCsvDialog";
 import { employeeService } from "@/services/employeeService";
@@ -85,12 +85,14 @@ export function EmployeeTable() {
       { key: "category", header: "Category" },
       { key: "status", header: "Status" },
       { key: "working_day", header: "Working Day" },
+      { key: "convert_working_day", header: "Convert Working Day" },
     ];
     const exportData = filteredEmployees.map((e) => ({
       ...e,
       month: MONTH_LABELS[(e.month || 1) - 1] || e.month,
       division_name: divisions.find((d) => d.id === e.division_id)?.name || "",
       role_name: roles.find((r) => r.id === e.role_id)?.code || "",
+      convert_working_day: (Number(e.working_day) * getConvertFactor(e.type || "")).toFixed(2),
     }));
     exportToCsv(exportData, "Employees", columns);
   };
@@ -210,13 +212,14 @@ export function EmployeeTable() {
                   <TableHead className="border border-border">Category</TableHead>
                   <TableHead className="border border-border">Status</TableHead>
                   <TableHead className="border border-border">Working Day</TableHead>
+                  <TableHead className="border border-border">Convert Working Day</TableHead>
                   <TableHead className="border border-border text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="p-4 text-center text-muted-foreground">
+                    <td colSpan={13} className="p-4 text-center text-muted-foreground">
                       No employees found.
                     </td>
                   </tr>

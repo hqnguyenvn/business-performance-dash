@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Employee } from "@/types/employee";
+import { Employee, getBusinessDaysInMonth } from "@/types/employee";
 import { employeeService } from "@/services/employeeService";
 import { MasterData } from "@/hooks/useMasterDataEdit";
 import { divisionsService } from "@/services/masterDataService";
@@ -68,6 +68,8 @@ export function useEmployeeData() {
 
   const addNewItem = useCallback((year?: number, month?: number) => {
     const now = new Date();
+    const useYear = year ?? now.getFullYear();
+    const useMonth = month ?? (now.getMonth() + 1);
     const newItem: Employee = {
       id: "tmp-" + Date.now() + Math.random().toString(36).slice(2, 6),
       username: "",
@@ -77,15 +79,17 @@ export function useEmployeeData() {
       role_id: null,
       category: "",
       status: "Working",
-      year: year ?? now.getFullYear(),
-      month: month ?? (now.getMonth() + 1),
-      working_day: 0,
+      year: useYear,
+      month: useMonth,
+      working_day: getBusinessDaysInMonth(useYear, useMonth),
     };
     setEmployees((prev) => [newItem, ...prev]);
   }, []);
 
   const addRowBelow = useCallback((index: number) => {
     const now = new Date();
+    const useYear = now.getFullYear();
+    const useMonth = now.getMonth() + 1;
     const newItem: Employee = {
       id: "tmp-" + Date.now() + Math.random().toString(36).slice(2, 6),
       username: "",
@@ -95,9 +99,9 @@ export function useEmployeeData() {
       role_id: null,
       category: "",
       status: "Working",
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      working_day: 0,
+      year: useYear,
+      month: useMonth,
+      working_day: getBusinessDaysInMonth(useYear, useMonth),
     };
     setEmployees((prev) => {
       const next = [...prev];

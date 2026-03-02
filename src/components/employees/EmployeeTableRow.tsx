@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH_LABELS, getDaysInMonth } from "@/types/employee";
+import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH_LABELS, getDaysInMonth, getConvertFactor } from "@/types/employee";
 import { MasterData } from "@/hooks/useMasterDataEdit";
 import { Role } from "@/types/role";
 import { RowActions } from "@/components/master-data/RowActions";
@@ -176,6 +176,9 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
           onBlur={() => handleBlur("working_day")}
           title={`Max: ${maxWorkingDays} days`}
         />
+      </td>
+      <td className="border border-gray-300 p-1 text-center bg-gray-50">
+        {(Number(item.working_day) * getConvertFactor(item.type || "")).toFixed(2)}
       </td>
       <RowActions
         onAddRowBelow={() => addRowBelow(index)}

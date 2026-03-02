@@ -23,3 +23,24 @@ export const MONTH_LABELS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "A
 export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
+
+export function getBusinessDaysInMonth(year: number, month: number): number {
+  const totalDays = new Date(year, month, 0).getDate();
+  let businessDays = 0;
+  for (let day = 1; day <= totalDays; day++) {
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      businessDays++;
+    }
+  }
+  return businessDays;
+}
+
+export function getConvertFactor(type: string): number {
+  switch (type) {
+    case "Nhân viên": return 1;
+    case "Cộng tác viên": return 1;
+    case "Sinh viên": return 0.25;
+    default: return 1;
+  }
+}
