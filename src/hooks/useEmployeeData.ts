@@ -130,5 +130,6 @@ export function useEmployeeData() {
     addNewItem,
     addRowBelow,
     deleteItem,
+    reload: loadData,
   };
 }
