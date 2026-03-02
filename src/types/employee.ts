@@ -17,3 +17,9 @@ export interface Employee {
 export const EMPLOYEE_TYPES = ["Sinh viên", "Nhân viên", "Cộng tác viên"];
 export const EMPLOYEE_CATEGORIES = ["Overhead", "Development"];
 export const EMPLOYEE_STATUSES = ["Working", "Off"];
+
+export const MONTH_LABELS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"] as const;
+
+export function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}

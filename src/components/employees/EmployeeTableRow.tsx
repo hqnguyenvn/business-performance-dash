@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES } from "@/types/employee";
+import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH_LABELS, getDaysInMonth } from "@/types/employee";
 import { MasterData } from "@/hooks/useMasterDataEdit";
 import { Role } from "@/types/role";
 import { RowActions } from "@/components/master-data/RowActions";
@@ -39,6 +39,17 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
     const key = `${item.id}-${field}`;
     const value = editingValues[key];
     if (value !== undefined) {
+      // Validate working_day against days in month
+      if (field === "working_day") {
+        const year = Number(item.year) || new Date().getFullYear();
+        const month = Number(item.month) || 1;
+        const maxDays = getDaysInMonth(year, month);
+        const numVal = Number(value);
+        if (numVal < 0 || numVal > maxDays) {
+          setEditingValues((prev) => { const next = { ...prev }; delete next[key]; return next; });
+          return;
+        }
+      }
       handleCellEdit(item.id, field, value);
       setEditingValues((prev) => {
         const next = { ...prev };
@@ -51,6 +62,8 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
   const handleSelectChange = (field: keyof Employee, value: string) => {
     handleCellEdit(item.id, field, value);
   };
+
+  const maxWorkingDays = getDaysInMonth(Number(item.year) || new Date().getFullYear(), Number(item.month) || 1);
 
   return (
     <tr className="hover:bg-gray-50 h-[40px]">
@@ -67,15 +80,15 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
         />
       </td>
       <td className="border border-gray-300 p-1">
-        <input
-          type="number"
+        <select
           className="border-0 p-1 h-8 w-full"
-          min={1}
-          max={12}
-          value={getValue("month")}
-          onChange={(e) => handleChange("month", e.target.value)}
-          onBlur={() => handleBlur("month")}
-        />
+          value={item.month || 1}
+          onChange={(e) => handleSelectChange("month", e.target.value)}
+        >
+          {MONTH_LABELS.map((label, idx) => (
+            <option key={idx + 1} value={idx + 1}>{label}</option>
+          ))}
+        </select>
       </td>
       <td className="border border-gray-300 p-1">
         <input
@@ -157,9 +170,11 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
           type="number"
           className="border-0 p-1 h-8 w-full"
           min={0}
+          max={maxWorkingDays}
           value={getValue("working_day")}
           onChange={(e) => handleChange("working_day", e.target.value)}
           onBlur={() => handleBlur("working_day")}
+          title={`Max: ${maxWorkingDays} days`}
         />
       </td>
       <RowActions
