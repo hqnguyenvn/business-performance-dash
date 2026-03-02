@@ -154,42 +154,42 @@ export function EmployeeTable() {
 
       <Card className="bg-card">
         <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <CardTitle>Employee List</CardTitle>
-            <div className="flex items-center gap-2">
-              <RevenueSearch
-                searchTerm={searchTerm}
-                onSearchTermChange={setSearchTerm}
-                onSearch={() => setAppliedSearch(searchTerm)}
+          <CardTitle>Employee Working Days</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+            <RevenueSearch
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              onSearch={() => setAppliedSearch(searchTerm)}
+            />
+            <div className="flex items-center gap-4 flex-wrap">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={totalItems}
+                startIndex={startIndex}
+                endIndex={endIndex}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+                position="top"
               />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
                 <Upload className="h-4 w-4" />
-                Import
+                Import CSV
               </Button>
               <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
                 <Download className="h-4 w-4" />
-                Export
+                Export CSV
               </Button>
               <Button onClick={addNewItem} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add Employee
+                Add New
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            totalItems={totalItems}
-            startIndex={startIndex}
-            endIndex={endIndex}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-            position="top"
-          />
-          <div className="overflow-x-auto mt-4">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
