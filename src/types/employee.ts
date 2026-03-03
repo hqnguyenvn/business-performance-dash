@@ -23,3 +23,14 @@ export const MONTH_LABELS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "A
 export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
+
+/** Count weekdays (Mon-Fri) in a given month (1-indexed) */
+export function getBusinessDays(year: number, month: number): number {
+  const totalDays = getDaysInMonth(year, month);
+  let count = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    const day = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) count++;
+  }
+  return count;
+}
