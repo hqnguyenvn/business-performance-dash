@@ -18,6 +18,9 @@ export interface DashboardStats {
   totalCost: StatWithChange;
   netProfit: StatWithChange;
   customerCount: StatWithChange;
+  devEE: StatWithChange;
+  devEEBMM: number;
+  devEECMM: number;
   ee: StatWithChange;
   eeBMM: number;
   eeCMM: number;
@@ -82,13 +85,7 @@ export function useDashboardStats({
     fetchData();
   }, [year, months.join(","), incomeTaxRate, bonusRate]);
 
-  function calcStats(revenuesArr: any[], costsArr: any[], costTypesArr: any[], employeesArr: any[], statYear: number): {
-    totalRevenue: number;
-    totalCost: number;
-    netProfit: number;
-    customerCount: number;
-    ee: number;
-  } {
+  function calcStats(revenuesArr: any[], costsArr: any[], costTypesArr: any[], employeesArr: any[], statYear: number) {
     const totalRevenue = revenuesArr.reduce((sum, r) => sum + (r.vnd_revenue || 0), 0);
 
     const salaryType = costTypesArr.find((ct: any) => ct.code?.toLowerCase() === "salary");
@@ -118,17 +115,23 @@ export function useDashboardStats({
     // EE = BMM / CMM
     const totalBMM = revenuesArr.reduce((sum, r) => sum + (r.quantity || 0), 0);
     let totalCMM = 0;
+    let devCMM = 0;
     for (const emp of employeesArr) {
       const convertFactor = getConvertFactor(emp.type);
       const cwd = (emp.working_day || 0) * convertFactor;
       const bizDays = getBusinessDays(emp.year || statYear, emp.month);
       if (bizDays > 0) {
-        totalCMM += cwd / bizDays;
+        const empCMM = cwd / bizDays;
+        totalCMM += empCMM;
+        if ((emp.category || "").toLowerCase() === "development") {
+          devCMM += empCMM;
+        }
       }
     }
     const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
+    const devEE = devCMM > 0 ? totalBMM / devCMM : 0;
 
-    return { totalRevenue, totalCost, netProfit, customerCount, ee, totalBMM, totalCMM };
+    return { totalRevenue, totalCost, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM };
   }
 
   const stats = useMemo(() => {
@@ -138,6 +141,9 @@ export function useDashboardStats({
         totalCost: { value: 0, prevValue: null, percentChange: null },
         netProfit: { value: 0, prevValue: null, percentChange: null },
         customerCount: { value: 0, prevValue: null, percentChange: null },
+        devEE: { value: 0, prevValue: null, percentChange: null },
+        devEEBMM: 0,
+        devEECMM: 0,
         ee: { value: 0, prevValue: null, percentChange: null },
         eeBMM: 0,
         eeCMM: 0,
@@ -176,6 +182,13 @@ export function useDashboardStats({
         prevValue: prevStats ? prevStats.customerCount : null,
         percentChange: percentChange(nowStats.customerCount, prevStats ? prevStats.customerCount : null),
       },
+      devEE: {
+        value: nowStats.devEE,
+        prevValue: prevStats ? prevStats.devEE : null,
+        percentChange: percentChange(nowStats.devEE, prevStats ? prevStats.devEE : null),
+      },
+      devEEBMM: nowStats.totalBMM,
+      devEECMM: nowStats.devCMM,
       ee: {
         value: nowStats.ee,
         prevValue: prevStats ? prevStats.ee : null,

@@ -111,6 +111,16 @@ const Index = () => {
       color: "text-purple-600",
     },
     {
+      title: stats.loading ? "Development EE" : `Dev EE (${stats.devEEBMM.toFixed(2)}/${stats.devEECMM.toFixed(2)})`,
+      value: stats.loading ? "..." : `${(stats.devEE.value * 100).toFixed(1)}%`,
+      percentChange: stats.devEE.percentChange,
+      change: stats.loading ? "--" : (typeof stats.devEE.percentChange === "number"
+        ? `${stats.devEE.percentChange > 0 ? "+" : ""}${stats.devEE.percentChange.toFixed(1)}%`
+        : "--"),
+      icon: Activity,
+      color: "text-teal-600",
+    },
+    {
       title: stats.loading ? "EE" : `EE (${stats.eeBMM.toFixed(2)}/${stats.eeCMM.toFixed(2)})`,
       value: stats.loading ? "..." : `${(stats.ee.value * 100).toFixed(1)}%`,
       percentChange: stats.ee.percentChange,
