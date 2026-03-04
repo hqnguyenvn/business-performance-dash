@@ -111,7 +111,7 @@ const Index = () => {
       color: "text-purple-600",
     },
     {
-      title: "EE",
+      title: stats.loading ? "EE" : `EE (${stats.eeBMM.toFixed(2)}/${stats.eeCMM.toFixed(2)})`,
       value: stats.loading ? "..." : `${(stats.ee.value * 100).toFixed(1)}%`,
       percentChange: stats.ee.percentChange,
       change: stats.loading ? "--" : (typeof stats.ee.percentChange === "number"
