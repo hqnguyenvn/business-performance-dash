@@ -159,7 +159,7 @@ export function EmployeeTable() {
       <Card className="bg-card">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <CardTitle>Employee List</CardTitle>
+            <CardTitle>Employee working days</CardTitle>
             <div className="flex items-center gap-2">
               <RevenueSearch
                 searchTerm={searchTerm}
@@ -175,7 +175,7 @@ export function EmployeeTable() {
                 <Download className="h-4 w-4" />
                 Export
               </Button>
-              <Button onClick={() => addNewItem()} className="flex items-center gap-2">
+              <Button onClick={() => addNewItem(selectedYear, selectedMonths.length === 1 ? selectedMonths[0] : undefined)} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Add Employee
               </Button>
