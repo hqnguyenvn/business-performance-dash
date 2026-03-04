@@ -8,8 +8,8 @@ export default function Employees() {
     <RoleBasedRoute allowedRoles={["Admin"]}>
       <div className="flex flex-col min-h-screen bg-gray-50">
         <PageHeader
-          title="Employee Management"
-          description="Manage employee master data"
+          title="Employee Working Days Management"
+          description="Manage employee working days data"
           icon={Users}
         />
         <main className="flex-1 p-6">
