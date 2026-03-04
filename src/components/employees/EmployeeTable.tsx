@@ -12,6 +12,7 @@ import { employeeService } from "@/services/employeeService";
 import RevenueFilters from "@/components/RevenueFilters";
 import RevenueSearch from "@/components/RevenueSearch";
 import PaginationControls from "@/components/PaginationControls";
+import CloneEmployeeDialog from "./CloneEmployeeDialog";
 
 const IMPORT_COLUMNS = ["Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
 
@@ -30,6 +31,7 @@ export function EmployeeTable() {
     addNewItem,
     addRowBelow,
     deleteItem,
+    cloneData,
     reload,
   } = useEmployeeData();
 
@@ -179,6 +181,7 @@ export function EmployeeTable() {
                 onPageSizeChange={setPageSize}
                 position="top"
               />
+              <CloneEmployeeDialog onClone={cloneData} />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
                 <Upload className="h-4 w-4" />
                 Import CSV

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+
 import { Employee, getBusinessDaysInMonth } from "@/types/employee";
+
 import { employeeService } from "@/services/employeeService";
 import { MasterData } from "@/hooks/useMasterDataEdit";
 import { divisionsService } from "@/services/masterDataService";
@@ -125,6 +127,46 @@ export function useEmployeeData() {
     [toast]
   );
 
+  const cloneData = useCallback(
+    async (sourceYear: number, sourceMonth: number, targetYear: number, targetMonth: number) => {
+      try {
+        const sourceEmployees = employees.filter(
+          (e) => e.year === sourceYear && e.month === sourceMonth && !e.id.startsWith("tmp-")
+        );
+        if (sourceEmployees.length === 0) {
+          toast({ title: "No data", description: "No employees found for the source month.", variant: "destructive" });
+          return;
+        }
+
+        const sourceBD = getBusinessDays(sourceYear, sourceMonth);
+        const targetBD = getBusinessDays(targetYear, targetMonth);
+
+        let created = 0;
+        for (const emp of sourceEmployees) {
+          // Adjust working_day proportionally based on business days
+          const adjustedWorkingDay = sourceBD > 0
+            ? Math.round((emp.working_day / sourceBD) * targetBD * 100) / 100
+            : targetBD;
+
+          const { id, created_at, updated_at, ...rest } = emp;
+          await employeeService.create({
+            ...rest,
+            year: targetYear,
+            month: targetMonth,
+            working_day: adjustedWorkingDay,
+          });
+          created++;
+        }
+
+        toast({ title: "Cloned", description: `${created} employees cloned successfully.` });
+        loadData();
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to clone employees.", variant: "destructive" });
+      }
+    },
+    [employees, toast, loadData]
+  );
+
   return {
     employees,
     divisions,
@@ -134,6 +176,7 @@ export function useEmployeeData() {
     addNewItem,
     addRowBelow,
     deleteItem,
+    cloneData,
     reload: loadData,
   };
 }

@@ -24,6 +24,7 @@ export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
+
 export function getBusinessDaysInMonth(year: number, month: number): number {
   const totalDays = new Date(year, month, 0).getDate();
   let businessDays = 0;
@@ -43,4 +44,6 @@ export function getConvertFactor(type: string): number {
     case "Sinh viên": return 0.25;
     default: return 1;
   }
+
+
 }
