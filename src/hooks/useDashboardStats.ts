@@ -25,6 +25,7 @@ export interface DashboardStats {
   ee: StatWithChange;
   eeBMM: number;
   eeCMM: number;
+  overheadRatio: StatWithChange;
   loading: boolean;
 }
 
@@ -117,9 +118,15 @@ export function useDashboardStats({
     const totalBMM = revenuesArr.reduce((sum, r) => sum + (r.quantity || 0), 0);
     let totalCMM = 0;
     let devCMM = 0;
+    let totalCWD = 0;
+    let overheadCWD = 0;
     for (const emp of employeesArr) {
       const convertFactor = getConvertFactor(emp.type);
       const cwd = (emp.working_day || 0) * convertFactor;
+      totalCWD += cwd;
+      if ((emp.category || "").toLowerCase() === "overhead") {
+        overheadCWD += cwd;
+      }
       const bizDays = getBusinessDays(emp.year || statYear, emp.month);
       if (bizDays > 0) {
         const empCMM = cwd / bizDays;
@@ -131,8 +138,9 @@ export function useDashboardStats({
     }
     const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
     const devEE = devCMM > 0 ? totalBMM / devCMM : 0;
+    const overheadRatio = totalCWD > 0 ? overheadCWD / totalCWD : 0;
 
-    return { totalRevenue, totalCost, grossProfit, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM };
+    return { totalRevenue, totalCost, grossProfit, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM, overheadRatio };
   }
 
   const stats = useMemo(() => {
@@ -149,6 +157,7 @@ export function useDashboardStats({
         ee: { value: 0, prevValue: null, percentChange: null },
         eeBMM: 0,
         eeCMM: 0,
+        overheadRatio: { value: 0, prevValue: null, percentChange: null },
         loading: true,
       };
     }
@@ -203,6 +212,11 @@ export function useDashboardStats({
       },
       eeBMM: nowStats.totalBMM,
       eeCMM: nowStats.totalCMM,
+      overheadRatio: {
+        value: nowStats.overheadRatio,
+        prevValue: prevStats ? prevStats.overheadRatio : null,
+        percentChange: percentChange(nowStats.overheadRatio, prevStats ? prevStats.overheadRatio : null),
+      },
       loading: false,
     };
   }, [

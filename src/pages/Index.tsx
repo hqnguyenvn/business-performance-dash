@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { DashboardFilter } from "@/components/dashboard/DashboardFilter";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
-import { DollarSign, Receipt, TrendingUp, Users, Activity } from "lucide-react";
+import { DollarSign, Receipt, TrendingUp, Users, Activity, ChartPie } from "lucide-react";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useParameterValues } from "@/hooks/useParameterValues";
 import { formatNumber } from "@/lib/format";
@@ -139,6 +139,16 @@ const Index = () => {
         : "--"),
       icon: Activity,
       color: "text-orange-600",
+    },
+    {
+      title: "Overhead",
+      value: stats.loading ? "..." : `${(stats.overheadRatio.value * 100).toFixed(1)}%`,
+      percentChange: stats.overheadRatio.percentChange,
+      change: stats.loading ? "--" : (typeof stats.overheadRatio.percentChange === "number"
+        ? `${stats.overheadRatio.percentChange > 0 ? "+" : ""}${stats.overheadRatio.percentChange.toFixed(1)}%`
+        : "--"),
+      icon: ChartPie,
+      color: "text-amber-600",
     },
   ];
 
