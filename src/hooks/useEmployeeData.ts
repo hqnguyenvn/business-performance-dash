@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-import { Employee, getBusinessDaysInMonth } from "@/types/employee";
-
+import { Employee, getBusinessDays } from "@/types/employee";
 import { employeeService } from "@/services/employeeService";
 import { MasterData } from "@/hooks/useMasterDataEdit";
 import { divisionsService } from "@/services/masterDataService";
@@ -83,7 +81,7 @@ export function useEmployeeData() {
       status: "Working",
       year: useYear,
       month: useMonth,
-      working_day: getBusinessDaysInMonth(useYear, useMonth),
+      working_day: getBusinessDays(useYear, useMonth),
     };
     setEmployees((prev) => [newItem, ...prev]);
   }, []);
@@ -103,7 +101,7 @@ export function useEmployeeData() {
       status: "Working",
       year: useYear,
       month: useMonth,
-      working_day: getBusinessDaysInMonth(useYear, useMonth),
+      working_day: getBusinessDays(useYear, useMonth),
     };
     setEmployees((prev) => {
       const next = [...prev];

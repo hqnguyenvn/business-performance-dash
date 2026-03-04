@@ -45,8 +45,6 @@ export function EmployeeTable() {
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
-      const isTmp = emp.id.startsWith("tmp-");
-      if (isTmp) return true;
       if (emp.year !== selectedYear) return false;
       if (selectedMonths.length > 0 && !selectedMonths.includes(emp.month)) return false;
       if (appliedSearch) {
@@ -160,47 +158,43 @@ export function EmployeeTable() {
 
       <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Employee Working Days</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
-            <RevenueSearch
-              searchTerm={searchTerm}
-              onSearchTermChange={setSearchTerm}
-              onSearch={() => setAppliedSearch(searchTerm)}
-            />
-            <div className="flex items-center gap-4 flex-wrap">
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                pageSize={pageSize}
-                onPageSizeChange={setPageSize}
-                position="top"
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle>Employee List</CardTitle>
+            <div className="flex items-center gap-2">
+              <RevenueSearch
+                searchTerm={searchTerm}
+                onSearchTermChange={setSearchTerm}
+                onSearch={() => setAppliedSearch(searchTerm)}
               />
               <CloneEmployeeDialog onClone={cloneData} />
               <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} className="flex items-center gap-1">
                 <Upload className="h-4 w-4" />
-                Import CSV
+                Import
               </Button>
               <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
                 <Download className="h-4 w-4" />
-                Export CSV
+                Export
               </Button>
-              <Button onClick={() => {
-                const month = selectedMonths.length > 0 ? Math.max(...selectedMonths) : new Date().getMonth() + 1;
-                addNewItem(selectedYear, month);
-                setCurrentPage(1);
-              }} className="flex items-center gap-2">
+              <Button onClick={addNewItem} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add New
+                Add Employee
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto">
+        </CardHeader>
+        <CardContent>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+            position="top"
+          />
+          <div className="overflow-x-auto mt-4">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">

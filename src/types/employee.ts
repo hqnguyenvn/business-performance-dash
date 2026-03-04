@@ -24,18 +24,18 @@ export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-
-export function getBusinessDaysInMonth(year: number, month: number): number {
-  const totalDays = new Date(year, month, 0).getDate();
-  let businessDays = 0;
-  for (let day = 1; day <= totalDays; day++) {
-    const dayOfWeek = new Date(year, month - 1, day).getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      businessDays++;
-    }
+/** Count weekdays (Mon-Fri) in a given month (1-indexed) */
+export function getBusinessDays(year: number, month: number): number {
+  const totalDays = getDaysInMonth(year, month);
+  let count = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    const day = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) count++;
   }
-  return businessDays;
+  return count;
 }
+
+export const getBusinessDaysInMonth = getBusinessDays;
 
 export function getConvertFactor(type: string): number {
   switch (type) {
@@ -44,6 +44,4 @@ export function getConvertFactor(type: string): number {
     case "Sinh viên": return 0.25;
     default: return 1;
   }
-
-
 }

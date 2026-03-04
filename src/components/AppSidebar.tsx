@@ -55,7 +55,7 @@ const menuItems = [
     icon: Users,
   },
   {
-    title: "Employee Working Days",
+    title: "Employee",
     url: "/employees",
     icon: Users,
   },
