@@ -16,6 +16,7 @@ export interface StatWithChange {
 export interface DashboardStats {
   totalRevenue: StatWithChange;
   totalCost: StatWithChange;
+  grossProfit: StatWithChange;
   netProfit: StatWithChange;
   customerCount: StatWithChange;
   devEE: StatWithChange;
@@ -131,7 +132,7 @@ export function useDashboardStats({
     const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
     const devEE = devCMM > 0 ? totalBMM / devCMM : 0;
 
-    return { totalRevenue, totalCost, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM };
+    return { totalRevenue, totalCost, grossProfit, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM };
   }
 
   const stats = useMemo(() => {
@@ -139,6 +140,7 @@ export function useDashboardStats({
       return {
         totalRevenue: { value: 0, prevValue: null, percentChange: null },
         totalCost: { value: 0, prevValue: null, percentChange: null },
+        grossProfit: { value: 0, prevValue: null, percentChange: null },
         netProfit: { value: 0, prevValue: null, percentChange: null },
         customerCount: { value: 0, prevValue: null, percentChange: null },
         devEE: { value: 0, prevValue: null, percentChange: null },
@@ -171,6 +173,11 @@ export function useDashboardStats({
         value: nowStats.totalCost,
         prevValue: prevStats ? prevStats.totalCost : null,
         percentChange: percentChange(nowStats.totalCost, prevStats ? prevStats.totalCost : null),
+      },
+      grossProfit: {
+        value: nowStats.grossProfit,
+        prevValue: prevStats ? prevStats.grossProfit : null,
+        percentChange: percentChange(nowStats.grossProfit, prevStats ? prevStats.grossProfit : null),
       },
       netProfit: {
         value: nowStats.netProfit,

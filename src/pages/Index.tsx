@@ -91,7 +91,17 @@ const Index = () => {
       color: "text-red-600",
     },
     {
-      title: "Net Profit",
+      title: stats.loading ? "Gross Profit" : `Gross Profit (${stats.totalRevenue.value > 0 ? ((stats.grossProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
+      value: stats.loading ? "..." : `${formatNumber(stats.grossProfit.value / 1_000_000)}M VND`,
+      percentChange: stats.grossProfit.percentChange,
+      change: stats.loading ? "--" : (typeof stats.grossProfit.percentChange === "number"
+        ? `${stats.grossProfit.percentChange > 0 ? "+" : ""}${stats.grossProfit.percentChange.toFixed(1)}%`
+        : "--"),
+      icon: TrendingUp,
+      color: "text-emerald-600",
+    },
+    {
+      title: stats.loading ? "Net Profit" : `Net Profit (${stats.totalRevenue.value > 0 ? ((stats.netProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
       value: stats.loading ? "..." : `${formatNumber(stats.netProfit.value / 1_000_000)}M VND`,
       percentChange: stats.netProfit.percentChange,
       change: stats.loading ? "--" : (typeof stats.netProfit.percentChange === "number"
