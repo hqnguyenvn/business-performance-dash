@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getConvertFactor, getBusinessDays } from "@/types/employee";
 
 interface DashboardStatsArgs {
   year: number;
@@ -9,18 +10,18 @@ interface DashboardStatsArgs {
 }
 export interface StatWithChange {
   value: number;
-  prevValue: number | null; // null nghĩa là không có dữ liệu tháng trước
-  percentChange: number | null; // null = không có so sánh
+  prevValue: number | null;
+  percentChange: number | null;
 }
 export interface DashboardStats {
   totalRevenue: StatWithChange;
   totalCost: StatWithChange;
   netProfit: StatWithChange;
   customerCount: StatWithChange;
+  ee: StatWithChange;
   loading: boolean;
 }
 
-// Hàm lấy khoảng kỳ trước: năm trước với cùng range tháng
 function getPreviousPeriod(year: number, months: number[]): { prevYear: number, prevMonths: number[] } | null {
   if (months.length === 0) return null;
   return { prevYear: year - 1, prevMonths: [...months] };
@@ -36,25 +37,26 @@ export function useDashboardStats({
   const [revenues, setRevenues] = useState<any[]>([]);
   const [costs, setCosts] = useState<any[]>([]);
   const [costTypes, setCostTypes] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [prevRevenues, setPrevRevenues] = useState<any[]>([]);
   const [prevCosts, setPrevCosts] = useState<any[]>([]);
+  const [prevEmployees, setPrevEmployees] = useState<any[]>([]);
 
   const prevPeriod = useMemo(() => getPreviousPeriod(year, months), [year, months]);
 
   useEffect(() => {
     async function fetchData() {
-
-      // get all revenues and costs for the filter
-      const queries = [
+      const queries: any[] = [
         supabase.from("revenues").select("*").in("year", [year]).in("month", months),
         supabase.from("costs").select("*").in("year", [year]).in("month", months),
         supabase.from("cost_types").select("id, code"),
+        supabase.from("employees").select("*").eq("year", year).in("month", months),
       ];
-      // Lấy dữ liệu cùng kỳ năm trước (same months nhưng year-1)
       if (prevPeriod) {
         queries.push(
           supabase.from("revenues").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
-          supabase.from("costs").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths)
+          supabase.from("costs").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
+          supabase.from("employees").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
         );
       }
 
@@ -63,65 +65,67 @@ export function useDashboardStats({
       setRevenues(results[0]?.data || []);
       setCosts(results[1]?.data || []);
       setCostTypes(results[2]?.data || []);
+      setEmployees(results[3]?.data || []);
       if (prevPeriod) {
-        setPrevRevenues(results[3]?.data || []);
-        setPrevCosts(results[4]?.data || []);
+        setPrevRevenues(results[4]?.data || []);
+        setPrevCosts(results[5]?.data || []);
+        setPrevEmployees(results[6]?.data || []);
       } else {
         setPrevRevenues([]);
         setPrevCosts([]);
+        setPrevEmployees([]);
       }
       setInitialLoading(false);
     }
     fetchData();
-    // eslint-disable-next-line
   }, [year, months.join(","), incomeTaxRate, bonusRate]);
 
-  function calcStats(revenuesArr: any[], costsArr: any[], costTypesArr: any[]): {
+  function calcStats(revenuesArr: any[], costsArr: any[], costTypesArr: any[], employeesArr: any[], statYear: number): {
     totalRevenue: number;
     totalCost: number;
     netProfit: number;
     customerCount: number;
+    ee: number;
   } {
-    // Total Revenue (sum of vnd_revenue)
     const totalRevenue = revenuesArr.reduce((sum, r) => sum + (r.vnd_revenue || 0), 0);
 
-    // For cost and net profit: Get salary costTypeId
     const salaryType = costTypesArr.find((ct: any) => ct.code?.toLowerCase() === "salary");
     const salaryCostTypeId = salaryType?.id;
 
-    // Calculate base cost as sum of all costs
     const baseCost = costsArr.reduce((sum, c) => sum + (c.cost || 0), 0);
 
-    // Calculate bonus (for each relevant month, for salary costs only)
     let bonus = 0;
-    // Lấy danh sách tháng trong dữ liệu
     const monthsArr = Array.from(new Set(costsArr.map(c => c.month)));
     monthsArr.forEach((m) => {
       const monthlySalary = costsArr
-        .filter(
-          (c) =>
-            c.cost_type === salaryCostTypeId &&
-            c.year !== undefined && // Có thể khi filter tháng trước sẽ thiếu thuộc tính này
-            c.month === m
-        )
+        .filter((c) => c.cost_type === salaryCostTypeId && c.month === m)
         .reduce((sum, c) => sum + (c.cost || 0), 0);
       bonus += monthlySalary * (bonusRate / 100);
     });
-    // Calculate gross profit
     const grossProfit = totalRevenue - baseCost;
-    // Income tax applies only if gross profit > 0
     const incomeTax = grossProfit > 0 ? grossProfit * (incomeTaxRate / 100) : 0;
     const totalCost = baseCost + bonus + incomeTax;
     const netProfit = totalRevenue - totalCost;
 
-    // Customers = count of unique customer_id in revenue (non-null)
     const customerSet = new Set<string>();
     for (const row of revenuesArr) {
       if (row.customer_id) customerSet.add(row.customer_id);
     }
     const customerCount = customerSet.size;
 
-    return { totalRevenue, totalCost, netProfit, customerCount };
+    // EE = BMM / CMM
+    const totalBMM = revenuesArr.reduce((sum, r) => sum + (r.quantity || 0), 0);
+    let totalCMM = 0;
+    for (const emp of employeesArr) {
+      const convertFactor = getConvertFactor(emp.type);
+      const bizDays = getBusinessDays(emp.year || statYear, emp.month);
+      if (bizDays > 0) {
+        totalCMM += (emp.working_day * convertFactor) / bizDays;
+      }
+    }
+    const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
+
+    return { totalRevenue, totalCost, netProfit, customerCount, ee };
   }
 
   const stats = useMemo(() => {
@@ -131,13 +135,14 @@ export function useDashboardStats({
         totalCost: { value: 0, prevValue: null, percentChange: null },
         netProfit: { value: 0, prevValue: null, percentChange: null },
         customerCount: { value: 0, prevValue: null, percentChange: null },
+        ee: { value: 0, prevValue: null, percentChange: null },
         loading: true,
       };
     }
 
-    const nowStats = calcStats(revenues, costs, costTypes);
-    const prevStats = prevPeriod && prevRevenues.length + prevCosts.length > 0
-      ? calcStats(prevRevenues, prevCosts, costTypes)
+    const nowStats = calcStats(revenues, costs, costTypes, employees, year);
+    const prevStats = prevPeriod && (prevRevenues.length + prevCosts.length + prevEmployees.length > 0)
+      ? calcStats(prevRevenues, prevCosts, costTypes, prevEmployees, prevPeriod.prevYear)
       : null;
 
     function percentChange(current: number, prev: number | null): number | null {
@@ -166,12 +171,17 @@ export function useDashboardStats({
         prevValue: prevStats ? prevStats.customerCount : null,
         percentChange: percentChange(nowStats.customerCount, prevStats ? prevStats.customerCount : null),
       },
+      ee: {
+        value: nowStats.ee,
+        prevValue: prevStats ? prevStats.ee : null,
+        percentChange: percentChange(nowStats.ee, prevStats ? prevStats.ee : null),
+      },
       loading: false,
     };
   }, [
-    revenues, costs, costTypes, initialLoading,
+    revenues, costs, costTypes, employees, initialLoading,
     bonusRate, incomeTaxRate, months, year,
-    prevPeriod, prevRevenues, prevCosts,
+    prevPeriod, prevRevenues, prevCosts, prevEmployees,
   ]);
 
   return stats;
