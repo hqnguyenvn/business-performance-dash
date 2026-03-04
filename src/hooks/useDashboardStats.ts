@@ -116,14 +116,37 @@ export function useDashboardStats({
     // EE = BMM / CMM
     const totalBMM = revenuesArr.reduce((sum, r) => sum + (r.quantity || 0), 0);
     let totalCMM = 0;
+    let totalConvertWorkingDay = 0;
     for (const emp of employeesArr) {
       const convertFactor = getConvertFactor(emp.type);
+      const cwd = (emp.working_day || 0) * convertFactor;
+      totalConvertWorkingDay += cwd;
       const bizDays = getBusinessDays(emp.year || statYear, emp.month);
       if (bizDays > 0) {
-        totalCMM += (emp.working_day * convertFactor) / bizDays;
+        totalCMM += cwd / bizDays;
       }
     }
     const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
+
+    console.log(`[EE Debug] Year=${statYear} | Revenue records=${revenuesArr.length} | Employee records=${employeesArr.length}`);
+    console.log(`[EE Debug] Total BMM = ${totalBMM}`);
+    console.log(`[EE Debug] Total Convert Working Day = ${totalConvertWorkingDay}`);
+    console.log(`[EE Debug] Total CMM = ${totalCMM}`);
+    console.log(`[EE Debug] EE = BMM/CMM = ${totalBMM}/${totalCMM} = ${ee} (${(ee * 100).toFixed(1)}%)`);
+    if (employeesArr.length > 0) {
+      console.log(`[EE Debug] Employee details:`, employeesArr.map(e => ({
+        name: e.name, type: e.type, month: e.month,
+        working_day: e.working_day,
+        convertFactor: getConvertFactor(e.type),
+        convertWorkingDay: (e.working_day || 0) * getConvertFactor(e.type),
+        bizDays: getBusinessDays(e.year || statYear, e.month),
+      })));
+    }
+    if (revenuesArr.length > 0) {
+      console.log(`[EE Debug] Revenue BMM details:`, revenuesArr.map(r => ({
+        month: r.month, quantity: r.quantity, customer_id: r.customer_id,
+      })));
+    }
 
     return { totalRevenue, totalCost, netProfit, customerCount, ee };
   }
