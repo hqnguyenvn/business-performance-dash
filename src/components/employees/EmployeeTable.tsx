@@ -175,7 +175,7 @@ export function EmployeeTable() {
                 <Download className="h-4 w-4" />
                 Export
               </Button>
-              <Button onClick={addNewItem} className="flex items-center gap-2">
+              <Button onClick={() => addNewItem()} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 Add Employee
               </Button>
