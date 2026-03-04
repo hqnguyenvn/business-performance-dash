@@ -7,7 +7,9 @@ interface MonthlyRevenueStat {
   totalRevenue: number;
 }
 
-export function useMonthlyRevenueStats(year: number, months: number[]) {
+const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+export function useMonthlyRevenueStats(year: number) {
   const [data, setData] = useState<MonthlyRevenueStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
@@ -15,12 +17,10 @@ export function useMonthlyRevenueStats(year: number, months: number[]) {
   useEffect(() => {
     async function fetchMonthlyRevenues() {
       if (!hasFetched) setLoading(true);
-      // Query: Lấy revenue của các tháng trong năm được chọn
       const { data: revenues, error } = await supabase
         .from("revenues")
         .select("month, vnd_revenue")
-        .eq("year", year)
-        .in("month", months);
+        .eq("year", year);
 
       if (error) {
         setData([]);
@@ -28,16 +28,14 @@ export function useMonthlyRevenueStats(year: number, months: number[]) {
         setHasFetched(true);
         return;
       }
-      // Tính tổng revenue theo từng tháng
       const revenueByMonth: Record<number, number> = {};
-      months.forEach((m) => (revenueByMonth[m] = 0));
+      ALL_MONTHS.forEach((m) => (revenueByMonth[m] = 0));
       (revenues || []).forEach((item) => {
         const month = item.month;
         const value = item.vnd_revenue || 0;
         revenueByMonth[month] = (revenueByMonth[month] || 0) + value;
       });
-      // Chuyển thành array
-      const chartData: MonthlyRevenueStat[] = months.map((month) => ({
+      const chartData: MonthlyRevenueStat[] = ALL_MONTHS.map((month) => ({
         month,
         totalRevenue: revenueByMonth[month] || 0,
       }));
@@ -46,7 +44,7 @@ export function useMonthlyRevenueStats(year: number, months: number[]) {
       setHasFetched(true);
     }
     fetchMonthlyRevenues();
-  }, [year, months.join(",")]);
+  }, [year]);
 
   return { data, loading };
 }

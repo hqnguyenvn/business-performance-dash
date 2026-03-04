@@ -20,7 +20,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
   selectedYear,
   selectedMonths,
 }) => {
-  const { data, loading } = useMonthlyRevenueStats(selectedYear, selectedMonths);
+  const { data, loading } = useMonthlyRevenueStats(selectedYear);
 
   // Định nghĩa tên tháng cho trục hoành
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
