@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { useMonthlyRevenueStats } from "@/hooks/useMonthlyRevenueStats";
 import { useTopCustomers } from "@/hooks/useTopCustomers";
 import { useState } from "react";
@@ -26,7 +26,8 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const chartData = data.map(d => ({
     name: monthLabels[d.month - 1],
-    totalRevenue: Math.round(d.totalRevenue / 1_000_000), // hiển thị triệu VND
+    totalRevenue: Math.round(d.totalRevenue / 1_000_000),
+    totalCost: Math.round(d.totalCost / 1_000_000),
   }));
 
   // Fetch top customers
@@ -40,7 +41,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
       <Card className="bg-white col-span-7">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
-            Monthly Revenue (Million VND)
+            Monthly Revenue/Cost (Million VND)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -56,10 +57,15 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
                     tickFormatter={(value) => formatNumber(value)}
                   />
                   <Tooltip
-                    formatter={(value: any) => [`${formatNumber(value)}M VND`, 'Revenue']}
+                    formatter={(value: any, name: string) => [
+                      `${formatNumber(value)}M VND`,
+                      name === 'totalRevenue' ? 'Revenue' : 'Cost'
+                    ]}
                     labelFormatter={(label: string) => `Month: ${label}`}
                   />
-                  <Bar dataKey="totalRevenue" fill="#3b82f6" />
+                  <Legend formatter={(value: string) => value === 'totalRevenue' ? 'Revenue' : 'Cost'} />
+                  <Bar dataKey="totalRevenue" fill="#3b82f6" name="totalRevenue" />
+                  <Bar dataKey="totalCost" fill="#ef4444" name="totalCost" />
                 </BarChart>
               </ResponsiveContainer>
             )}
