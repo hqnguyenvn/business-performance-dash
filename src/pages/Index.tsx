@@ -71,8 +71,8 @@ const Index = () => {
 
   const statCardsData = [
     {
-      title: "Total Revenue",
-      value: stats.loading ? "..." : `${formatNumber(stats.totalRevenue.value / 1_000_000)}M VND`,
+      title: "Revenue",
+      value: stats.loading ? "..." : `${formatNumber(stats.totalRevenue.value / 1_000_000)}M`,
       percentChange: stats.totalRevenue.percentChange,
       change: stats.loading ? "--" : (typeof stats.totalRevenue.percentChange === "number"
         ? `${stats.totalRevenue.percentChange > 0 ? "+" : ""}${stats.totalRevenue.percentChange.toFixed(1)}%`
@@ -81,8 +81,8 @@ const Index = () => {
       color: "text-green-600",
     },
     {
-      title: "Total Cost",
-      value: stats.loading ? "..." : `${formatNumber(stats.totalCost.value / 1_000_000)}M VND`,
+      title: "Cost",
+      value: stats.loading ? "..." : `${formatNumber(stats.totalCost.value / 1_000_000)}M`,
       percentChange: stats.totalCost.percentChange,
       change: stats.loading ? "--" : (typeof stats.totalCost.percentChange === "number"
         ? `${stats.totalCost.percentChange > 0 ? "+" : ""}${stats.totalCost.percentChange.toFixed(1)}%`
@@ -92,7 +92,7 @@ const Index = () => {
     },
     {
       title: stats.loading ? "Gross Profit" : `Gross Profit (${stats.totalRevenue.value > 0 ? ((stats.grossProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
-      value: stats.loading ? "..." : `${formatNumber(stats.grossProfit.value / 1_000_000)}M VND`,
+      value: stats.loading ? "..." : `${formatNumber(stats.grossProfit.value / 1_000_000)}M`,
       percentChange: stats.grossProfit.percentChange,
       change: stats.loading ? "--" : (typeof stats.grossProfit.percentChange === "number"
         ? `${stats.grossProfit.percentChange > 0 ? "+" : ""}${stats.grossProfit.percentChange.toFixed(1)}%`
@@ -102,7 +102,7 @@ const Index = () => {
     },
     {
       title: stats.loading ? "Net Profit" : `Net Profit (${stats.totalRevenue.value > 0 ? ((stats.netProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
-      value: stats.loading ? "..." : `${formatNumber(stats.netProfit.value / 1_000_000)}M VND`,
+      value: stats.loading ? "..." : `${formatNumber(stats.netProfit.value / 1_000_000)}M`,
       percentChange: stats.netProfit.percentChange,
       change: stats.loading ? "--" : (typeof stats.netProfit.percentChange === "number"
         ? `${stats.netProfit.percentChange > 0 ? "+" : ""}${stats.netProfit.percentChange.toFixed(1)}%`
