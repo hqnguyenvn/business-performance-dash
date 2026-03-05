@@ -15,4 +15,5 @@ export const MONTHS = [
   { value: 12, label: "December", short: "Dec" },
 ];
 
-export const YEARS = [2023, 2024, 2025];
+const currentYear = new Date().getFullYear();
+export const YEARS = Array.from({ length: currentYear - 2023 + 1 }, (_, i) => 2023 + i);
