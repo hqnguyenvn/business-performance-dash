@@ -99,7 +99,17 @@ export function EmployeeTable() {
 
   const handleImport = useCallback(async (rows: Record<string, string>[]) => {
     let created = 0;
+    let updated = 0;
     const errors: string[] = [];
+
+    // Build lookup map for upsert by (year, month, username)
+    const existingMap = new Map<string, Employee>();
+    for (const emp of employees) {
+      if (!emp.id.startsWith("tmp-")) {
+        const key = `${emp.year}-${emp.month}-${emp.username.toLowerCase()}`;
+        existingMap.set(key, emp);
+      }
+    }
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -127,16 +137,24 @@ export function EmployeeTable() {
           working_day: parseFloat(row["Working Day"]) || 0,
         };
 
-        await employeeService.create(item);
-        created++;
+        const key = `${item.year}-${month}-${item.username.toLowerCase()}`;
+        const existing = existingMap.get(key);
+
+        if (existing) {
+          await employeeService.update(existing.id, item);
+          updated++;
+        } else {
+          await employeeService.create(item);
+          created++;
+        }
       } catch (err: any) {
         errors.push(`Row ${i + 1}: ${err.message || "Failed"}`);
       }
     }
 
     if (reload) reload();
-    return { created, updated: 0, errors };
-  }, [divisions, roles, reload]);
+    return { created, updated, errors };
+  }, [employees, divisions, roles, reload]);
 
   if (loading) {
     return (
