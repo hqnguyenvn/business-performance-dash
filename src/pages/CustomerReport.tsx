@@ -29,7 +29,8 @@ const MONTHS = [
   { value: 11, label: "November", short: "Nov" },
   { value: 12, label: "December", short: "Dec" },
 ];
-const years = [2023, 2024, 2025];
+const currentYearValue = new Date().getFullYear();
+const years = Array.from({ length: currentYearValue - 2023 + 1 }, (_, i) => 2023 + i);
 
 interface CustomerReportData {
   year: number;
