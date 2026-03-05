@@ -108,8 +108,8 @@ export function EmployeeTable() {
         const monthIndex = MONTH_LABELS.findIndex((m) => m === monthStr);
         const month = monthIndex >= 0 ? monthIndex + 1 : parseInt(row["Month"]) || 1;
 
-        const divName = (row["Division"] || "").trim();
-        const div = divisions.find((d) => d.name.toLowerCase() === divName.toLowerCase());
+        const divCode = (row["Division"] || "").trim();
+        const div = divisions.find((d) => d.code.toLowerCase() === divCode.toLowerCase());
 
         const roleCode = (row["Role"] || "").trim();
         const role = roles.find((r) => r.code.toLowerCase() === roleCode.toLowerCase());
