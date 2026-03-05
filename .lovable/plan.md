@@ -1,39 +1,51 @@
 
 
-## Plan: Add EE (Employee Efficiency) KPI to Dashboard
+## Analysis: Import CSV Logic for Employee Working Days
 
-### What is EE?
+### Current behavior
 
-**EE = BMM / CMM** where:
-- **BMM** (Billable Man Month) = Sum of `quantity` from `revenues` table (filtered by year/months)
-- **CMM** (Calendar Man Month) = Sum of each employee's `Convert Working Day` / `business days of that month`, aggregated across all filtered months
-  - `Convert Working Day` = `working_day × getConvertFactor(type)`
-  - `business days` = weekdays (Mon-Fri) count via `getBusinessDays(year, month)`
+The current import logic (lines 100-140 in `EmployeeTable.tsx`) does **NOT** implement upsert logic. It always calls `employeeService.create(item)` for every row in the CSV, meaning:
 
-### Changes
+- Every row is inserted as a **new record**, regardless of whether a matching (Year, Month, User name) already exists
+- There is no duplicate check — importing the same CSV twice will create duplicate records
+- The `updated` counter is hardcoded to `0`
 
-#### 1. `src/hooks/useDashboardStats.ts`
-- Add `employees` fetch query: `supabase.from("employees").select("*").eq("year", year).in("month", months)` (and same for previous period)
-- Add `ee` field to `DashboardStats` interface as `StatWithChange`
-- In `calcStats`, compute:
-  - `totalBMM` = sum of `quantity` from revenues
-  - `totalCMM` = for each employee row, `(working_day * convertFactor) / getBusinessDays(year, month)`, summed across all rows
-  - `ee = totalBMM / totalCMM` (or 0 if CMM = 0)
-- Return EE with year-over-year comparison like other stats
+### Proposed fix
 
-#### 2. `src/pages/Index.tsx`
-- Add a 5th stat card for "EE" after "Customers"
-- Display as percentage format (e.g., `85.2%`) with `formatNumber` or fixed decimals
-- Use a new icon (e.g., `Activity` or `Gauge` from lucide-react)
-- Include year-over-year percent change like other cards
+Add upsert logic: before inserting, query existing employees to find a match by `(year, month, username)`. If found, update; if not, create.
 
-#### 3. `src/components/dashboard/StatCards.tsx`
-- Grid layout update: change from `lg:grid-cols-4` to `lg:grid-cols-5` to accommodate 5 cards
+#### Changes in `src/components/employees/EmployeeTable.tsx` — `handleImport` function:
 
-### Data Flow
-```text
-revenues.quantity → sum → BMM
-employees (working_day, type, month) → convertFactor × working_day / businessDays(year, month) → sum → CMM
-EE = BMM / CMM → display as percentage
+1. Before the loop, fetch all existing employees for the relevant year (or use the already-loaded `employees` state) to build a lookup
+2. For each CSV row, check if an employee with matching `(year, month, username)` exists in the current data
+3. If match found → call `employeeService.update(existingId, fields)` and increment `updated` counter
+4. If no match → call `employeeService.create(item)` and increment `created` counter
+
+#### Changes in `src/services/employeeService.ts`:
+
+No changes needed — `update` method already exists and accepts partial fields.
+
+### Key code sketch
+
+```typescript
+// Inside handleImport, before the loop:
+const existingMap = new Map<string, Employee>();
+for (const emp of employees) {
+  const key = `${emp.year}-${emp.month}-${emp.username.toLowerCase()}`;
+  existingMap.set(key, emp);
+}
+
+// Inside the loop, after building `item`:
+const key = `${item.year}-${item.month}-${item.username.toLowerCase()}`;
+const existing = existingMap.get(key);
+if (existing && !existing.id.startsWith("tmp-")) {
+  await employeeService.update(existing.id, item);
+  updated++;
+} else {
+  await employeeService.create(item);
+  created++;
+}
 ```
+
+This ensures CSV import works as an upsert: update existing records when (Year, Month, User name) matches, create new ones otherwise.
 
