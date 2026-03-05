@@ -1,54 +1,39 @@
 
 
-## Analysis: Why Employee CSV Import is Slow
+## Plan: Add EE (Employee Efficiency) KPI to Dashboard
 
-The Employee import processes each CSV row **one at a time sequentially**, making a separate HTTP request to Supabase for each row (`await employeeService.update(...)` or `await employeeService.create(...)`). For 100 rows, that means 100 sequential network round-trips — each taking ~100-300ms — totaling 10-30 seconds.
+### What is EE?
 
-Other screens (MasterData, Roles, etc.) use the same pattern but typically have very few rows (10-30), so the delay is not noticeable. Employee data has many more rows (dozens per month × multiple months).
+**EE = BMM / CMM** where:
+- **BMM** (Billable Man Month) = Sum of `quantity` from `revenues` table (filtered by year/months)
+- **CMM** (Calendar Man Month) = Sum of each employee's `Convert Working Day` / `business days of that month`, aggregated across all filtered months
+  - `Convert Working Day` = `working_day × getConvertFactor(type)`
+  - `business days` = weekdays (Mon-Fri) count via `getBusinessDays(year, month)`
 
-## Solution: Batch Operations
+### Changes
 
-Split the CSV rows into two groups (updates and creates), then send them to Supabase in bulk using batch `insert` and individual `update` calls run in parallel.
+#### 1. `src/hooks/useDashboardStats.ts`
+- Add `employees` fetch query: `supabase.from("employees").select("*").eq("year", year).in("month", months)` (and same for previous period)
+- Add `ee` field to `DashboardStats` interface as `StatWithChange`
+- In `calcStats`, compute:
+  - `totalBMM` = sum of `quantity` from revenues
+  - `totalCMM` = for each employee row, `(working_day * convertFactor) / getBusinessDays(year, month)`, summed across all rows
+  - `ee = totalBMM / totalCMM` (or 0 if CMM = 0)
+- Return EE with year-over-year comparison like other stats
 
-### Changes to `src/components/employees/EmployeeTable.tsx` — `handleImport` function:
+#### 2. `src/pages/Index.tsx`
+- Add a 5th stat card for "EE" after "Customers"
+- Display as percentage format (e.g., `85.2%`) with `formatNumber` or fixed decimals
+- Use a new icon (e.g., `Activity` or `Gauge` from lucide-react)
+- Include year-over-year percent change like other cards
 
-1. **Separate rows into two arrays**: `toCreate` (new records) and `toUpdate` (existing records matched by year/month/username)
-2. **Batch create**: Use a single `supabase.from('employees').insert(toCreate)` call instead of N individual creates
-3. **Parallel update**: Run all update calls concurrently using `Promise.allSettled()` instead of sequential `await` in a loop
-4. **Error handling**: Collect errors from failed promises and report them
+#### 3. `src/components/dashboard/StatCards.tsx`
+- Grid layout update: change from `lg:grid-cols-4` to `lg:grid-cols-5` to accommodate 5 cards
 
-### Key code approach:
-
-```typescript
-// Phase 1: Classify rows into creates vs updates
-const toCreate = [];
-const toUpdate = [];
-
-for (const row of rows) {
-  // ... parse row into item ...
-  const existing = existingMap.get(key);
-  if (existing) {
-    toUpdate.push({ id: existing.id, ...item });
-  } else {
-    toCreate.push(item);
-  }
-}
-
-// Phase 2: Batch create
-if (toCreate.length > 0) {
-  const { error } = await supabase.from('employees').insert(toCreate);
-  if (error) errors.push(error.message);
-  else created = toCreate.length;
-}
-
-// Phase 3: Parallel updates
-const updateResults = await Promise.allSettled(
-  toUpdate.map(({ id, ...fields }) => employeeService.update(id, fields))
-);
-// Count successes/failures from results
+### Data Flow
+```text
+revenues.quantity → sum → BMM
+employees (working_day, type, month) → convertFactor × working_day / businessDays(year, month) → sum → CMM
+EE = BMM / CMM → display as percentage
 ```
-
-This reduces network calls from N sequential requests to 1 batch insert + M parallel updates, dramatically improving performance.
-
-### No other files need changes.
 
