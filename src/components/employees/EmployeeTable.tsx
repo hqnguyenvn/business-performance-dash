@@ -9,6 +9,7 @@ import { Employee, EMPLOYEE_TYPES, EMPLOYEE_CATEGORIES, EMPLOYEE_STATUSES, MONTH
 import { exportToCsv } from "@/utils/exportCsv";
 import ImportCsvDialog from "@/components/ImportCsvDialog";
 import { employeeService } from "@/services/employeeService";
+import { supabase } from "@/integrations/supabase/client";
 import RevenueFilters from "@/components/RevenueFilters";
 import RevenueSearch from "@/components/RevenueSearch";
 import PaginationControls from "@/components/PaginationControls";
