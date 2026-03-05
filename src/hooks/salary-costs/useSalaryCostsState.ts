@@ -63,7 +63,11 @@ export const useSalaryCostsState = () => {
   const getMonthName = (monthNumber: number) => MONTHS.find(m => m.id === monthNumber)?.name || 'N/A';
   const getMasterDataName = (id: string | null, data: MasterData[], field: 'code' | 'name' = 'name') => data.find(d => d.id === id)?.[field] || '';
   const getMasterDataId = (code: string, data: MasterData[]) => data.find(d => d.code === code)?.id || null;
-  const getMonthNumber = (name: string) => MONTHS.find(m => m.name === name)?.id || 1;
+  const getMonthNumber = (name: string) => {
+    if (!name) return 0;
+    const key = name.trim().substring(0, 3).toLowerCase();
+    return MONTHS.find(m => m.name.toLowerCase() === key)?.id || 0;
+  };
 
 
   const handleYearChange = useCallback((year: string) => {
