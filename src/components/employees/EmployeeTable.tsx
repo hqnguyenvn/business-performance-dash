@@ -111,6 +111,10 @@ export function EmployeeTable() {
       }
     }
 
+    // Phase 1: Classify rows into creates vs updates
+    const toCreate: Omit<Employee, "id" | "created_at" | "updated_at">[] = [];
+    const toUpdate: { id: string; data: Omit<Employee, "id" | "created_at" | "updated_at"> }[] = [];
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       try {
@@ -141,14 +145,33 @@ export function EmployeeTable() {
         const existing = existingMap.get(key);
 
         if (existing) {
-          await employeeService.update(existing.id, item);
-          updated++;
+          toUpdate.push({ id: existing.id, data: item });
         } else {
-          await employeeService.create(item);
-          created++;
+          toCreate.push(item);
         }
       } catch (err: any) {
         errors.push(`Row ${i + 1}: ${err.message || "Failed"}`);
+      }
+    }
+
+    // Phase 2: Batch create in one request
+    if (toCreate.length > 0) {
+      const { error } = await supabase.from('employees').insert(toCreate);
+      if (error) {
+        errors.push(`Batch create failed: ${error.message}`);
+      } else {
+        created = toCreate.length;
+      }
+    }
+
+    // Phase 3: Parallel updates
+    if (toUpdate.length > 0) {
+      const results = await Promise.allSettled(
+        toUpdate.map(({ id, data }) => employeeService.update(id, data))
+      );
+      for (const result of results) {
+        if (result.status === 'fulfilled') updated++;
+        else errors.push(`Update failed: ${(result as PromiseRejectedResult).reason?.message || 'Unknown'}`);
       }
     }
 
