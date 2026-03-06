@@ -246,12 +246,28 @@ const CustomerReport = () => {
         salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
+      // Build set of customer_ids that have revenue in each period
+      const customersWithRevenueByPeriod = new Map<string, Set<string>>();
+      for (const row of rows ?? []) {
+        const k = `${row.year}_${row.month}`;
+        if (!customersWithRevenueByPeriod.has(k)) {
+          customersWithRevenueByPeriod.set(k, new Set());
+        }
+        if (row.customer_id) {
+          customersWithRevenueByPeriod.get(k)!.add(row.customer_id);
+        }
+      }
+
       // Customer cost (customer_id not null) by period from salary_costs
+      // Only include costs for customers that have revenue in that period
       const customerCostByPeriod = new Map<string, number>();
       for (const row of salaryRows ?? []) {
         if (row.customer_id) {
           const k = `${row.year}_${row.month}`;
-          customerCostByPeriod.set(k, (customerCostByPeriod.get(k) ?? 0) + (Number(row.amount) || 0));
+          const customersWithRevenue = customersWithRevenueByPeriod.get(k);
+          if (customersWithRevenue && customersWithRevenue.has(row.customer_id)) {
+            customerCostByPeriod.set(k, (customerCostByPeriod.get(k) ?? 0) + (Number(row.amount) || 0));
+          }
         }
       }
 
