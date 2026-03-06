@@ -1,39 +1,49 @@
 
 
-## Plan: Add EE (Employee Efficiency) KPI to Dashboard
+## Plan: Fix Salary Cost Calculation in Customer Report
 
-### What is EE?
+### Problem
+When a customer has projects across multiple companies in the same month, the current grouping by `(year, month, customer_id, company_id)` assigns the **full** customer salary cost to each company row, inflating costs and making profit incorrect.
 
-**EE = BMM / CMM** where:
-- **BMM** (Billable Man Month) = Sum of `quantity` from `revenues` table (filtered by year/months)
-- **CMM** (Calendar Man Month) = Sum of each employee's `Convert Working Day` / `business days of that month`, aggregated across all filtered months
-  - `Convert Working Day` = `working_day × getConvertFactor(type)`
-  - `business days` = weekdays (Mon-Fri) count via `getBusinessDays(year, month)`
+### Recommended Approach: Option 1
+
+Option 1 is the cleanest solution because salary costs in the system are tracked per customer, not per company. Grouping by company creates an inherent mismatch. Removing the company dimension eliminates the root cause.
+
+Option 2 would work but still shows a company column that doesn't meaningfully relate to salary cost allocation — it's a workaround rather than a fix.
 
 ### Changes
 
-#### 1. `src/hooks/useDashboardStats.ts`
-- Add `employees` fetch query: `supabase.from("employees").select("*").eq("year", year).in("month", months)` (and same for previous period)
-- Add `ee` field to `DashboardStats` interface as `StatWithChange`
-- In `calcStats`, compute:
-  - `totalBMM` = sum of `quantity` from revenues
-  - `totalCMM` = for each employee row, `(working_day * convertFactor) / getBusinessDays(year, month)`, summed across all rows
-  - `ee = totalBMM / totalCMM` (or 0 if CMM = 0)
-- Return EE with year-over-year comparison like other stats
+#### `src/pages/CustomerReport.tsx`
+1. **Change grouping key** from `${year}_${month}_${customer_id}_${company_id}` to `${year}_${month}_${customer_id}`
+2. **Remove `company_id` and `company_code`** from `CustomerReportData` interface
+3. **Remove company-related maps** (`bmmByPeriodCompany`, `salaryWithoutCustomerMap`, allocated salary logic)
+4. **Simplify salary cost**: directly use `salaryMap` keyed by `${year}_${month}_${customer_id}`
+5. **Recalculate Bonus** per row:
+   - Compute `avgBonusPerBMM` for each period = `(salaryCostFromCosts * bonusRate) / totalBMM`
+   - For each customer row: `bonusValue = avgBonusPerBMM * customerBMM`
+6. **Remove** fetches for `bonus_by_c`, `salaryWithoutCustomerRows`, `companies` (no longer needed for grouping)
+7. **Update sort**: sort by `month`, then `customer_code`
 
-#### 2. `src/pages/Index.tsx`
-- Add a 5th stat card for "EE" after "Customers"
-- Display as percentage format (e.g., `85.2%`) with `formatNumber` or fixed decimals
-- Use a new icon (e.g., `Activity` or `Gauge` from lucide-react)
-- Include year-over-year percent change like other cards
+#### `src/components/customer-report/ReportTable.tsx`
+1. **Remove Company column** from table header and body
+2. **Remove `company_code`** from `GroupedCustomerData` interface
+3. **Remove `isCompanyReport`** logic (no longer needed since company column is gone)
+4. **Update column filter** for `company_code` — remove it
+5. **Adjust `colSpan`** for loading/empty states
 
-#### 3. `src/components/dashboard/StatCards.tsx`
-- Grid layout update: change from `lg:grid-cols-4` to `lg:grid-cols-5` to accommodate 5 cards
+#### `src/utils/customerReportExport.ts`
+1. **Remove "Company" column** from CSV headers and row data
 
-### Data Flow
+### Data Flow After Fix
 ```text
-revenues.quantity → sum → BMM
-employees (working_day, type, month) → convertFactor × working_day / businessDays(year, month) → sum → CMM
-EE = BMM / CMM → display as percentage
+Group by: (year, month, customer_id)
+Salary Cost = salary_costs WHERE customer_id matches (year, month)
+Bonus = (Salary cost from costs table * bonusRate / totalBMM) * customer BMM
+Overhead = unchanged (already per-BMM based)
 ```
+
+### Files Changed
+- `src/pages/CustomerReport.tsx` — main logic refactor
+- `src/components/customer-report/ReportTable.tsx` — remove company column
+- `src/utils/customerReportExport.ts` — remove company from CSV export
 
