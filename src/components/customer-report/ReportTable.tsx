@@ -9,13 +9,13 @@ export interface GroupedCustomerData {
   month: number;
   customer_id: string;
   customer_code: string;
-  company_id: string;
-  company_code: string;
+  company_id?: string;
+  company_code?: string;
   bmm: number;
   revenue: number;
   salaryCost?: number;
   overheadCost?: number;
-  bonusValue?: number; // Thêm field này cho Company Report
+  bonusValue?: number;
 }
 
 const MONTH_MAP = {
@@ -49,9 +49,9 @@ interface ReportTableProps {
     totalProfitPercent: number;
   }) => void;
   onFilteredCountChange?: (count: number) => void;
+  hideCompanyColumn?: boolean;
 }
 
-// Hàm lấy dữ liệu filter cho từng trường
 function getFilterData(data: GroupedCustomerData[], field: string) {
   const uniqueValues = new Set();
   const filterData: any[] = [];
@@ -84,6 +84,7 @@ export function ReportTable({
   onFilteredDataChange,
   onTotalsChange,
   onFilteredCountChange,
+  hideCompanyColumn = false,
 }: ReportTableProps) {
   const {
     filteredData: columnFilteredData,
@@ -105,13 +106,14 @@ export function ReportTable({
     });
   }, [columnFilteredData, searchTerm]);
 
-  // Check if this is Company Report (no customer_code field) 
+  // Check if this is Company Report (no customer_code field)
   const isCompanyReport = !data[0]?.customer_code;
+  const showCompanyColumn = !hideCompanyColumn;
 
-  // Calculate totals from filtered data
+  // Calculate column count for colSpan
+  const colCount = 10 + (showCompanyColumn ? 1 : 0) + (!isCompanyReport ? 1 : 0);
+
   const totals = useMemo(() => {
-    console.log('💰 ReportTable: Calculating totals from', filteredData.length, 'filtered records');
-    
     const revenue = filteredData.reduce((sum, d) => sum + (d.revenue || 0), 0);
     const bmm = filteredData.reduce((sum, d) => sum + (d.bmm || 0), 0);
     const bonus = filteredData.reduce((sum, d) => sum + (d.bonusValue || 0), 0);
@@ -123,13 +125,6 @@ export function ReportTable({
     }, 0);
     const profit = revenue - cost;
     const profitPercent = revenue !== 0 ? (profit / revenue) * 100 : 0;
-
-    console.log('📊 ReportTable: Calculated totals -', {
-      records: filteredData.length,
-      revenue: Math.round(revenue).toLocaleString(),
-      cost: Math.round(cost).toLocaleString(),
-      profit: Math.round(profit).toLocaleString()
-    });
 
     return {
       totalRevenue: revenue,
@@ -149,21 +144,15 @@ export function ReportTable({
   }, [filteredData, currentPage, pageSize]);
 
   useEffect(() => {
-    if (onFilteredDataChange) {
-      onFilteredDataChange(filteredData);
-    }
+    if (onFilteredDataChange) onFilteredDataChange(filteredData);
   }, [filteredData, onFilteredDataChange]);
 
   useEffect(() => {
-    if (onFilteredCountChange) {
-      onFilteredCountChange(filteredData.length);
-    }
+    if (onFilteredCountChange) onFilteredCountChange(filteredData.length);
   }, [filteredData.length, onFilteredCountChange]);
 
   useEffect(() => {
-    if (onTotalsChange) {
-      onTotalsChange(totals);
-    }
+    if (onTotalsChange) onTotalsChange(totals);
   }, [totals, onTotalsChange]);
 
   return (
@@ -171,9 +160,7 @@ export function ReportTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-green-50">
-            <TableHead className="border border-gray-300 p-2 text-center font-medium w-10">
-              No.
-            </TableHead>
+            <TableHead className="border border-gray-300 p-2 text-center font-medium w-10">No.</TableHead>
             <TableHead
               className="border border-gray-300 p-2 text-center font-medium"
               showFilter
@@ -184,16 +171,18 @@ export function ReportTable({
             >
               Month
             </TableHead>
-            <TableHead
-              className="border border-gray-300 p-2 text-left font-medium"
-              showFilter
-              filterData={getFilterData(data, "company_code")}
-              filterField="company_code"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters("company_code")}
-            >
-              {companyLabel || "Company"}
-            </TableHead>
+            {showCompanyColumn && (
+              <TableHead
+                className="border border-gray-300 p-2 text-left font-medium"
+                showFilter
+                filterData={getFilterData(data, "company_code")}
+                filterField="company_code"
+                onFilter={setFilter}
+                activeFilters={getActiveFilters("company_code")}
+              >
+                {companyLabel || "Company"}
+              </TableHead>
+            )}
             {!isCompanyReport && (
               <TableHead
                 className="border border-gray-300 p-2 text-left font-medium"
@@ -219,11 +208,11 @@ export function ReportTable({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={isCompanyReport ? 11 : 12} className="p-8 text-center text-gray-500">Loading...</TableCell>
+              <TableCell colSpan={colCount} className="p-8 text-center text-gray-500">Loading...</TableCell>
             </TableRow>
           ) : filteredData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isCompanyReport ? 11 : 12} className="border border-gray-300 p-8 text-center text-gray-500">
+              <TableCell colSpan={colCount} className="border border-gray-300 p-8 text-center text-gray-500">
                 No data matches the selected filters. Try adjusting the year or month selection.
               </TableCell>
             </TableRow>
@@ -245,16 +234,16 @@ export function ReportTable({
                 >
                   <TableCell className="border border-gray-300 p-2 text-center">{rowNumber}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-center">{MONTH_MAP[data.month] || data.month}</TableCell>
-                  <TableCell className="border border-gray-300 p-2">{data.company_code}</TableCell>
+                  {showCompanyColumn && (
+                    <TableCell className="border border-gray-300 p-2">{data.company_code}</TableCell>
+                  )}
                   {!isCompanyReport && (
                     <TableCell className="border border-gray-300 p-2">{data.customer_code}</TableCell>
                   )}
-                  <TableCell className="border border-gray-300 p-2 text-right">
-                    {data.bmm.toFixed(1)}
-                  </TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{data.bmm.toFixed(1)}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(revenue).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(salaryCost).toLocaleString()}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(data.bonusValue || 0).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(bonusValue).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(overheadCost).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right font-semibold">{Math.round(totalCost).toLocaleString()}</TableCell>
                   <TableCell
