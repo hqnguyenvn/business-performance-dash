@@ -250,19 +250,11 @@ const CustomerReport = () => {
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
         const salaryCostFromSalaryCosts = salaryByPeriod.get(periodKey) ?? 0;
-        const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
-        const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
-        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
-
-        const bonusCost = salaryCostFromCosts * bonusRate;
-        const profitBeforeTax = totalRevenue - totalCostFromCosts;
-        const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
-        const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
 
         let overhead = 0;
         if (totalBmm !== 0) {
-          overhead = (adjustedTotalCost - salaryCostFromSalaryCosts - salaryBonus) / totalBmm;
+          overhead = (totalCostFromCosts - salaryCostFromSalaryCosts) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
