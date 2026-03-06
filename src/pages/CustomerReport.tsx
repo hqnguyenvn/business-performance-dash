@@ -14,7 +14,6 @@ import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import PaginationControls from "@/components/PaginationControls";
 
-// Define month info for filtering & display
 const MONTHS = [
   { value: 1, label: "January", short: "Jan" },
   { value: 2, label: "February", short: "Feb" },
@@ -35,22 +34,19 @@ const years = Array.from({ length: currentYearValue - 2023 + 1 }, (_, i) => 2023
 interface CustomerReportData {
   year: number;
   month: number;
-  company_id: string;
   customer_id: string;
-  company_code: string;
   customer_code: string;
   bmm: number;
   revenue: number;
   salaryCost: number;
   overheadCost: number;
-  bonusValue: number; // Thêm field bonusValue
+  bonusValue: number;
 }
 
 const CustomerReport = () => {
   const { toast } = useToast();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
-  // --- Year, months state (multi-checkbox)
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonths, setSelectedMonths] = useState<number[]>(Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1));
   const [groupedData, setGroupedData] = useState<CustomerReportData[]>([]);
@@ -71,7 +67,6 @@ const CustomerReport = () => {
     totalProfitPercent: 0
   });
 
-  // Get parameter values from database
   const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
 
   const handleFilteredDataChange = useCallback((filtered: CustomerReportData[]) => {
@@ -106,165 +101,62 @@ const CustomerReport = () => {
     const fetchData = async () => {
       setLoading(true);
 
-      // Execute all queries in parallel for better performance
       const [
         { data: rows, error },
         { data: salaryRows, error: salaryError },
         { data: costRows, error: costError },
         { data: costTypes, error: costTypesError },
-        { data: salaryWithoutCustomerRows, error: salaryWithoutCustomerError },
         { data: bonusRows, error: bonusError },
-        { data: customers, error: customersError },
-        { data: companies, error: companiesError }
+        { data: customers, error: customersError }
       ] = await Promise.all([
-        // 1. Fetch revenues with group data for all months selected
+        // 1. Revenues
         supabase
           .from('revenues')
-          .select(
-            `
-              year,
-              month,
-              customer_id,
-              company_id,
-              quantity,
-              vnd_revenue,
-              customers!revenues_customer_id_fkey(code),
-              companies!revenues_company_id_fkey(code)
-            `
-          )
+          .select(`
+            year, month, customer_id, company_id, quantity, vnd_revenue,
+            customers!revenues_customer_id_fkey(code)
+          `)
           .eq('year', Number(selectedYear))
           .in('month', selectedMonths),
 
-        // 2. Fetch salary_costs: SUM amount by (year, month, customer_id)
+        // 2. Salary costs (with customer_id)
         supabase
           .from('salary_costs')
-          .select(`
-            year, month, customer_id, company_id, amount
-          `)
+          .select('year, month, customer_id, amount')
           .eq('year', Number(selectedYear))
           .in('month', selectedMonths),
 
-        // 3. Fetch costs: SUM cost by (year, month) with is_cost = true
+        // 3. Costs (is_cost = true)
         supabase
           .from('costs')
-          .select(`
-            year, month, cost, is_cost
-          `)
+          .select('year, month, cost, is_cost')
           .eq('year', Number(selectedYear))
           .in('month', selectedMonths)
           .eq('is_cost', true),
 
-        // 4. Fetch cost_types to get the ID for "Salary" cost type by CODE
+        // 4. Cost types to find "Salary" type
         supabase
           .from('cost_types')
           .select('id, name, code')
           .eq('code', 'Salary'),
 
-        // 5. Fetch salary_costs without customer_id: SUM amount by (year, month, company_id)
-        supabase
-          .from('salary_costs')
-          .select(`
-            year, month, company_id, amount
-          `)
-          .eq('year', Number(selectedYear))
-          .in('month', selectedMonths)
-          .is('customer_id', null),
-
-        // 6. Fetch bonus_by_c for the selected year
+        // 5. Bonus by company
         supabase
           .from('bonus_by_c')
-          .select(`
-            year, company_id, bn_bmm
-          `)
+          .select('year, company_id, bn_bmm')
           .eq('year', Number(selectedYear)),
 
-        // 7. Fetch customers data for debug function
+        // 6. Customers
         supabase
           .from('customers')
-          .select('id, code, name'),
-
-        // 8. Fetch companies data for debug function
-        supabase
-          .from('companies')
           .select('id, code, name')
       ]);
 
-      // Check for errors
-      if (error) {
+      if (error || salaryError || costError || costTypesError || bonusError || customersError) {
         toast({
           variant: "destructive",
           title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu revenues.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (salaryError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu salary_costs.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (costError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu costs.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (costTypesError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu cost_types.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (salaryWithoutCustomerError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu salary_costs without customer_id.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (bonusError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu bonus_by_c.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (customersError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu customers.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (companiesError) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi lấy dữ liệu",
-          description: "Không lấy được dữ liệu companies.",
+          description: "Không lấy được dữ liệu báo cáo.",
         });
         setLoading(false);
         return;
@@ -272,92 +164,78 @@ const CustomerReport = () => {
 
       const salaryTypeId = costTypes?.[0]?.id;
 
-      // 3.2. Fetch salary costs from costs table with cost_type = "Salary"
-      let salaryCostRows = [];
+      // Fetch salary costs from costs table with cost_type = "Salary"
+      let salaryCostRows: any[] = [];
       if (salaryTypeId) {
         const { data: salaryFromCosts, error: salaryFromCostsError } = await supabase
           .from('costs')
-          .select(`
-            year, month, cost
-          `)
+          .select('year, month, cost')
           .eq('year', Number(selectedYear))
           .in('month', selectedMonths)
           .eq('cost_type', salaryTypeId);
 
         if (salaryFromCostsError) {
-          toast({
-            variant: "destructive",
-            title: "Lỗi lấy dữ liệu",
-            description: "Không lấy được dữ liệu salary costs từ bảng costs.",
-          });
+          toast({ variant: "destructive", title: "Lỗi", description: "Không lấy được salary costs từ bảng costs." });
           setLoading(false);
           return;
         }
         salaryCostRows = salaryFromCosts || [];
       }
 
-      // Aggregation per filter
+      // === Aggregation maps ===
 
+      // Total cost by period
       const costByPeriod = new Map<string, number>();
       for (const row of costRows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        costByPeriod.set(periodKey, (costByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+        const k = `${row.year}_${row.month}`;
+        costByPeriod.set(k, (costByPeriod.get(k) ?? 0) + (Number(row.cost) || 0));
       }
 
+      // Total salary (from salary_costs) by period
       const salaryByPeriod = new Map<string, number>();
       for (const row of salaryRows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        salaryByPeriod.set(periodKey, (salaryByPeriod.get(periodKey) ?? 0) + Number(row.amount) || 0);
+        const k = `${row.year}_${row.month}`;
+        salaryByPeriod.set(k, (salaryByPeriod.get(k) ?? 0) + (Number(row.amount) || 0));
       }
 
-      // NEW: Salary costs without customer_id (unassigned)
-      const salaryWithoutCustomerMap = new Map<string, number>();
-      for (const row of salaryWithoutCustomerRows ?? []) {
-        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
-        salaryWithoutCustomerMap.set(periodCompanyKey, (salaryWithoutCustomerMap.get(periodCompanyKey) ?? 0) + Number(row.amount) || 0);
-      }
-
-      // Salary costs từ bảng costs với cost_type = "Salary"
+      // Salary cost from costs table (cost_type=Salary) by period
       const salaryCostByPeriod = new Map<string, number>();
-      for (const row of salaryCostRows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        salaryCostByPeriod.set(periodKey, (salaryCostByPeriod.get(periodKey) ?? 0) + Number(row.cost) || 0);
+      for (const row of salaryCostRows) {
+        const k = `${row.year}_${row.month}`;
+        salaryCostByPeriod.set(k, (salaryCostByPeriod.get(k) ?? 0) + (Number(row.cost) || 0));
       }
 
-      // Total revenue by period for tax calculation
+      // Revenue & BMM by period
       const revenueByPeriod = new Map<string, number>();
-      for (const row of rows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        revenueByPeriod.set(periodKey, (revenueByPeriod.get(periodKey) ?? 0) + Number(row.vnd_revenue) || 0);
-      }
-
       const bmmByPeriod = new Map<string, number>();
-      const bmmByPeriodCompany = new Map<string, number>(); // New: BMM by period and company
+      const bmmByPeriodCompany = new Map<string, number>();
       for (const row of rows ?? []) {
-        const periodKey = `${row.year}_${row.month}`;
-        const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
-        bmmByPeriod.set(periodKey, (bmmByPeriod.get(periodKey) ?? 0) + Number(row.quantity) || 0);
-        bmmByPeriodCompany.set(periodCompanyKey, (bmmByPeriodCompany.get(periodCompanyKey) ?? 0) + Number(row.quantity) || 0);
+        const k = `${row.year}_${row.month}`;
+        revenueByPeriod.set(k, (revenueByPeriod.get(k) ?? 0) + (Number(row.vnd_revenue) || 0));
+        bmmByPeriod.set(k, (bmmByPeriod.get(k) ?? 0) + (Number(row.quantity) || 0));
+        const kc = `${row.year}_${row.month}_${row.company_id}`;
+        bmmByPeriodCompany.set(kc, (bmmByPeriodCompany.get(kc) ?? 0) + (Number(row.quantity) || 0));
       }
 
-      // Create salary map by (year, month, customer_id) - MOVED UP before debug function
+      // Salary map by (year, month, customer_id) from salary_costs table
       const salaryMap = new Map<string, number>();
       for (const row of salaryRows ?? []) {
-        if (row.customer_id) { // Only include rows with customer_id
-          const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
-          salaryMap.set(salaryKey, (salaryMap.get(salaryKey) ?? 0) + Number(row.amount) || 0);
+        if (row.customer_id) {
+          const k = `${row.year}_${row.month}_${row.customer_id}`;
+          salaryMap.set(k, (salaryMap.get(k) ?? 0) + (Number(row.amount) || 0));
         }
       }
 
-      // Use bonus rate from parameters instead of bonus_by_c
-      const percentBn = bonusRate * 100; // Convert decimal to percentage for calculation
+      // Bonus map by company_id
+      const bonusMap = new Map<string, number>();
+      for (const row of bonusRows ?? []) {
+        bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
+      }
 
-      // Calculate salaryBonus correctly for each period by summing up bonus for each company
+      // salaryBonus by period (sum of BMM * bn_bmm for each company)
       const salaryBonusByPeriod = new Map<string, number>();
       for (const [periodKey] of bmmByPeriod.entries()) {
         let totalSalaryBonus = 0;
-
-        // Sum bonus for each company in this period
         for (const [periodCompanyKey, bmm] of bmmByPeriodCompany.entries()) {
           if (periodCompanyKey.startsWith(periodKey + '_')) {
             const companyId = periodCompanyKey.replace(periodKey + '_', '');
@@ -365,119 +243,77 @@ const CustomerReport = () => {
             totalSalaryBonus += bmm * bnBmm;
           }
         }
-
         salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
+      // Overhead per BMM by period
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
         const salaryCostFromSalaryCosts = salaryByPeriod.get(periodKey) ?? 0;
         const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
         const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
-        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0; // Get pre-calculated value
+        const salaryBonus = salaryBonusByPeriod.get(periodKey) ?? 0;
 
-        // Calculate Bonus Cost using parameter value
         const bonusCost = salaryCostFromCosts * bonusRate;
-
-        // Calculate Tax Cost using parameter value
         const profitBeforeTax = totalRevenue - totalCostFromCosts;
         const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
-
-        // Calculate Adjusted Total Cost = Total Cost (from costs) + Bonus Cost + Tax Cost
         const adjustedTotalCost = totalCostFromCosts + bonusCost + taxCost;
 
         let overhead = 0;
         if (totalBmm !== 0) {
-          // FIXED: Use correct formula including salaryBonus
           overhead = (adjustedTotalCost - salaryCostFromSalaryCosts - salaryBonus) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
 
-      // Create bonus map by company_id - FIXED: Remove percent_bn reference
-      const bonusMap = new Map<string, number>();
-      for (const row of bonusRows ?? []) {
-        bonusMap.set(row.company_id, Number(row.bn_bmm) || 0);
+      // === Bonus per BMM by period ===
+      // Bonus = (Salary cost from costs table * bonusRate) / totalBMM * customerBMM
+      const avgBonusPerBMMByPeriod = new Map<string, number>();
+      for (const [periodKey] of bmmByPeriod.entries()) {
+        const salaryCostFromCosts = salaryCostByPeriod.get(periodKey) ?? 0;
+        const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+        const avgBonus = totalBmm !== 0 ? (salaryCostFromCosts * bonusRate) / totalBmm : 0;
+        avgBonusPerBMMByPeriod.set(periodKey, avgBonus);
       }
 
-      
-
-      // BƯỚC 1: Tính tổng BMM theo customer trước khi group
-      const customerBMMMap = new Map<string, number>(); // key: ${year}_${month}_${customer_id}_${company_id}
-      for (const row of rows ?? []) {
-        const customerKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
-        const bmm = Number(row.quantity) || 0;
-        customerBMMMap.set(customerKey, (customerBMMMap.get(customerKey) || 0) + bmm);
-      }
-
-      // --- GROUP: by (customer_id, company_id, year, month), aggregate bmm, revenue
+      // === GROUP by (year, month, customer_id) — no company dimension ===
       const groupMap = new Map<string, CustomerReportData>();
       for (const row of rows ?? []) {
-        const groupKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
-        let prev = groupMap.get(groupKey);
+        const groupKey = `${row.year}_${row.month}_${row.customer_id}`;
         const bmm = Number(row.quantity) || 0;
         const revenue = Number(row.vnd_revenue) || 0;
-
         const periodKey = `${row.year}_${row.month}`;
         const overheadPerBMM = overheadPerBMMByPeriod.get(periodKey) ?? 0;
-        const baseOverheadCost = overheadPerBMM * bmm;
+        const avgBonusPerBMM = avgBonusPerBMMByPeriod.get(periodKey) ?? 0;
 
-        // Tính bonus theo công thức đơn giản: BMM × BN_BMM
-        const bnBmm = bonusMap.get(row.company_id) ?? 0;
-        const bonusValue = bmm * bnBmm;
-
-        const overheadCost = baseOverheadCost; // Chỉ overhead thuần túy, không cộng bonus
-
+        const prev = groupMap.get(groupKey);
         if (prev) {
-          // ✅ Chỉ cộng dồn BMM, revenue, overhead, bonus - KHÔNG tính lại allocated salary cost
           prev.bmm += bmm;
           prev.revenue += revenue;
-          prev.overheadCost += overheadCost;
-          prev.bonusValue += bonusValue;
+          prev.overheadCost += overheadPerBMM * bmm;
+          prev.bonusValue += avgBonusPerBMM * bmm;
         } else {
-          // Find salary cost for this (year, month, customer_id)
           const salaryKey = `${row.year}_${row.month}_${row.customer_id}`;
-          const baseSalaryCost = salaryMap.get(salaryKey) || 0;
-
-          // BƯỚC 2: Tính allocated salary cost với TỔNG BMM của customer
-          const customerKey = `${row.year}_${row.month}_${row.customer_id}_${row.company_id}`;
-          const totalCustomerBMM = customerBMMMap.get(customerKey) || 0; // SỬ DỤNG TỔNG BMM
-
-          const periodCompanyKey = `${row.year}_${row.month}_${row.company_id}`;
-          const unassignedSalaryCost = salaryWithoutCustomerMap.get(periodCompanyKey) || 0;
-          const totalCompanyBMM = bmmByPeriodCompany.get(periodCompanyKey) || 0;
-
-          let allocatedSalaryCost = 0;
-          if (totalCompanyBMM > 0) {
-            // ✅ Dùng totalCustomerBMM thay vì bmm từ row hiện tại
-            allocatedSalaryCost = (unassignedSalaryCost / totalCompanyBMM) * totalCustomerBMM;
-          }
-
-          const totalSalaryCost = baseSalaryCost + allocatedSalaryCost;
+          const salaryCost = salaryMap.get(salaryKey) || 0;
 
           groupMap.set(groupKey, {
             year: row.year,
-            month: row.month, // integer 1-12
+            month: row.month,
             customer_id: row.customer_id,
             customer_code: row.customers?.code || 'N/A',
-            company_id: row.company_id,
-            company_code: row.companies?.code || 'N/A',
             bmm,
             revenue,
-            salaryCost: totalSalaryCost,
-            overheadCost,
-            bonusValue,
+            salaryCost,
+            overheadCost: overheadPerBMM * bmm,
+            bonusValue: avgBonusPerBMM * bmm,
           });
         }
       }
 
-      // --- Build result array, sorted by month, company_code, customer_code ---
       const resultArr = Array.from(groupMap.values());
       resultArr.sort((a, b) => {
-        // Sort by month ASC, then company_code ASC, then customer_code ASC
         if (a.month !== b.month) return a.month - b.month;
-        if (a.company_code !== b.company_code) return a.company_code.localeCompare(b.company_code);
         return a.customer_code.localeCompare(b.customer_code);
       });
       setGroupedData(resultArr);
@@ -487,22 +323,14 @@ const CustomerReport = () => {
   }, [selectedYear, selectedMonths, bonusRate, taxRate]);
 
   const exportToCSV = () => {
-    exportCustomerReportCSV(groupedData, 0); // Pass 0 as bonusRate since we're not using it anymore
+    exportCustomerReportCSV(tableFilteredData.length > 0 ? tableFilteredData as any : groupedData as any, 0);
     toast({
       title: "Export Successful",
       description: "Customer report has been successfully exported as a CSV file.",
     });
   };
 
-  // Use totals directly from state (calculated in ReportTable)
-  const {
-    totalRevenue,
-    totalBMM, 
-    totalBonus,
-    totalCost,
-    totalProfit,
-    totalProfitPercent
-  } = totals;
+  const { totalRevenue, totalBMM, totalBonus, totalCost, totalProfit, totalProfitPercent } = totals;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -568,9 +396,9 @@ const CustomerReport = () => {
               </div>
             </div>
             <ReportTable
-              data={groupedData}
+              data={groupedData as any}
               loading={loading}
-              paginatedData={groupedData}
+              paginatedData={groupedData as any}
               currentPage={currentPage}
               totalPages={totalPages}
               goToPage={handlePageChange}
@@ -585,6 +413,7 @@ const CustomerReport = () => {
               onFilteredDataChange={handleFilteredDataChange}
               onTotalsChange={handleTotalsChange}
               onFilteredCountChange={handleFilteredCountChange}
+              hideCompanyColumn={true}
             />
             <PaginationControls
               currentPage={currentPage}

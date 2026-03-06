@@ -7,11 +7,14 @@ const MONTH_MAP: Record<number, string> = {
 };
 
 export function exportCustomerReportCSV(data: GroupedCustomerData[], bonusRate: number) {
+  // Determine if company column should be included
+  const hasCompany = data.some(d => !!d.company_code);
+
   const headers = [
     "No.",
     "Year",
     "Month",
-    "Company",
+    ...(hasCompany ? ["Company"] : []),
     "Customer",
     "BMM",
     "Revenue",
@@ -25,7 +28,6 @@ export function exportCustomerReportCSV(data: GroupedCustomerData[], bonusRate: 
 
   const rows = data.map((d, i) => {
     const salaryCost = d.salaryCost ?? 0;
-    // Use bonusValue from data instead of calculating with bonusRate
     const bonus = d.bonusValue ?? 0;
     const overhead = d.overheadCost ?? 0;
     const totalCost = salaryCost + bonus + overhead;
@@ -37,7 +39,7 @@ export function exportCustomerReportCSV(data: GroupedCustomerData[], bonusRate: 
       (i + 1).toString(),
       d.year,
       MONTH_MAP[d.month] || d.month,
-      d.company_code,
+      ...(hasCompany ? [d.company_code || ''] : []),
       d.customer_code,
       d.bmm,
       revenue,
