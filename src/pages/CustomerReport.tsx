@@ -246,15 +246,26 @@ const CustomerReport = () => {
         salaryBonusByPeriod.set(periodKey, totalSalaryBonus);
       }
 
+      // Customer cost (customer_id not null) by period from salary_costs
+      const customerCostByPeriod = new Map<string, number>();
+      for (const row of salaryRows ?? []) {
+        if (row.customer_id) {
+          const k = `${row.year}_${row.month}`;
+          customerCostByPeriod.set(k, (customerCostByPeriod.get(k) ?? 0) + (Number(row.amount) || 0));
+        }
+      }
+
       // Overhead per BMM by period
       const overheadPerBMMByPeriod = new Map<string, number>();
       for (const [periodKey, totalCostFromCosts] of costByPeriod.entries()) {
-        const salaryCostFromSalaryCosts = salaryByPeriod.get(periodKey) ?? 0;
+        const customerCost = customerCostByPeriod.get(periodKey) ?? 0;
+        const totalRevenue = revenueByPeriod.get(periodKey) ?? 0;
         const totalBmm = bmmByPeriod.get(periodKey) ?? 0;
+        const tax = taxRate * (totalRevenue - totalCostFromCosts);
 
         let overhead = 0;
         if (totalBmm !== 0) {
-          overhead = (totalCostFromCosts - salaryCostFromSalaryCosts) / totalBmm;
+          overhead = (totalCostFromCosts + tax - customerCost) / totalBmm;
         }
         overheadPerBMMByPeriod.set(periodKey, overhead);
       }
