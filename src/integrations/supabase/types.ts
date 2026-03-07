@@ -857,6 +857,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      confirm_user_email: { Args: { user_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "Admin" | "Manager" | "User"
