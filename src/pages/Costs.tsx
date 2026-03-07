@@ -85,7 +85,7 @@ const Costs = () => {
             isImporting={false} // You can get this from the mutation state if needed
           />
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-800">
+            <h2 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">
               Cost Data ({totalCount} total records, showing {filteredCosts.length})
             </h2>
             <div className="flex items-center gap-2">

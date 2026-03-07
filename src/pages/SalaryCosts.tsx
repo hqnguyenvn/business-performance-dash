@@ -85,7 +85,7 @@ const SalaryCosts = () => {
         <Card className="bg-white">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>
+              <CardTitle className="whitespace-nowrap">
                 Cost Per Customer ({totalRecords} total records)
               </CardTitle>
               <div className="flex items-center gap-2">
