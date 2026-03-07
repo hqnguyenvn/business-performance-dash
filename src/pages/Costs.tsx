@@ -1,5 +1,6 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCosts } from "@/hooks/useCosts";
 import { CostsHeader } from "@/components/costs/CostsHeader";
 import { CostsToolbar } from "@/components/costs/CostsToolbar";
@@ -80,15 +81,17 @@ const Costs = () => {
           setSelectedMonths={setSelectedMonths}
         />
 
-        <div className="bg-white p-4 rounded-lg shadow">
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost Data ({totalCount} total records)</CardTitle>
+          </CardHeader>
+          <CardContent>
           <CostsImportStatus 
-            isImporting={false} // You can get this from the mutation state if needed
+            isImporting={false}
           />
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">
-              Cost Data ({totalCount} total records, showing {filteredCosts.length})
-            </h2>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+            <div />
+            <div className="flex items-center gap-2 flex-wrap">
               <PaginationControls
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -137,7 +140,8 @@ const Costs = () => {
             endIndex={endIndex}
             position="bottom"
           />
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <CostDialogs

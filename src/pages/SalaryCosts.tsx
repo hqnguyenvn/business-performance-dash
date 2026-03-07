@@ -82,13 +82,14 @@ const SalaryCosts = () => {
           setSelectedMonths={setSelectedMonths}
         />
 
-        <Card className="bg-white">
+        <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="whitespace-nowrap">
-                Cost Per Customer ({totalRecords} total records)
-              </CardTitle>
-              <div className="flex items-center gap-2">
+            <CardTitle>Cost Per Customer ({totalRecords} total records)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+              <div />
+              <div className="flex items-center gap-2 flex-wrap">
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -100,7 +101,7 @@ const SalaryCosts = () => {
                   onPageSizeChange={handlePageSizeChange}
                   position="top"
                 />
-                 <Button variant="outline" onClick={importFromCSV}>
+                <Button variant="outline" onClick={importFromCSV}>
                   <Import className="h-4 w-4 mr-2" />
                   Import CSV
                 </Button>
@@ -115,8 +116,6 @@ const SalaryCosts = () => {
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
             <SalaryCostsTable
               costs={filteredSalaryCosts}
               updateCost={updateSalaryCost}
