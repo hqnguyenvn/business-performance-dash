@@ -15,7 +15,7 @@ import RevenueSearch from "@/components/RevenueSearch";
 import PaginationControls from "@/components/PaginationControls";
 import CloneEmployeeDialog from "./CloneEmployeeDialog";
 
-const IMPORT_COLUMNS = ["Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
+const IMPORT_COLUMNS = ["ID", "Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
 
 function getDefaultMonths(): number[] {
   const currentMonth = new Date().getMonth(); // 0-indexed
