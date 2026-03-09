@@ -76,6 +76,7 @@ export function EmployeeTable() {
 
   const handleExport = () => {
     const columns = [
+      { key: "id", header: "ID" },
       { key: "year", header: "Year" },
       { key: "month", header: "Month" },
       { key: "username", header: "User name" },
