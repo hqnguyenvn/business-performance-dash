@@ -15,7 +15,7 @@ import RevenueSearch from "@/components/RevenueSearch";
 import PaginationControls from "@/components/PaginationControls";
 import CloneEmployeeDialog from "./CloneEmployeeDialog";
 
-const IMPORT_COLUMNS = ["Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
+const IMPORT_COLUMNS = ["ID", "Year", "Month", "User name", "Name", "Type", "Division", "Role", "Category", "Status", "Working Day"];
 
 function getDefaultMonths(): number[] {
   const currentMonth = new Date().getMonth(); // 0-indexed
@@ -76,6 +76,7 @@ export function EmployeeTable() {
 
   const handleExport = () => {
     const columns = [
+      { key: "id", header: "ID" },
       { key: "year", header: "Year" },
       { key: "month", header: "Month" },
       { key: "username", header: "User name" },
@@ -103,16 +104,15 @@ export function EmployeeTable() {
     let updated = 0;
     const errors: string[] = [];
 
-    // Build lookup map for upsert by (year, month, username)
-    const existingMap = new Map<string, Employee>();
+    // Build lookup map by ID for existing employees
+    const existingById = new Map<string, Employee>();
     for (const emp of employees) {
       if (!emp.id.startsWith("tmp-")) {
-        const key = `${emp.year}-${emp.month}-${emp.username.toLowerCase()}`;
-        existingMap.set(key, emp);
+        existingById.set(emp.id, emp);
       }
     }
 
-    // Phase 1: Classify rows into creates vs updates
+    // Phase 1: Classify rows — ID present & exists → update, otherwise → create
     const toCreate: Omit<Employee, "id" | "created_at" | "updated_at">[] = [];
     const toUpdate: { id: string; data: Omit<Employee, "id" | "created_at" | "updated_at"> }[] = [];
 
@@ -142,11 +142,9 @@ export function EmployeeTable() {
           working_day: parseFloat(row["Working Day"]) || 0,
         };
 
-        const key = `${item.year}-${month}-${item.username.toLowerCase()}`;
-        const existing = existingMap.get(key);
-
-        if (existing) {
-          toUpdate.push({ id: existing.id, data: item });
+        const rowId = (row["ID"] || "").trim();
+        if (rowId && existingById.has(rowId)) {
+          toUpdate.push({ id: rowId, data: item });
         } else {
           toCreate.push(item);
         }
@@ -155,7 +153,7 @@ export function EmployeeTable() {
       }
     }
 
-    // Phase 2: Batch create in one request
+    // Phase 2: Batch create
     if (toCreate.length > 0) {
       const { error } = await supabase.from('employees').insert(toCreate);
       if (error) {
