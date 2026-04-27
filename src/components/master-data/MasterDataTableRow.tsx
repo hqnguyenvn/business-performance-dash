@@ -11,6 +11,7 @@ interface MasterDataTableRowProps {
   customers: MasterData[];
   showCompanyColumn: boolean;
   showCustomerColumn: boolean;
+  showGroupCodeColumn?: boolean;
   handleCellEdit: (id: string, field: keyof MasterData, value: string) => void;
   deleteItem: (id: string) => void;
   addRowBelow: (index: number) => void;
@@ -24,6 +25,7 @@ export const MasterDataTableRow: React.FC<MasterDataTableRowProps> = ({
   customers,
   showCompanyColumn,
   showCustomerColumn,
+  showGroupCodeColumn = false,
   handleCellEdit,
   deleteItem,
   addRowBelow,
@@ -90,7 +92,19 @@ export const MasterDataTableRow: React.FC<MasterDataTableRowProps> = ({
         onBlur={handleInputBlur}
         onKeyDown={handleKeyDown}
       />
-      
+
+      {showGroupCodeColumn && (
+        <EditableInput
+          item={item}
+          field="group_code"
+          value={getInputValue(item, 'group_code')}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          onKeyDown={handleKeyDown}
+        />
+      )}
+
       <EditableInput
         item={item}
         field="description"

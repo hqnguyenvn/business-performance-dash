@@ -15,8 +15,9 @@ import { BonusByCompany, bonusByCompanyService } from "@/services/bonusByCompany
 import { useBonusByCompanyFilter } from "./useBonusByCompanyFilter";
 import BonusByCompanyRow from "./BonusByCompanyRow";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/utils/exportCsv";
-import ImportCsvDialog from "@/components/ImportCsvDialog";
+import { exportExcel, type ImportError, type ExcelSchema } from "@/utils/excelIO";
+import ExcelImportDialog, { type ImportResult, type ImportProgress } from "@/components/ExcelImportDialog";
+import { reportRowProgress } from "@/utils/importProgress";
 
 interface BonusByCompanyTableProps {
   data: BonusByCompany[];
@@ -149,60 +150,85 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
 
   const [importOpen, setImportOpen] = useState(false);
 
-  const handleExport = () => {
-    const exportData = data.map((row) => ({
-      ...row,
-      company_name: companies.find((c) => c.id === row.company_id)?.name || "",
-    }));
-    exportToCsv(exportData, "Bonus_by_Company", [
-      { key: "year", header: "Year" },
-      { key: "company_name", header: "Company" },
-      { key: "bn_bmm", header: "BN_BMM" },
-      { key: "notes", header: "Notes" },
-    ]);
+  const schema = useMemo<ExcelSchema>(() => ({
+    sheetName: "Bonus by Company",
+    lookups: { companies: companies.map((c) => ({ code: c.code, name: c.name })) },
+    columns: [
+      { key: "year", header: "Year", type: "integer", required: true, width: 8 },
+      { key: "company_code", header: "Company", lookup: "companies", required: true, width: 20 },
+      { key: "bn_bmm", header: "BN_BMM", type: "number", width: 12 },
+      { key: "notes", header: "Notes", width: 40 },
+    ],
+  }), [companies]);
+
+  const handleExport = async () => {
+    try {
+      const rows = data.map((r) => ({
+        year: r.year,
+        company_code: companies.find((c) => c.id === r.company_id)?.code || "",
+        bn_bmm: r.bn_bmm,
+        notes: r.notes || "",
+      }));
+      await exportExcel({ schema, rows, fileName: "bonus-by-company.xlsx" });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng.` });
+    } catch (err: any) {
+      toast({ title: "Export thất bại", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+  const handleImport = useCallback(async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
     let created = 0;
     let updated = 0;
-    const errors: string[] = [];
+    const errors: ImportError[] = [];
+    const total = rows.length;
+    onProgress?.(0, total);
 
-    for (const row of rows) {
-      const year = parseInt(row["Year"] || "");
-      const companyName = (row["Company"] || "").trim();
-      const bn_bmm = parseFloat(row["BN_BMM"] || "0");
-      const notes = (row["Notes"] || "").trim();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber: number = row.__rowNumber || 0;
+      const errCols: string[] = [];
+      const reasons: string[] = [];
 
-      if (!year || !companyName) {
-        errors.push(`Skipped invalid row: Year=${row["Year"]}, Company=${companyName}`);
-        continue;
+      const year = Number(row.year);
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        errCols.push("Year"); reasons.push(`Năm không hợp lệ: "${row.year ?? ""}"`);
       }
-
-      const company = companies.find(
-        (c) => c.name.toLowerCase() === companyName.toLowerCase() || c.code.toLowerCase() === companyName.toLowerCase()
-      );
+      const companyCode = String(row.company_code || "").trim();
+      const company = companies.find((c) => c.code.toLowerCase() === companyCode.toLowerCase());
       if (!company) {
-        errors.push(`Company "${companyName}" not found.`);
+        errCols.push("Company"); reasons.push(`Không tìm thấy Company: "${companyCode}"`);
+      }
+      const bn_bmm_raw = row.bn_bmm;
+      const bn_bmm = bn_bmm_raw != null && bn_bmm_raw !== "" ? Number(bn_bmm_raw) : 0;
+      if (bn_bmm_raw != null && bn_bmm_raw !== "" && !Number.isFinite(bn_bmm)) {
+        errCols.push("BN_BMM"); reasons.push("BN_BMM phải là số");
+      }
+      const notes = String(row.notes || "").trim();
+
+      if (errCols.length > 0) {
+        errors.push({ rowIndex: rowNumber, columns: errCols, reason: reasons.join("; ") });
+        reportRowProgress(i + 1, total, onProgress);
         continue;
       }
 
-      const existing = data.find(
-        (item) => item.year === year && item.company_id === company.id
-      );
-
+      const existing = data.find((item) => item.year === year && item.company_id === company!.id);
       try {
         if (existing) {
           const updatedItem = await bonusByCompanyService.update(existing.id, { bn_bmm, notes });
           setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
           updated++;
         } else {
-          const newItem = await bonusByCompanyService.add({ year, company_id: company.id, bn_bmm, notes });
+          const newItem = await bonusByCompanyService.add({ year, company_id: company!.id, bn_bmm, notes });
           setter((prev) => [newItem, ...prev]);
           created++;
         }
       } catch (error: any) {
-        errors.push(`Year=${year}, Company=${companyName}: ${error.message || "Unknown error"}`);
+        errors.push({ rowIndex: rowNumber, columns: [], reason: `${year}/${companyCode}: ${error.message || "Lỗi"}` });
       }
+      reportRowProgress(i + 1, total, onProgress);
     }
     return { created, updated, errors };
   }, [data, companies, setter]);
@@ -228,11 +254,13 @@ const BonusByCompanyTable: React.FC<BonusByCompanyTableProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ImportCsvDialog
+      <ExcelImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Bonus by Company"
-        expectedColumns={["Year", "Company", "BN_BMM", "Notes"]}
+        schema={schema}
+        templateFileName="bonus-by-company-template.xlsx"
+        errorFileName="bonus-by-company-errors.xlsx"
         onImport={handleImport}
       />
       <CardContent>

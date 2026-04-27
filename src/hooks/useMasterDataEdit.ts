@@ -7,6 +7,8 @@ export interface MasterData {
   description?: string;
   company_id?: string;
   customer_id?: string;
+  /** Free-text portfolio/grouping code, used by Projects only. */
+  group_code?: string | null;
 }
 
 interface UseMasterDataEditProps {

@@ -7,7 +7,8 @@ import { Search } from "lucide-react";
 interface RevenueSearchProps {
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
-  onSearch: () => void;
+  /** Optional. When provided, Enter/click "applies" the term (useful for deferred search). */
+  onSearch?: () => void;
 }
 
 const RevenueSearch: React.FC<RevenueSearchProps> = ({
@@ -16,13 +17,11 @@ const RevenueSearch: React.FC<RevenueSearchProps> = ({
   onSearch,
 }) => {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      onSearch();
-    }
+    if (e.key === "Enter" && onSearch) onSearch();
   };
 
   return (
-    <div className="flex gap-2 md:w-1/3">
+    <div className="flex gap-2 w-full sm:w-72">
       <Input
         type="search"
         placeholder="Search..."
@@ -31,9 +30,11 @@ const RevenueSearch: React.FC<RevenueSearchProps> = ({
         onKeyPress={handleKeyPress}
         className="flex-1"
       />
-      <Button variant="outline" onClick={onSearch}>
-        <Search className="h-4 w-4" />
-      </Button>
+      {onSearch && (
+        <Button variant="outline" onClick={onSearch}>
+          <Search className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

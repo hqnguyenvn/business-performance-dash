@@ -139,21 +139,27 @@ export function useEmployeeData() {
         const sourceBD = getBusinessDays(sourceYear, sourceMonth);
         const targetBD = getBusinessDays(targetYear, targetMonth);
 
-        let created = 0;
-        for (const emp of sourceEmployees) {
-          // Adjust working_day proportionally based on business days
-          const adjustedWorkingDay = sourceBD > 0
-            ? Math.round((emp.working_day / sourceBD) * targetBD * 100) / 100
-            : targetBD;
-
-          const { id, created_at, updated_at, ...rest } = emp;
-          await employeeService.create({
-            ...rest,
-            year: targetYear,
-            month: targetMonth,
-            working_day: adjustedWorkingDay,
-          });
-          created++;
+        // Parallel create — previously this ran sequentially in a for…await
+        // loop so cloning a 50-employee roster took 50× the round-trip time.
+        const results = await Promise.allSettled(
+          sourceEmployees.map((emp) => {
+            const adjustedWorkingDay =
+              sourceBD > 0
+                ? Math.round((emp.working_day / sourceBD) * targetBD * 100) / 100
+                : targetBD;
+            const { id, created_at, updated_at, ...rest } = emp;
+            return employeeService.create({
+              ...rest,
+              year: targetYear,
+              month: targetMonth,
+              working_day: adjustedWorkingDay,
+            });
+          }),
+        );
+        const created = results.filter((r) => r.status === "fulfilled").length;
+        const failed = results.length - created;
+        if (failed > 0) {
+          console.warn(`[clone] ${failed} employee creates failed`);
         }
 
         toast({ title: "Cloned", description: `${created} employees cloned successfully.` });

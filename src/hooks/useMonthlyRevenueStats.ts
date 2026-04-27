@@ -1,6 +1,6 @@
-
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { getMonthlySummary } from "@/services/reportsService";
+import { MONTHS as MONTHS_FULL } from "@/lib/months";
 
 interface MonthlyRevenueCostStat {
   month: number;
@@ -8,56 +8,30 @@ interface MonthlyRevenueCostStat {
   totalCost: number;
 }
 
-const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const ALL_MONTHS = MONTHS_FULL.map((m) => m.value);
 
 export function useMonthlyRevenueStats(year: number) {
-  const [data, setData] = useState<MonthlyRevenueCostStat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasFetched, setHasFetched] = useState(false);
-
-  useEffect(() => {
-    async function fetchData() {
-      if (!hasFetched) setLoading(true);
-
-      const [revResult, costResult] = await Promise.all([
-        supabase.from("revenues").select("month, vnd_revenue").eq("year", year),
-        supabase.from("costs").select("month, cost").eq("year", year),
-      ]);
-
-      if (revResult.error && costResult.error) {
-        setData([]);
-        setLoading(false);
-        setHasFetched(true);
-        return;
+  const { data = [], isLoading: loading } = useQuery<MonthlyRevenueCostStat[]>({
+    queryKey: ["monthly-revenue-stats", year],
+    queryFn: async () => {
+      const rows = await getMonthlySummary(year, ALL_MONTHS);
+      const map = new Map<number, { totalRevenue: number; totalCost: number }>();
+      for (const r of rows) {
+        map.set(r.month, {
+          totalRevenue: r.total_revenue,
+          totalCost: r.total_cost,
+        });
       }
-
-      const revenueByMonth: Record<number, number> = {};
-      const costByMonth: Record<number, number> = {};
-      ALL_MONTHS.forEach((m) => {
-        revenueByMonth[m] = 0;
-        costByMonth[m] = 0;
-      });
-
-      (revResult.data || []).forEach((item) => {
-        revenueByMonth[item.month] = (revenueByMonth[item.month] || 0) + (item.vnd_revenue || 0);
-      });
-
-      (costResult.data || []).forEach((item) => {
-        costByMonth[item.month] = (costByMonth[item.month] || 0) + (item.cost || 0);
-      });
-
-      const chartData: MonthlyRevenueCostStat[] = ALL_MONTHS.map((month) => ({
+      return ALL_MONTHS.map((month) => ({
         month,
-        totalRevenue: revenueByMonth[month] || 0,
-        totalCost: costByMonth[month] || 0,
+        totalRevenue: map.get(month)?.totalRevenue ?? 0,
+        totalCost: map.get(month)?.totalCost ?? 0,
       }));
-
-      setData(chartData);
-      setLoading(false);
-      setHasFetched(true);
-    }
-    fetchData();
-  }, [year]);
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
   return { data, loading };
 }

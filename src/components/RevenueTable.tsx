@@ -113,17 +113,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
         <TableHeader className="sticky top-0 bg-white z-10">
           <TableRow>
             <TableHead className="w-[50px] border-r">No.</TableHead>
-            <TableHead 
-              className="w-[60px] border-r"
-              showFilter={true}
-              filterData={getFilterData('year')}
-              filterField="year"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('year')}
-            >
-              Year
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="w-[60px] border-r"
               showFilter={true}
               filterData={getFilterData('month')}
@@ -153,17 +143,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
             >
               Company
             </TableHead>
-            <TableHead 
-              className="w-[100px] border-r"
-              showFilter={true}
-              filterData={getFilterData('division_id')}
-              filterField="division_id"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('division_id')}
-            >
-              Division
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="w-[100px] border-r"
               showFilter={true}
               filterData={getFilterData('project_id')}
@@ -173,17 +153,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
             >
               Project
             </TableHead>
-            <TableHead 
-              className="w-[120px] border-r"
-              showFilter={true}
-              filterData={getFilterData('project_name')}
-              filterField="project_name"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('project_name')}
-            >
-              Project Name
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="w-[100px] border-r"
               showFilter={true}
               filterData={getFilterData('project_type_id')}
@@ -193,17 +163,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
             >
               Project Type
             </TableHead>
-            <TableHead 
-              className="w-[100px] border-r"
-              showFilter={true}
-              filterData={getFilterData('resource_id')}
-              filterField="resource_id"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('resource_id')}
-            >
-              Resource
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="w-[80px] border-r"
               showFilter={true}
               filterData={getFilterData('currency_id')}
@@ -227,7 +187,7 @@ const RevenueTable: React.FC<RevenueTableProps> = ({
             >
               Notes
             </TableHead>
-            <TableHead className="w-[200px] text-center">Actions</TableHead>
+            <TableHead className="w-[200px] text-center sticky right-0 bg-white z-20 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.12)]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

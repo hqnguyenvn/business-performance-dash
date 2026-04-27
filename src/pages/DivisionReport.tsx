@@ -4,14 +4,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Loader2, Search, Download } from "lucide-react";
+import { BarChart3, Loader2, Search, Download, DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useParameterValues } from "@/hooks/useParameterValues";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
-import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
+import { StatCards } from "@/components/dashboard/StatCards";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useDivisionReportData, MONTHS, YEARS, type GroupedDivisionData } from "@/hooks/useDivisionReportData";
+import { formatNumber } from "@/lib/format";
 import PaginationControls from "@/components/PaginationControls";
 
 const DivisionReport = () => {
@@ -95,6 +97,51 @@ const DivisionReport = () => {
   const totalProfit = totalRevenue - totalCost;
   const totalProfitPercent = totalRevenue !== 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
+  const stats = useDashboardStats({
+    year: parseInt(selectedYear),
+    months: selectedMonths,
+    incomeTaxRate: taxRate !== null ? taxRate * 100 : 0,
+    bonusRate: bonusRate !== null ? bonusRate * 100 : 0,
+  });
+
+  const fmtChange = (p: number | null | undefined) =>
+    typeof p === "number" ? `${p > 0 ? "+" : ""}${p.toFixed(1)}%` : "--";
+
+  const summaryStats = [
+    {
+      title: "Revenue (VND)",
+      value: formatNumber(stats.totalRevenue.value),
+      percentChange: stats.totalRevenue.percentChange,
+      change: fmtChange(stats.totalRevenue.percentChange),
+      icon: DollarSign,
+      color: "text-blue-600",
+    },
+    {
+      title: "Total Cost (VND)",
+      value: formatNumber(stats.totalCost.value),
+      percentChange: stats.totalCost.percentChange,
+      change: fmtChange(stats.totalCost.percentChange),
+      icon: Receipt,
+      color: "text-red-600",
+    },
+    {
+      title: `Net Profit (VND — ${totalProfitPercent.toFixed(1)}%)`,
+      value: formatNumber(stats.netProfit.value),
+      percentChange: stats.netProfit.percentChange,
+      change: fmtChange(stats.netProfit.percentChange),
+      icon: TrendingUp,
+      color: "text-purple-600",
+    },
+    {
+      title: "Total BMM",
+      value: formatNumber(stats.totalBMM.value),
+      percentChange: stats.totalBMM.percentChange,
+      change: fmtChange(stats.totalBMM.percentChange),
+      icon: Users,
+      color: "text-orange-600",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
@@ -103,13 +150,7 @@ const DivisionReport = () => {
         icon={BarChart3}
       />
       <div className="p-6">
-        <ReportSummary
-          totalRevenue={totalRevenue}
-          totalBMM={totalBMM}
-          totalCost={totalCost}
-          totalProfit={totalProfit}
-          totalProfitPercent={totalProfitPercent}
-        />
+        <StatCards groups={[{ label: `Division Performance ${selectedYear}`, stats: summaryStats }]} />
 
         <ReportFilter
           selectedYear={selectedYear}
@@ -181,6 +222,7 @@ const DivisionReport = () => {
                 pageSize={pageSize}
                 bonusRate={0}
                 companyLabel="Division"
+                hideBonusColumn
                 searchTerm={searchTerm}
                 onFilteredCountChange={handleFilteredCountChange}
               />

@@ -17,7 +17,10 @@ export const useSalaryCostsMutations = () => {
   });
 
   const updateSalaryCostMutation = useMutation({
-    mutationFn: (cost: SalaryCost) => updateSalaryCost(cost.id, cost),
+    mutationFn: (cost: SalaryCost) => {
+      const { id, created_at: _c, updated_at: _u, ...patch } = cost as SalaryCost & { created_at?: unknown; updated_at?: unknown };
+      return updateSalaryCost(id, patch);
+    },
     onMutate: async (updatedCost: SalaryCost) => {
       await queryClient.cancelQueries({ queryKey: ['salaryCosts'] });
       const previousCosts = queryClient.getQueryData<SalaryCost[]>(['salaryCosts']);

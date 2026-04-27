@@ -1,13 +1,8 @@
 import React, { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
 import RevenueFilters from "@/components/RevenueFilters";
 import RevenueTable from "@/components/RevenueTable";
+import { Skeleton } from "@/components/ui/skeleton";
 import RevenueSearch from "@/components/RevenueSearch";
 import RevenueActions from "@/components/RevenueActions";
 import RevenueDialog from "@/components/RevenueDialog";
@@ -18,15 +13,22 @@ import { useRevenueCalculations } from "@/hooks/useRevenueCalculations";
 import { useRevenueDialog } from "@/hooks/useRevenueDialog";
 import { useRevenueUpdate } from "@/hooks/useRevenueUpdate";
 import { useRevenueCreation } from "@/hooks/useRevenueCreation";
-import { exportRevenueCSV } from "@/utils/csvExport";
-import { getRevenues } from "@/services/revenueApi";
+import { getRevenues, batchCreateRevenues, createRevenue, bulkDeleteRevenues } from "@/services/revenueApi";
 import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
 import { useClientRevenueFilter } from "@/hooks/useClientRevenueFilter";
 import { useRevenueInlineEntry } from "@/hooks/useRevenueInlineEntry";
+import { useQueryClient } from "@tanstack/react-query";
+import { exportExcel, normalizeLookupKey, type ImportError } from "@/utils/excelIO";
+import {
+  buildRevenueImportSchema,
+  buildRevenueExportSchema,
+} from "@/utils/revenueExcelSchema";
+import type { ImportResult, ImportProgress } from "@/components/ExcelImportDialog";
 
 const Revenues = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const {
     revenues,
     setRevenues,
@@ -41,6 +43,8 @@ const Revenues = () => {
     searchParams,
     setSearchParams,
     total,
+    loading,
+    fetching,
     fetchData,
     handleSaveRevenue,
     handleDeleteRevenue,
@@ -145,289 +149,209 @@ const Revenues = () => {
     }));
   };
 
-  const handleSearch = () => {};
-
   const handleCombinedCellEdit = (id: string, field: keyof Revenue, value: any) => {
     // The handleCellEdit from inlineEntryUtils is already designed to call handleCellEditDb internally.
     handleCellEdit(id, field, value, handleCellEditDb as any);
   };
 
-  const handleExportCSV = async () => {
+  const codeOf = (arr: MasterData[], id: string | undefined | null): string => {
+    if (!id) return "";
+    return arr.find((m) => m.id === id)?.code || "";
+  };
+
+  const handleExportExcel = async () => {
     try {
       const allData = await getRevenues({
         year: searchParams.year,
         months: searchParams.months,
         pageSize: 'all',
       });
-      exportRevenueCSV({
-        revenues: allData.data,
-        customers,
-        companies,
-        divisions,
-        projects,
-        projectTypes,
-        resources,
-        currencies,
-        getMonthName,
-        calculateVNDRevenue,
+      const schema = buildRevenueExportSchema({
+        customers, companies, divisions, projects, projectTypes, resources, currencies,
       });
-      toast({
-        title: "CSV exported successfully!",
-        description: `Exported ${allData.data.length} revenue records as CSV file.`,
-      });
-    } catch (error) {
-      console.error("Error exporting CSV:", error);
-      toast({
-        variant: "destructive",
-        title: "Export failed",
-        description: "There was an error exporting the CSV file.",
-      });
+      const rows = allData.data.map((r) => ({
+        year: r.year,
+        month: r.month,
+        customer_code: codeOf(customers, r.customer_id),
+        company_code: codeOf(companies, r.company_id),
+        division_code: codeOf(divisions, r.division_id),
+        project_code: codeOf(projects, r.project_id),
+        project_name: r.project_name || "",
+        project_type_code: codeOf(projectTypes, r.project_type_id),
+        resource_code: codeOf(resources, r.resource_id),
+        currency_code: codeOf(currencies, r.currency_id),
+        unit_price: r.unit_price ?? "",
+        bmm: r.quantity ?? "",
+        original_amount: r.original_amount,
+        notes: r.notes || "",
+      }));
+      const fileName = `revenue-${searchParams.year ?? "all"}.xlsx`;
+      await exportExcel({ schema, rows, fileName });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng ra ${fileName}` });
+    } catch (error: any) {
+      console.error("Error exporting Excel:", error);
+      toast({ variant: "destructive", title: "Export thất bại", description: error?.message || "Có lỗi xảy ra." });
     }
   };
 
   const monthNameToNumber = (name: string | undefined | null): number | null => {
     if (!name) return null;
-    const map: Record<string, number> = {
-      jan: 1, feb: 2, mar: 3, apr: 4,
-      may: 5, jun: 6, jul: 7, aug: 8,
-      sep: 9, oct: 10, nov: 11, dec: 12,
+    const full: Record<string, number> = {
+      jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
+      apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7,
+      aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+      oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
     };
-    const key = (name + "").substring(0,3).toLowerCase();
-    return map[key] || null;
+    const key = String(name).trim().toLowerCase();
+    return full[key] ?? null;
   };
   
-  function findIdByCode(arr: MasterData[], code: string | undefined | null): string | null {
-    if (!code) return null;
-    const obj = arr.find((item) => (item.code || "").toString().trim().toLowerCase() === (code || "").toString().trim().toLowerCase());
-    return obj ? obj.id : null;
-  }
-  
-  const handleImportCSV = async (
-    data: any[],
-    masterDataRefs: { 
-      customers: MasterData[],
-      companies: MasterData[],
-      divisions: MasterData[],
-      projects: MasterData[],
-      projectTypes: MasterData[],
-      resources: MasterData[],
-      currencies: MasterData[],
-    },
-    onProgress?: (progress: { processed: number; total: number; isComplete: boolean }) => void
-  ) => {
-    let successCount = 0;
-    let errorRows: { row: number; reason: string }[] = [];
-    const requiredFields = ['Year', 'Month', 'Original Amount']; // VND Revenue is calculated
+  const parseNum = (v: any): number => {
+    if (typeof v === "number") return v;
+    if (v === null || v === undefined || v === "") return NaN;
+    return Number(String(v).replace(/,/g, ""));
+  };
 
-    // Function để parse số có dấu phẩy phân cách hàng nghìn
-    const parseNumberWithCommas = (value: string | number): number => {
-      if (typeof value === 'number') return value;
-      if (!value) return 0;
-      
-      // Loại bỏ dấu phẩy và convert sang number
-      const cleanValue = value.toString().replace(/,/g, '');
-      const parsed = Number(cleanValue);
-      return isNaN(parsed) ? 0 : parsed;
-    };
+  const handleImportExcel = async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
+    const errors: ImportError[] = [];
+    const validRevenues: { index: number; rowNumber: number; data: Omit<Revenue, "id"> }[] = [];
 
-    // Thêm nhiều biến thể tên cột cho Original Amount/Revenue
-    const getOriginalAmountValue = (row: any) => {
-      return (
-        row["Original Amount"] ??
-        row["Original Amount".toLowerCase()] ??
-        row["OriginalAmount"] ??
-        row["OriginalRevenue"] ??
-        row["Original Revenue"] ??
-        row["original_amount"] ??
-        row["originalamount"] ??
-        row["original_revenue"] ??
-        row["originalrevenue"] ??
-        row["OriginalAmount"] ??
-        row["Original Revenue"]
-      );
-    };
+    rows.forEach((row, idx) => {
+      const rowNumber: number = row.__rowNumber || idx + 2;
+      const errCols: string[] = [];
+      const reasons: string[] = [];
 
-    // ===> Thêm hàm lấy quantity từ cột BMM nếu có
-    const getQuantityValue = (row: any) => {
-      return (
-        row["BMM"] ??
-        row["bmm"] ??
-        row["Quantity"] ??
-        row["quantity"]
-      );
-    };
-
-    // Process data validation and prepare batch
-    const validRevenues: Omit<Revenue, 'id'>[] = [];
-    
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      
-      // Update progress
-      if (onProgress) {
-        onProgress({ processed: i, total: data.length, isComplete: false });
+      const year = parseNum(row.year);
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        errCols.push("Year");
+        reasons.push(`Năm không hợp lệ: "${row.year ?? ""}"`);
       }
-      
-      let missingRequiredFields: string[] = [];
-      requiredFields.forEach(rf => {
-        // Đối với Original Amount/Original Revenue
-        if (rf === "Original Amount") {
-          const val = getOriginalAmountValue(row);
-          if (val === undefined || val === null || val === "") {
-            missingRequiredFields.push(rf);
-          }
+
+      let monthValue: number | null = null;
+      if (row.month != null && row.month !== "") {
+        if (typeof row.month === "string" && isNaN(Number(row.month))) {
+          monthValue = monthNameToNumber(row.month);
         } else {
-          const keyVariations = [rf, rf.toLowerCase(), rf.replace(/\s+/g, ''), rf.replace(/\s+/g, '_').toLowerCase()];
-          if (!keyVariations.some(k => row[k] !== undefined && row[k] !== null && row[k] !== '')) {
-            missingRequiredFields.push(rf);
-          }
+          monthValue = Number(row.month);
         }
+      }
+      if (!monthValue || monthValue < 1 || monthValue > 12) {
+        errCols.push("Month");
+        reasons.push(`Tháng không hợp lệ: "${row.month ?? ""}" (nhập 1–12)`);
+      }
+
+      const mapFK = (code: any, list: MasterData[], header: string): string | null => {
+        if (!code) return null;
+        // Whitespace-insensitive lookup: NBSP / em-space / tab from Excel
+        // copy-paste won't break the match.
+        const key = normalizeLookupKey(String(code));
+        const found = list.find((m) => normalizeLookupKey(m.code) === key);
+        if (!found) {
+          errCols.push(header);
+          reasons.push(`Không tìm thấy mã ${header}: "${code}" — dùng dropdown từ file mẫu`);
+          return null;
+        }
+        return found.id;
+      };
+
+      // Project bắt buộc — customer_id và project_name suy ra từ đây.
+      const projectCodeRaw = row.project_code;
+      let project_id: string | undefined = undefined;
+      let project: MasterData | undefined = undefined;
+      if (!projectCodeRaw) {
+        errCols.push("Project");
+        reasons.push("Project bắt buộc");
+      } else {
+        const id = mapFK(projectCodeRaw, projects, "Project");
+        if (id) {
+          project_id = id;
+          project = projects.find((p) => p.id === id);
+        }
+      }
+
+      const company_id = mapFK(row.company_code, companies, "Company") || undefined;
+      const division_id = mapFK(row.division_code, divisions, "Division") || undefined;
+      const project_type_id = mapFK(row.project_type_code, projectTypes, "Project Type") || undefined;
+      const resource_id = mapFK(row.resource_code, resources, "Resource") || undefined;
+      const currency_id = mapFK(row.currency_code, currencies, "Currency") || undefined;
+
+      // Unit Price + BMM bắt buộc — original_amount = unit_price × bmm.
+      const unit_price = parseNum(row.unit_price);
+      if (!Number.isFinite(unit_price)) {
+        errCols.push("Unit Price");
+        reasons.push("Unit Price bắt buộc và phải là số");
+      }
+      const quantity = parseNum(row.bmm);
+      if (!Number.isFinite(quantity)) {
+        errCols.push("BMM");
+        reasons.push("BMM bắt buộc và phải là số");
+      }
+
+      if (errCols.length > 0) {
+        errors.push({ rowIndex: rowNumber, columns: errCols, reason: reasons.join("; ") });
+        return;
+      }
+
+      const original_amount = unit_price * quantity;
+      // customer_id và project_name auto từ master Project
+      const customer_id = (project as any)?.customer_id || undefined;
+      const project_name = project?.name || project?.code || "";
+
+      const partial: Partial<Revenue> = {
+        year: Number(year),
+        month: monthValue!,
+        customer_id, company_id, division_id, project_id,
+        project_type_id, resource_id, currency_id,
+        project_name,
+        unit_price: Number.isFinite(unit_price as number) ? (unit_price as number) : undefined,
+        quantity: Number.isFinite(quantity as number) ? (quantity as number) : undefined,
+        original_amount,
+        notes: row.notes ? String(row.notes) : undefined,
+      };
+      const vnd_revenue = calculateVNDRevenue(partial);
+
+      validRevenues.push({
+        index: idx,
+        rowNumber,
+        data: {
+          ...partial,
+          year: partial.year!,
+          month: partial.month!,
+          original_amount: partial.original_amount!,
+          project_name: partial.project_name || "",
+          vnd_revenue,
+        },
       });
+    });
 
-      if (missingRequiredFields.length > 0) {
-        errorRows.push({ row: i + 2, reason: `Thiếu dữ liệu bắt buộc: ${missingRequiredFields.join(", ")}`});
-        continue;
-      }
-      
-      const customer_code = row["Customer"] || row["customer"];
-      const company_code = row["Company"] || row["company"];
-      const division_code = row["Division"] || row["division"];
-      const project_code = row["Project"] || row["project"];
-      const project_type_code = row["Project Type"] || row["project_type"];
-      const resource_code = row["Resource"] || row["resource"];
-      const currency_code = row["Currency"] || row["currency"];
-
-      const customer_id = findIdByCode(masterDataRefs.customers, customer_code);
-      const company_id = findIdByCode(masterDataRefs.companies, company_code);
-      const division_id = findIdByCode(masterDataRefs.divisions, division_code);
-      const project_id = findIdByCode(masterDataRefs.projects, project_code);
-      const project_type_id = findIdByCode(masterDataRefs.projectTypes, project_type_code);
-      const resource_id = findIdByCode(masterDataRefs.resources, resource_code);
-      const currency_id = findIdByCode(masterDataRefs.currencies, currency_code);
-      
-      let mappingErrors: string[] = [];
-      if (customer_code && !customer_id) mappingErrors.push(`Customer ('${customer_code}')`);
-      if (company_code && !company_id) mappingErrors.push(`Company ('${company_code}')`);
-      if (division_code && !division_id) mappingErrors.push(`Division ('${division_code}')`);
-      if (project_code && !project_id) mappingErrors.push(`Project ('${project_code}')`);
-      if (project_type_code && !project_type_id) mappingErrors.push(`Project Type ('${project_type_code}')`);
-      if (resource_code && !resource_id) mappingErrors.push(`Resource ('${resource_code}')`);
-      if (currency_code && !currency_id) mappingErrors.push(`Currency ('${currency_code}')`);
-
-      if (mappingErrors.length > 0) {
-        errorRows.push({ row: i + 2, reason: `Không tìm thấy mã tương ứng cho: ${mappingErrors.join(", ")}` });
-        continue;
-      }
-      
+    let created = 0;
+    const total = validRevenues.length;
+    onProgress?.(0, total);
+    const CHUNK = 200;
+    for (let i = 0; i < validRevenues.length; i += CHUNK) {
+      const chunk = validRevenues.slice(i, i + CHUNK);
       try {
-        const fileMonthRaw = row["Month"] || row["month"];
-        let monthValue: number | null = null;
-        if (fileMonthRaw) {
-          if (typeof fileMonthRaw === "string" && isNaN(Number(fileMonthRaw))) {
-            monthValue = monthNameToNumber(fileMonthRaw);
-          } else {
-            monthValue = Number(fileMonthRaw);
-          }
-        }
-        if (!monthValue || monthValue < 1 || monthValue > 12) {
-           errorRows.push({ row: i + 2, reason: `Tháng không hợp lệ: ${fileMonthRaw}` });
-           continue;
-        }
-        
-        const originalAmountRaw = getOriginalAmountValue(row);
-        const original_amount = parseNumberWithCommas(originalAmountRaw);
-        if (isNaN(original_amount)) {
-          errorRows.push({ row: i + 2, reason: `Số tiền gốc không hợp lệ: ${originalAmountRaw}` });
-          continue;
-        }
-
-        // ===> Dùng giá trị quantity lấy từ cột BMM (ưu tiên), fallback xuống Quantity/quantity
-        let quantityRaw = getQuantityValue(row);
-        const quantity = quantityRaw !== undefined && quantityRaw !== null && quantityRaw !== ""
-          ? parseNumberWithCommas(quantityRaw)
-          : undefined;
-
-        const newRevenuePartial: Partial<Revenue> = {
-          year: Number(row["Year"] || row["year"]),
-          month: monthValue,
-          customer_id: customer_id || undefined,
-          company_id: company_id || undefined,
-          division_id: division_id || undefined,
-          project_id: project_id || undefined,
-          project_type_id: project_type_id || undefined,
-          resource_id: resource_id || undefined,
-          currency_id: currency_id || undefined,
-          unit_price: row["Unit Price"] !== undefined ? parseNumberWithCommas(row["Unit Price"]) : (row["unit_price"] !== undefined ? parseNumberWithCommas(row["unit_price"]) : undefined),
-          quantity,
-          original_amount: original_amount,
-          notes: row["Notes"] || row["notes"] || undefined,
-          project_name: row["Project Name"] || row["project_name"] || "",
-        };
-        
-        const vnd_revenue = calculateVNDRevenue(newRevenuePartial);
-
-        const finalNewRevenue: Omit<Revenue, 'id'> = {
-            ...newRevenuePartial,
-            year: newRevenuePartial.year!,
-            month: newRevenuePartial.month!,
-            original_amount: newRevenuePartial.original_amount!,
-            project_name: newRevenuePartial.project_name || "", 
-            vnd_revenue: vnd_revenue,
-        };
-        
-        if (!finalNewRevenue.year) {
-          errorRows.push({ row: i + 2, reason: "Thiếu dữ liệu năm" });
-          continue;
-        }
-
-        validRevenues.push(finalNewRevenue);
-      } catch (err: any) {
-        errorRows.push({ row: i + 2, reason: `Lỗi validation: ${err.message}` });
-      }
-    }
-
-    // Batch import valid revenues
-    if (validRevenues.length > 0) {
-      try {
-        const { batchCreateRevenues } = await import("@/services/revenueApi");
-        const result = await batchCreateRevenues(validRevenues);
-        
-        successCount = result.success;
-        
-        // Add batch errors to errorRows
-        result.errors.forEach(error => {
-          errorRows.push({ 
-            row: error.index + 2, 
-            reason: error.error 
+        const result = await batchCreateRevenues(chunk.map((v) => v.data));
+        created += result.success;
+        result.errors.forEach((e) => {
+          const src = chunk[e.index];
+          errors.push({
+            rowIndex: src?.rowNumber ?? i + e.index + 2,
+            columns: [],
+            reason: e.error,
           });
         });
       } catch (err: any) {
-        errorRows.push({ row: 0, reason: `Lỗi batch import: ${err.message}` });
+        errors.push({ rowIndex: 0, columns: [], reason: `Lỗi batch import: ${err.message}` });
       }
-    }
-
-    // Final progress update
-    if (onProgress) {
-      onProgress({ processed: data.length, total: data.length, isComplete: true });
+      onProgress?.(Math.min(i + chunk.length, total), total);
     }
 
     fetchData();
-    let msg = `Đã import thành công ${successCount} dòng dữ liệu.`;
-    if (errorRows.length > 0) {
-      const errorDetails = errorRows.map(e => `- Dòng ${e.row}: ${e.reason}`).join("\n");
-      msg += `\n\nCác dòng lỗi (${errorRows.length}):\n${errorDetails}`;
-      toast({
-        title: "Kết quả Import CSV",
-        description: <pre className="whitespace-pre-wrap max-h-60 overflow-y-auto">{msg}</pre>,
-        variant: "destructive",
-        duration: errorRows.length > 5 ? 15000 : 9000,
-      });
-    } else {
-       toast({
-        title: "Kết quả Import CSV",
-        description: msg,
-      });
-    }
+    return { created, updated: 0, errors };
   };
 
   const handleCloneData = async (
@@ -437,10 +361,10 @@ const Revenues = () => {
     targetMonth: number
   ) => {
     try {
-      const { data: sourceRevenues } = await (await import("@/services/revenueApi")).getRevenues({
+      const { data: sourceRevenues } = await getRevenues({
         year: sourceYear,
         months: [sourceMonth],
-        pageSize: 'all',
+        pageSize: "all",
       });
 
       if (sourceRevenues.length === 0) {
@@ -468,7 +392,7 @@ const Revenues = () => {
           };
           clonedEntry.vnd_revenue = calculateVNDRevenue(clonedEntry);
 
-          await (await import("@/services/revenueApi")).createRevenue(clonedEntry);
+          await createRevenue(clonedEntry);
           cloneSuccess++;
         } catch (err: any) {
           cloneFail++;
@@ -517,11 +441,8 @@ const Revenues = () => {
 
   return (
     <div>
-      <PageHeader
-        title="Revenue Management"
-        description="Manage revenue information"
-      />
-      <div className="p-6">
+      <PageHeader title="Revenue Management" />
+      <div className="p-4 space-y-3">
         <RevenueFilters
           selectedYear={searchParams.year || new Date().getFullYear()}
           selectedMonths={searchParams.months || []}
@@ -529,46 +450,60 @@ const Revenues = () => {
           onMonthChange={handleMonthChange}
         />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
-              <RevenueSearch
-                searchTerm={searchTerm}
-                onSearchTermChange={setSearchTerm}
-                onSearch={handleSearch}
-              />
-              <div className="flex items-center gap-4 flex-wrap">
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
-                  onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
-                  totalItems={total}
-                  startIndex={startIndex}
-                  endIndex={endIndex}
-                  pageSize={searchParams.pageSize}
-                  onPageSizeChange={handlePageSizeChange}
-                  position="top"
-                />
-                <RevenueActions
-                  onImportCSV={(data) => handleImportCSV(data, {customers, companies, divisions, projects, projectTypes, resources, currencies})}
-                  onExportCSV={handleExportCSV}
-                  onCloneData={handleCloneData}
-                  onAddNewRow={handleAddNewRowInline}
-                  customers={customers}
-                  companies={companies}
-                  divisions={divisions}
-                  projects={projects}
-                  projectTypes={projectTypes}
-                  resources={resources}
-                  currencies={currencies}
-                />
-              </div>
-            </div>
+        <div className="flex items-center gap-3 flex-wrap justify-between">
+          <RevenueSearch
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+          />
+          <div className="flex items-center gap-3 flex-wrap">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
+              onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
+              totalItems={total}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              pageSize={searchParams.pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              position="top"
+            />
+            <RevenueActions
+              onImportExcel={handleImportExcel}
+              onExportExcel={handleExportExcel}
+              onCloneData={handleCloneData}
+              onBulkDelete={async (year, months) => {
+                try {
+                  const { deleted } = await bulkDeleteRevenues(year, months);
+                  toast({ title: "Đã xoá", description: `Đã xoá ${deleted} dòng revenue.` });
+                  fetchData();
+                  queryClient.invalidateQueries({ queryKey: ["dashboard-primitives"] });
+                } catch (err: any) {
+                  toast({ variant: "destructive", title: "Xoá thất bại", description: err?.message || "Lỗi" });
+                }
+              }}
+              defaultYear={searchParams.year || new Date().getFullYear()}
+              onAddNewRow={handleAddNewRowInline}
+              customers={customers}
+              companies={companies}
+              divisions={divisions}
+              projects={projects}
+              projectTypes={projectTypes}
+              resources={resources}
+              currencies={currencies}
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="space-y-2 py-4" aria-busy="true">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
             <RevenueTable
               revenues={tableRows}
               customers={customers}
@@ -581,18 +516,30 @@ const Revenues = () => {
               searchParams={searchParams}
               getMonthName={getMonthName}
               calculateVNDRevenue={calculateVNDRevenue}
-              onCellEdit={handleCombinedCellEdit} // Use the correctly wired handler
+              onCellEdit={handleCombinedCellEdit}
               editingCell={editingCell}
               setEditingCell={setEditingCell}
               onInsertRowBelow={handleInsertRowBelow}
-              onCloneRevenue={originalHandleCloneRevenue} // Use the original one from crudOperations
+              onCloneRevenue={originalHandleCloneRevenue}
               onOpenDialog={handleOpenDialog}
               onDeleteRevenue={handleDeleteRevenue}
               tempRow={tempRow}
               onCommitTempRow={handleCommitTempRow}
             />
-          </CardContent>
-        </Card>
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onNextPage={() => { if (currentPage < totalPages) handlePageChange(currentPage + 1);}}
+              onPreviousPage={() => { if (currentPage > 1) handlePageChange(currentPage - 1);}}
+              totalItems={total}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              pageSize={searchParams.pageSize}
+              position="bottom"
+            />
+          </>
+        )}
       </div>
 
       <RevenueDialog
@@ -609,6 +556,7 @@ const Revenues = () => {
         currencies={currencies}
         onSave={handleSaveRevenue}
       />
+
     </div>
   );
 };

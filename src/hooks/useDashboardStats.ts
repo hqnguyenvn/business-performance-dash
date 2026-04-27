@@ -1,23 +1,34 @@
-import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { getConvertFactor, getBusinessDays } from "@/types/employee";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getDashboardPrimitives,
+  type DashboardPeriodPrimitives,
+} from "@/services/reportsService";
 
 interface DashboardStatsArgs {
   year: number;
   months: number[];
+  /** Income tax rate as a percentage (e.g. 5 for 5%). */
   incomeTaxRate: number;
+  /** Bonus rate as a percentage (e.g. 15 for 15%). */
   bonusRate: number;
 }
+
 export interface StatWithChange {
   value: number;
   prevValue: number | null;
   percentChange: number | null;
+  /** Planned value for the period (VND for revenue, raw number for BMM). null when no plan exists. */
+  planValue?: number | null;
+  /** ((value - planValue) / |planValue|) × 100 — null when no plan. */
+  planPercent?: number | null;
 }
+
 export interface DashboardStats {
   totalRevenue: StatWithChange;
   totalCost: StatWithChange;
   grossProfit: StatWithChange;
   netProfit: StatWithChange;
+  totalBMM: StatWithChange;
   customerCount: StatWithChange;
   devEE: StatWithChange;
   devEEBMM: number;
@@ -29,10 +40,86 @@ export interface DashboardStats {
   loading: boolean;
 }
 
-function getPreviousPeriod(year: number, months: number[]): { prevYear: number, prevMonths: number[] } | null {
-  if (months.length === 0) return null;
-  return { prevYear: year - 1, prevMonths: [...months] };
+/**
+ * Computes the derived KPIs from a period's aggregated primitives.
+ * Formula matches the legacy client-side implementation (see git history
+ * prior to the Supabase→PG migration).
+ */
+function calcKPIs(
+  period: DashboardPeriodPrimitives,
+  incomeTaxRate: number,
+  bonusRate: number,
+) {
+  const totalRevenue = period.total_revenue;
+  const baseCost = period.total_cost;
+  const salaryCost = period.salary_cost;
+  const bonus = salaryCost * (bonusRate / 100);
+  const grossProfit = totalRevenue - baseCost;
+  const incomeTax = grossProfit > 0 ? grossProfit * (incomeTaxRate / 100) : 0;
+  const totalCost = baseCost + bonus + incomeTax;
+  const netProfit = totalRevenue - totalCost;
+
+  const customerCount = period.customer_count;
+  const totalBMM = period.total_bmm;
+  const totalCMM = period.total_cmm;
+  const devCMM = period.dev_cmm;
+  const overheadRatio =
+    period.total_cwd > 0 ? period.overhead_cwd / period.total_cwd : 0;
+
+  const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
+  const devEE = devCMM > 0 ? totalBMM / devCMM : 0;
+
+  const planRevenue = period.plan_revenue ?? 0;
+  const planBmm = period.plan_bmm ?? 0;
+
+  return {
+    totalRevenue,
+    totalCost,
+    grossProfit,
+    netProfit,
+    customerCount,
+    ee,
+    devEE,
+    totalBMM,
+    totalCMM,
+    devCMM,
+    overheadRatio,
+    planRevenue,
+    planBmm,
+  };
 }
+
+function percentChange(current: number, prev: number | null): number | null {
+  if (prev === null || prev === 0) return null;
+  return ((current - prev) / Math.abs(prev)) * 100;
+}
+
+function planFields(value: number, planValue: number) {
+  if (planValue === 0) {
+    return { planValue: null, planPercent: null };
+  }
+  return {
+    planValue,
+    planPercent: ((value - planValue) / Math.abs(planValue)) * 100,
+  };
+}
+
+const ZERO_STATS: DashboardStats = {
+  totalRevenue: { value: 0, prevValue: null, percentChange: null },
+  totalCost: { value: 0, prevValue: null, percentChange: null },
+  grossProfit: { value: 0, prevValue: null, percentChange: null },
+  netProfit: { value: 0, prevValue: null, percentChange: null },
+  totalBMM: { value: 0, prevValue: null, percentChange: null },
+  customerCount: { value: 0, prevValue: null, percentChange: null },
+  devEE: { value: 0, prevValue: null, percentChange: null },
+  devEEBMM: 0,
+  devEECMM: 0,
+  ee: { value: 0, prevValue: null, percentChange: null },
+  eeBMM: 0,
+  eeCMM: 0,
+  overheadRatio: { value: 0, prevValue: null, percentChange: null },
+  loading: true,
+};
 
 export function useDashboardStats({
   year,
@@ -40,190 +127,88 @@ export function useDashboardStats({
   incomeTaxRate,
   bonusRate,
 }: DashboardStatsArgs): DashboardStats {
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [revenues, setRevenues] = useState<any[]>([]);
-  const [costs, setCosts] = useState<any[]>([]);
-  const [costTypes, setCostTypes] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [prevRevenues, setPrevRevenues] = useState<any[]>([]);
-  const [prevCosts, setPrevCosts] = useState<any[]>([]);
-  const [prevEmployees, setPrevEmployees] = useState<any[]>([]);
+  const monthsKey = [...months].sort((a, b) => a - b).join(",");
 
-  const prevPeriod = useMemo(() => getPreviousPeriod(year, months), [year, months]);
+  const { data, isLoading, isSuccess } = useQuery({
+    queryKey: ["dashboard-primitives", year, monthsKey],
+    queryFn: () => getDashboardPrimitives(year, months),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: months.length > 0,
+  });
 
-  useEffect(() => {
-    async function fetchData() {
-      const queries: any[] = [
-        supabase.from("revenues").select("*").in("year", [year]).in("month", months),
-        supabase.from("costs").select("*").in("year", [year]).in("month", months),
-        supabase.from("cost_types").select("id, code"),
-        supabase.from("employees").select("*").eq("year", year).in("month", months),
-      ];
-      if (prevPeriod) {
-        queries.push(
-          supabase.from("revenues").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
-          supabase.from("costs").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
-          supabase.from("employees").select("*").eq("year", prevPeriod.prevYear).in("month", prevPeriod.prevMonths),
-        );
-      }
-
-      const results = await Promise.all(queries);
-
-      setRevenues(results[0]?.data || []);
-      setCosts(results[1]?.data || []);
-      setCostTypes(results[2]?.data || []);
-      setEmployees(results[3]?.data || []);
-      if (prevPeriod) {
-        setPrevRevenues(results[4]?.data || []);
-        setPrevCosts(results[5]?.data || []);
-        setPrevEmployees(results[6]?.data || []);
-      } else {
-        setPrevRevenues([]);
-        setPrevCosts([]);
-        setPrevEmployees([]);
-      }
-      setInitialLoading(false);
-    }
-    fetchData();
-  }, [year, months.join(","), incomeTaxRate, bonusRate]);
-
-  function calcStats(revenuesArr: any[], costsArr: any[], costTypesArr: any[], employeesArr: any[], statYear: number) {
-    const totalRevenue = revenuesArr.reduce((sum, r) => sum + (r.vnd_revenue || 0), 0);
-
-    const salaryType = costTypesArr.find((ct: any) => ct.code?.toLowerCase() === "salary");
-    const salaryCostTypeId = salaryType?.id;
-
-    const baseCost = costsArr.reduce((sum, c) => sum + (c.cost || 0), 0);
-
-    let bonus = 0;
-    const monthsArr = Array.from(new Set(costsArr.map(c => c.month)));
-    monthsArr.forEach((m) => {
-      const monthlySalary = costsArr
-        .filter((c) => c.cost_type === salaryCostTypeId && c.month === m)
-        .reduce((sum, c) => sum + (c.cost || 0), 0);
-      bonus += monthlySalary * (bonusRate / 100);
-    });
-    const grossProfit = totalRevenue - baseCost;
-    const incomeTax = grossProfit > 0 ? grossProfit * (incomeTaxRate / 100) : 0;
-    const totalCost = baseCost + bonus + incomeTax;
-    const netProfit = totalRevenue - totalCost;
-
-    const customerSet = new Set<string>();
-    for (const row of revenuesArr) {
-      if (row.customer_id) customerSet.add(row.customer_id);
-    }
-    const customerCount = customerSet.size;
-
-    // EE = BMM / CMM
-    const totalBMM = revenuesArr.reduce((sum, r) => sum + (r.quantity || 0), 0);
-    let totalCMM = 0;
-    let devCMM = 0;
-    let totalCWD = 0;
-    let overheadCWD = 0;
-    for (const emp of employeesArr) {
-      const convertFactor = getConvertFactor(emp.type);
-      const cwd = (emp.working_day || 0) * convertFactor;
-      totalCWD += cwd;
-      if ((emp.category || "").toLowerCase() === "overhead") {
-        overheadCWD += cwd;
-      }
-      const bizDays = getBusinessDays(emp.year || statYear, emp.month);
-      if (bizDays > 0) {
-        const empCMM = cwd / bizDays;
-        totalCMM += empCMM;
-        if ((emp.category || "").toLowerCase() === "development") {
-          devCMM += empCMM;
-        }
-      }
-    }
-    const ee = totalCMM > 0 ? totalBMM / totalCMM : 0;
-    const devEE = devCMM > 0 ? totalBMM / devCMM : 0;
-    const overheadRatio = totalCWD > 0 ? overheadCWD / totalCWD : 0;
-
-    return { totalRevenue, totalCost, grossProfit, netProfit, customerCount, ee, totalBMM, totalCMM, devEE, devCMM, overheadRatio };
+  if (isLoading || !data) {
+    return ZERO_STATS;
   }
 
-  const stats = useMemo(() => {
-    if (initialLoading) {
-      return {
-        totalRevenue: { value: 0, prevValue: null, percentChange: null },
-        totalCost: { value: 0, prevValue: null, percentChange: null },
-        grossProfit: { value: 0, prevValue: null, percentChange: null },
-        netProfit: { value: 0, prevValue: null, percentChange: null },
-        customerCount: { value: 0, prevValue: null, percentChange: null },
-        devEE: { value: 0, prevValue: null, percentChange: null },
-        devEEBMM: 0,
-        devEECMM: 0,
-        ee: { value: 0, prevValue: null, percentChange: null },
-        eeBMM: 0,
-        eeCMM: 0,
-        overheadRatio: { value: 0, prevValue: null, percentChange: null },
-        loading: true,
-      };
-    }
+  const now = calcKPIs(data.current, incomeTaxRate, bonusRate);
+  const hasPrev =
+    data.previous.total_revenue > 0 ||
+    data.previous.total_cost > 0 ||
+    data.previous.customer_count > 0;
+  const prev = hasPrev
+    ? calcKPIs(data.previous, incomeTaxRate, bonusRate)
+    : null;
 
-    const nowStats = calcStats(revenues, costs, costTypes, employees, year);
-    const prevStats = prevPeriod && (prevRevenues.length + prevCosts.length + prevEmployees.length > 0)
-      ? calcStats(prevRevenues, prevCosts, costTypes, prevEmployees, prevPeriod.prevYear)
-      : null;
-
-    function percentChange(current: number, prev: number | null): number | null {
-      if (prev === null || prev === 0) return null;
-      return ((current - prev) / Math.abs(prev)) * 100;
-    }
-
-    return {
-      totalRevenue: {
-        value: nowStats.totalRevenue,
-        prevValue: prevStats ? prevStats.totalRevenue : null,
-        percentChange: percentChange(nowStats.totalRevenue, prevStats ? prevStats.totalRevenue : null),
-      },
-      totalCost: {
-        value: nowStats.totalCost,
-        prevValue: prevStats ? prevStats.totalCost : null,
-        percentChange: percentChange(nowStats.totalCost, prevStats ? prevStats.totalCost : null),
-      },
-      grossProfit: {
-        value: nowStats.grossProfit,
-        prevValue: prevStats ? prevStats.grossProfit : null,
-        percentChange: percentChange(nowStats.grossProfit, prevStats ? prevStats.grossProfit : null),
-      },
-      netProfit: {
-        value: nowStats.netProfit,
-        prevValue: prevStats ? prevStats.netProfit : null,
-        percentChange: percentChange(nowStats.netProfit, prevStats ? prevStats.netProfit : null),
-      },
-      customerCount: {
-        value: nowStats.customerCount,
-        prevValue: prevStats ? prevStats.customerCount : null,
-        percentChange: percentChange(nowStats.customerCount, prevStats ? prevStats.customerCount : null),
-      },
-      devEE: {
-        value: nowStats.devEE,
-        prevValue: prevStats ? prevStats.devEE : null,
-        percentChange: percentChange(nowStats.devEE, prevStats ? prevStats.devEE : null),
-      },
-      devEEBMM: nowStats.totalBMM,
-      devEECMM: nowStats.devCMM,
-      ee: {
-        value: nowStats.ee,
-        prevValue: prevStats ? prevStats.ee : null,
-        percentChange: percentChange(nowStats.ee, prevStats ? prevStats.ee : null),
-      },
-      eeBMM: nowStats.totalBMM,
-      eeCMM: nowStats.totalCMM,
-      overheadRatio: {
-        value: nowStats.overheadRatio,
-        prevValue: prevStats ? prevStats.overheadRatio : null,
-        percentChange: percentChange(nowStats.overheadRatio, prevStats ? prevStats.overheadRatio : null),
-      },
-      loading: false,
-    };
-  }, [
-    revenues, costs, costTypes, employees, initialLoading,
-    bonusRate, incomeTaxRate, months, year,
-    prevPeriod, prevRevenues, prevCosts, prevEmployees,
-  ]);
-
-  return stats;
+  return {
+    totalRevenue: {
+      value: now.totalRevenue,
+      prevValue: prev?.totalRevenue ?? null,
+      percentChange: percentChange(now.totalRevenue, prev?.totalRevenue ?? null),
+      ...planFields(now.totalRevenue, now.planRevenue),
+    },
+    totalCost: {
+      value: now.totalCost,
+      prevValue: prev?.totalCost ?? null,
+      percentChange: percentChange(now.totalCost, prev?.totalCost ?? null),
+    },
+    grossProfit: {
+      value: now.grossProfit,
+      prevValue: prev?.grossProfit ?? null,
+      percentChange: percentChange(now.grossProfit, prev?.grossProfit ?? null),
+    },
+    netProfit: {
+      value: now.netProfit,
+      prevValue: prev?.netProfit ?? null,
+      percentChange: percentChange(now.netProfit, prev?.netProfit ?? null),
+    },
+    totalBMM: {
+      value: now.totalBMM,
+      prevValue: prev?.totalBMM ?? null,
+      percentChange: percentChange(now.totalBMM, prev?.totalBMM ?? null),
+      ...planFields(now.totalBMM, now.planBmm),
+    },
+    customerCount: {
+      value: now.customerCount,
+      prevValue: prev?.customerCount ?? null,
+      percentChange: percentChange(
+        now.customerCount,
+        prev?.customerCount ?? null,
+      ),
+    },
+    devEE: {
+      value: now.devEE,
+      prevValue: prev?.devEE ?? null,
+      percentChange: percentChange(now.devEE, prev?.devEE ?? null),
+    },
+    devEEBMM: now.totalBMM,
+    devEECMM: now.devCMM,
+    ee: {
+      value: now.ee,
+      prevValue: prev?.ee ?? null,
+      percentChange: percentChange(now.ee, prev?.ee ?? null),
+    },
+    eeBMM: now.totalBMM,
+    eeCMM: now.totalCMM,
+    overheadRatio: {
+      value: now.overheadRatio,
+      prevValue: prev?.overheadRatio ?? null,
+      percentChange: percentChange(
+        now.overheadRatio,
+        prev?.overheadRatio ?? null,
+      ),
+    },
+    loading: !isSuccess,
+  };
 }

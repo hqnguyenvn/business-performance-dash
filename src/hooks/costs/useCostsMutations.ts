@@ -29,8 +29,10 @@ export const useCostsMutations = () => {
   });
 
   const updateCostMutation = useMutation({
-    mutationFn: ({ id, cost }: { id: string; cost: Partial<Cost> }) => 
-      updateCost(id, cost),
+    mutationFn: ({ id, cost }: { id: string; cost: Partial<Cost> }) => {
+      const { id: _id, created_at: _c, updated_at: _u, ...patch } = cost as Cost;
+      return updateCost(id, patch);
+    },
     onSuccess: () => {
       invalidateQueries();
       toast({

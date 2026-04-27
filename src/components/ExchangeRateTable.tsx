@@ -7,8 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { exchangeRateService, ExchangeRateDisplay } from "@/services/exchangeRateService";
 import ExchangeRateTableHead from "./ExchangeRateTableHead";
 import ExchangeRateTableBody from "./ExchangeRateTableBody";
-import { exportToCsv } from "@/utils/exportCsv";
-import ImportCsvDialog from "./ImportCsvDialog";
+import { exportExcel, type ImportError, type ExcelSchema } from "@/utils/excelIO";
+import ExcelImportDialog, { type ImportResult, type ImportProgress } from "@/components/ExcelImportDialog";
+import { reportRowProgress } from "@/utils/importProgress";
+import { MONTH_SHORTS } from "@/lib/months";
 
 interface MasterData {
   id: string;
@@ -23,15 +25,22 @@ interface ExchangeRateTableProps {
   currencies: MasterData[];
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [...MONTH_SHORTS];
 
 const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   exchangeRates,
   setExchangeRates,
-  currencies,
+  currencies: allCurrencies,
 }) => {
   const { toast } = useToast();
   const [userModified, setUserModified] = useState(false);
+
+  // VND is treated as a constant rate of 1 elsewhere in the app — hide it
+  // from this screen entirely (dropdown + Excel template/import).
+  const currencies = useMemo(
+    () => allCurrencies.filter((c) => (c.code || "").toUpperCase() !== "VND"),
+    [allCurrencies],
+  );
 
   const MONTH_ORDER: Record<string, number> = {
     Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
@@ -39,12 +48,14 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
   };
 
   const sortedRates = useMemo(() => {
-    if (userModified) return exchangeRates;
-    return [...exchangeRates].sort((a, b) => {
+    const isNew = (id: string) => !isNaN(Number(id));
+    const newRows = exchangeRates.filter((r) => isNew(r.id));
+    const savedRows = exchangeRates.filter((r) => !isNew(r.id)).sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return (MONTH_ORDER[b.month] || 0) - (MONTH_ORDER[a.month] || 0);
     });
-  }, [exchangeRates, userModified]);
+    return [...newRows, ...savedRows];
+  }, [exchangeRates]);
 
   // Track editing cell: {id, field}
   const [editingCell, setEditingCell] = useState<{
@@ -52,28 +63,31 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
     field: keyof ExchangeRateDisplay | null;
   } | null>(null);
 
-  // Add row BELOW given id, or append if id === null
+  // Add row: Add button (afterId=null) OR + icon on the top row → prepend.
+  // Otherwise insert after the given id.
   const addExchangeRateBelow = useCallback((afterId: string | null) => {
     setUserModified(true);
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const newRate: ExchangeRateDisplay = {
       id: Date.now().toString(),
-      year: new Date().getFullYear(),
-      month: "Jan",
+      year: prev.getFullYear(),
+      month: MONTHS[prev.getMonth()],
       currencyID: "",
       exchangeRate: 0,
     };
     setExchangeRates((prev) => {
-      if (!afterId) return [...prev, newRate];
+      if (!afterId) return [newRate, ...prev];
+      const topVisibleId = sortedRates[0]?.id;
+      if (afterId === topVisibleId) return [newRate, ...prev];
       const idx = prev.findIndex((item) => item.id === afterId);
-      if (idx === -1) return [...prev, newRate];
-      const newArr = [...prev.slice(0, idx + 1), newRate, ...prev.slice(idx + 1)];
-      return newArr;
+      if (idx === -1) return [newRate, ...prev];
+      return [...prev.slice(0, idx + 1), newRate, ...prev.slice(idx + 1)];
     });
-    // focus cell mới: year
     setTimeout(() => {
       setEditingCell({ id: newRate.id, field: "year" });
     }, 100);
-  }, [setExchangeRates]);
+  }, [setExchangeRates, sortedRates]);
 
   // Inline edit-saving: on change cell AND on blur/enter sẽ gọi save (auto)
   const saveCell = useCallback(
@@ -155,33 +169,82 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
 
   const [importOpen, setImportOpen] = useState(false);
 
-  const handleExport = () => {
-    exportToCsv(exchangeRates, "Exchange_Rates", [
-      { key: "year", header: "Year" },
-      { key: "month", header: "Month" },
-      { key: "currencyID", header: "Currency" },
-      { key: "exchangeRate", header: "Exchange Rate" },
-    ]);
+  const schema = useMemo<ExcelSchema>(() => ({
+    sheetName: "Exchange Rates",
+    lookups: {
+      months: MONTHS.map((m) => ({ code: m })),
+      currencies: currencies.map((c) => ({ code: c.code, name: c.name })),
+    },
+    columns: [
+      { key: "year", header: "Year", type: "integer", required: true, width: 8 },
+      { key: "month", header: "Month", lookup: "months", required: true, width: 10 },
+      { key: "currency_code", header: "Currency", lookup: "currencies", required: true, width: 14 },
+      { key: "exchange_rate", header: "Exchange Rate", type: "number", required: true, width: 16 },
+    ],
+  }), [currencies]);
+
+  const handleExport = async () => {
+    try {
+      const rows = exchangeRates.map((r) => ({
+        year: r.year,
+        month: r.month,
+        currency_code: r.currencyID,
+        exchange_rate: r.exchangeRate,
+      }));
+      await exportExcel({ schema, rows, fileName: "exchange-rates.xlsx" });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng.` });
+    } catch (err: any) {
+      toast({ title: "Export thất bại", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+  const handleImport = useCallback(async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
     let created = 0;
     let updated = 0;
-    const errors: string[] = [];
+    const errors: ImportError[] = [];
+    const total = rows.length;
+    onProgress?.(0, total);
 
-    for (const row of rows) {
-      const year = parseInt(row["Year"] || "");
-      const month = (row["Month"] || "").trim();
-      const currency = (row["Currency"] || "").trim();
-      const exchangeRate = parseFloat(row["Exchange Rate"] || "");
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber: number = row.__rowNumber || 0;
+      const errCols: string[] = [];
+      const reasons: string[] = [];
 
-      if (!year || !month || !currency || isNaN(exchangeRate)) {
-        errors.push(`Skipped invalid row: Year=${row["Year"]}, Month=${month}, Currency=${currency}`);
+      const year = Number(row.year);
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        errCols.push("Year"); reasons.push(`Năm không hợp lệ: "${row.year ?? ""}"`);
+      }
+      const monthRaw = String(row.month || "").trim();
+      const month = MONTHS.find((m) => m.toLowerCase() === monthRaw.toLowerCase()) || "";
+      if (!month) {
+        errCols.push("Month"); reasons.push(`Tháng phải là ${MONTHS.join("/")}`);
+      }
+      const currencyCode = String(row.currency_code || "").trim();
+      if (!currencyCode) {
+        errCols.push("Currency"); reasons.push("Currency bắt buộc");
+      } else if (currencyCode.toUpperCase() === "VND") {
+        errCols.push("Currency");
+        reasons.push("VND có tỷ giá luôn = 1; không cần nhập vào bảng tỷ giá");
+      } else if (!currencies.find((c) => c.code.toLowerCase() === currencyCode.toLowerCase())) {
+        errCols.push("Currency"); reasons.push(`Không tìm thấy Currency: "${currencyCode}"`);
+      }
+      const exchangeRate = Number(row.exchange_rate);
+      if (!Number.isFinite(exchangeRate)) {
+        errCols.push("Exchange Rate"); reasons.push("Exchange Rate phải là số");
+      }
+
+      if (errCols.length > 0) {
+        errors.push({ rowIndex: rowNumber, columns: errCols, reason: reasons.join("; ") });
+        reportRowProgress(i + 1, total, onProgress);
         continue;
       }
 
       const existing = exchangeRates.find(
-        (item) => item.year === year && item.month === month && item.currencyID.toLowerCase() === currency.toLowerCase()
+        (item) => item.year === year && item.month === month && item.currencyID.toLowerCase() === currencyCode.toLowerCase()
       );
 
       try {
@@ -190,16 +253,17 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
           setExchangeRates((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
           updated++;
         } else {
-          const newItem = await exchangeRateService.create({ year, month, currencyID: currency, exchangeRate });
+          const newItem = await exchangeRateService.create({ year, month, currencyID: currencyCode, exchangeRate });
           setExchangeRates((prev) => [newItem, ...prev]);
           created++;
         }
       } catch (error: any) {
-        errors.push(`Year=${year}, Month=${month}, Currency=${currency}: ${error.message || "Unknown error"}`);
+        errors.push({ rowIndex: rowNumber, columns: [], reason: `${year}/${month}/${currencyCode}: ${error.message || "Lỗi"}` });
       }
+      reportRowProgress(i + 1, total, onProgress);
     }
     return { created, updated, errors };
-  }, [exchangeRates, setExchangeRates]);
+  }, [exchangeRates, setExchangeRates, currencies]);
 
   return (
     <Card className="bg-white">
@@ -222,11 +286,13 @@ const ExchangeRateTable: React.FC<ExchangeRateTableProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ImportCsvDialog
+      <ExcelImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Exchange Rates"
-        expectedColumns={["Year", "Month", "Currency", "Exchange Rate"]}
+        schema={schema}
+        templateFileName="exchange-rates-template.xlsx"
+        errorFileName="exchange-rates-errors.xlsx"
         onImport={handleImport}
       />
       <CardContent>

@@ -117,6 +117,7 @@ export const useCosts = () => {
     handleYearChange,
     handleMonthToggle,
     getMonthName,
+    getMonthNumber,
     getCostTypeName,
   };
 };

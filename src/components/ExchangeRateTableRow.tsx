@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -45,6 +45,38 @@ interface ExchangeRateTableRowProps {
   MONTHS: string[];
   className?: string;
 }
+
+const ExchangeRateInput: React.FC<{
+  value: number;
+  onCommit: (n: number) => void;
+  onBlurCell: () => void;
+}> = ({ value, onCommit, onBlurCell }) => {
+  const [text, setText] = useState<string>(String(value ?? ""));
+  useEffect(() => { setText(String(value ?? "")); }, [value]);
+
+  const commit = () => {
+    const parsed = parseFloat(text.replace(/,/g, ""));
+    const final = isNaN(parsed) ? 0 : Math.round(parsed * 100) / 100;
+    if (final !== value) onCommit(final);
+    onBlurCell();
+  };
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      autoFocus
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      className="border-0 p-1 h-8 text-right"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Tab") commit();
+        else if (e.key === "Escape") onBlurCell();
+      }}
+    />
+  );
+};
 
 const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
   rate,
@@ -136,23 +168,10 @@ const ExchangeRateTableRow: React.FC<ExchangeRateTableRowProps> = ({
         onClick={() => onEditCell(rate.id, "exchangeRate")}
       >
         {editingCell?.id === rate.id && editingCell?.field === "exchangeRate" ? (
-          <Input
-            type="number"
-            step="0.01"
-            autoFocus
+          <ExchangeRateInput
             value={rate.exchangeRate}
-            onChange={(e) => {
-              let val = parseFloat(e.target.value);
-              if (isNaN(val)) val = 0;
-              // Giữ lại đúng 2 số lẻ
-              saveCell(rate.id, "exchangeRate", Math.round(val * 100) / 100);
-            }}
-            onBlur={onBlurCell}
-            className="border-0 p-1 h-8 text-right"
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === "Tab") onBlurCell();
-              else if (e.key === "Escape") onBlurCell();
-            }}
+            onCommit={(n) => saveCell(rate.id, "exchangeRate", n)}
+            onBlurCell={onBlurCell}
           />
         ) : (
           <div className="h-8 flex items-center justify-end pr-2">{formatNumberWithDecimals(rate.exchangeRate, 2)}</div>

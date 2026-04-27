@@ -1,6 +1,6 @@
 
 import { PageHeader } from "@/components/PageHeader";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardFilter } from "@/components/dashboard/DashboardFilter";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
@@ -8,24 +8,10 @@ import { DollarSign, Receipt, TrendingUp, Users, Activity, ChartPie } from "luci
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useParameterValues } from "@/hooks/useParameterValues";
 import { formatNumber } from "@/lib/format";
+import { MONTHS as MONTHS_FULL, YEARS as years } from "@/lib/months";
 
-// Month & year options
-const months = [
-  { value: 1, label: "Jan" },
-  { value: 2, label: "Feb" },
-  { value: 3, label: "Mar" },
-  { value: 4, label: "Apr" },
-  { value: 5, label: "May" },
-  { value: 6, label: "Jun" },
-  { value: 7, label: "Jul" },
-  { value: 8, label: "Aug" },
-  { value: 9, label: "Sep" },
-  { value: 10, label: "Oct" },
-  { value: 11, label: "Nov" },
-  { value: 12, label: "Dec" },
-];
-
-const years = Array.from({ length: 2035 - 2020 + 1 }, (_, idx) => 2020 + idx);
+// Dashboard uses short labels ("Jan", "Feb", ...)
+const months = MONTHS_FULL.map((m) => ({ value: m.value, label: m.short }));
 
 const now = new Date();
 const currentYear = now.getFullYear();
@@ -38,19 +24,17 @@ const Index = () => {
     Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, idx) => idx + 1)
   );
   
-  // Get parameter values from database
-  const { taxRate: paramTaxRate, bonusRate: paramBonusRate, loading: paramLoading } = useParameterValues(selectedYear);
-  
-  const [incomeTaxRate, setIncomeTaxRate] = useState<number | null>(null);
-  const [bonusRate, setBonusRate] = useState<number | null>(null);
+  // Parameter values from database. The hook returns null while loading so
+  // we can show a spinner instead of flashing placeholder KPIs.
+  const {
+    taxRate: paramTaxRate,
+    bonusRate: paramBonusRate,
+    ready: paramsReady,
+  } = useParameterValues(selectedYear);
 
-  // Update rates when parameter values are loaded - convert to percentage for display
-  useEffect(() => {
-    if (!paramLoading) {
-      setIncomeTaxRate(paramTaxRate * 100); // Convert 0.05 to 5 for display
-      setBonusRate(paramBonusRate * 100);   // Convert 0.15 to 15 for display
-    }
-  }, [paramTaxRate, paramBonusRate, paramLoading]);
+  // Rates come from master data (Parameters in Settings). Dashboard is view-only.
+  const incomeTaxRate = paramTaxRate !== null ? paramTaxRate * 100 : null;
+  const bonusRate = paramBonusRate !== null ? paramBonusRate * 100 : null;
 
   // Month toggle utility
   const handleMonthToggle = (month: number) => {
@@ -61,80 +45,92 @@ const Index = () => {
     );
   };
 
-  // Lấy dữ liệu thống kê mới - use fallback values if parameters not loaded
+  // Stats are only valid once parameters are loaded — before that the hook
+  // waits and returns a "loading" result so the UI shows a spinner.
   const stats = useDashboardStats({
     year: selectedYear,
     months: selectedMonths,
-    incomeTaxRate: incomeTaxRate ?? 5, // Fallback to 5% if not loaded
-    bonusRate: bonusRate ?? 15, // Fallback to 15% if not loaded
+    incomeTaxRate: incomeTaxRate ?? 0,
+    bonusRate: bonusRate ?? 0,
   });
+  const statsLoading = stats.loading || !paramsReady;
 
-  const statCardsData = [
+  const grossPct = stats.totalRevenue.value > 0 ? ((stats.grossProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0";
+  const netPct = stats.totalRevenue.value > 0 ? ((stats.netProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0";
+
+  const businessStats = [
     {
-      title: "Revenue",
-      value: stats.loading ? "..." : `${formatNumber(stats.totalRevenue.value / 1_000_000)}M`,
+      title: "Revenue (VND)",
+      value: statsLoading ? "..." : formatNumber(stats.totalRevenue.value),
       percentChange: stats.totalRevenue.percentChange,
-      change: stats.loading ? "--" : (typeof stats.totalRevenue.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.totalRevenue.percentChange === "number"
         ? `${stats.totalRevenue.percentChange > 0 ? "+" : ""}${stats.totalRevenue.percentChange.toFixed(1)}%`
+        : "--"),
+      planPercent: stats.totalRevenue.planPercent,
+      planChange: statsLoading ? "--" : (typeof stats.totalRevenue.planPercent === "number"
+        ? `${stats.totalRevenue.planPercent > 0 ? "+" : ""}${stats.totalRevenue.planPercent.toFixed(1)}%`
         : "--"),
       icon: DollarSign,
       color: "text-green-600",
     },
     {
-      title: "Cost",
-      value: stats.loading ? "..." : `${formatNumber(stats.totalCost.value / 1_000_000)}M`,
+      title: "Cost (VND)",
+      value: statsLoading ? "..." : formatNumber(stats.totalCost.value),
       percentChange: stats.totalCost.percentChange,
-      change: stats.loading ? "--" : (typeof stats.totalCost.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.totalCost.percentChange === "number"
         ? `${stats.totalCost.percentChange > 0 ? "+" : ""}${stats.totalCost.percentChange.toFixed(1)}%`
         : "--"),
       icon: Receipt,
       color: "text-red-600",
     },
     {
-      title: stats.loading ? "Gross Profit" : `Gross Profit (${stats.totalRevenue.value > 0 ? ((stats.grossProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
-      value: stats.loading ? "..." : `${formatNumber(stats.grossProfit.value / 1_000_000)}M`,
+      title: statsLoading ? "Gross Profit (VND)" : `Gross Profit (VND — ${grossPct}%)`,
+      value: statsLoading ? "..." : formatNumber(stats.grossProfit.value),
       percentChange: stats.grossProfit.percentChange,
-      change: stats.loading ? "--" : (typeof stats.grossProfit.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.grossProfit.percentChange === "number"
         ? `${stats.grossProfit.percentChange > 0 ? "+" : ""}${stats.grossProfit.percentChange.toFixed(1)}%`
         : "--"),
       icon: TrendingUp,
       color: "text-emerald-600",
     },
     {
-      title: stats.loading ? "Net Profit" : `Net Profit (${stats.totalRevenue.value > 0 ? ((stats.netProfit.value / stats.totalRevenue.value) * 100).toFixed(1) : "0.0"}%)`,
-      value: stats.loading ? "..." : `${formatNumber(stats.netProfit.value / 1_000_000)}M`,
+      title: statsLoading ? "Net Profit (VND)" : `Net Profit (VND — ${netPct}%)`,
+      value: statsLoading ? "..." : formatNumber(stats.netProfit.value),
       percentChange: stats.netProfit.percentChange,
-      change: stats.loading ? "--" : (typeof stats.netProfit.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.netProfit.percentChange === "number"
         ? `${stats.netProfit.percentChange > 0 ? "+" : ""}${stats.netProfit.percentChange.toFixed(1)}%`
         : "--"),
       icon: TrendingUp,
       color: "text-blue-600",
     },
+  ];
+
+  const kpiStats = [
     {
       title: "Customers",
-      value: stats.loading ? "..." : stats.customerCount.value.toString(),
+      value: statsLoading ? "..." : stats.customerCount.value.toString(),
       percentChange: stats.customerCount.percentChange,
-      change: stats.loading ? "--" : (typeof stats.customerCount.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.customerCount.percentChange === "number"
         ? `${stats.customerCount.percentChange > 0 ? "+" : ""}${stats.customerCount.percentChange.toFixed(1)}%`
         : "--"),
       icon: Users,
       color: "text-purple-600",
     },
     {
-      title: stats.loading ? "Development EE" : `Dev EE (${stats.devEEBMM.toFixed(2)}/${stats.devEECMM.toFixed(2)})`,
-      value: stats.loading ? "..." : `${(stats.devEE.value * 100).toFixed(1)}%`,
+      title: statsLoading ? "Development EE" : `Dev EE (${stats.devEEBMM.toFixed(2)}/${stats.devEECMM.toFixed(2)})`,
+      value: statsLoading ? "..." : `${(stats.devEE.value * 100).toFixed(1)}%`,
       percentChange: stats.devEE.percentChange,
-      change: stats.loading ? "--" : (typeof stats.devEE.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.devEE.percentChange === "number"
         ? `${stats.devEE.percentChange > 0 ? "+" : ""}${stats.devEE.percentChange.toFixed(1)}%`
         : "--"),
       icon: Activity,
       color: "text-teal-600",
     },
     {
-      title: stats.loading ? "EE" : `EE (${stats.eeBMM.toFixed(2)}/${stats.eeCMM.toFixed(2)})`,
-      value: stats.loading ? "..." : `${(stats.ee.value * 100).toFixed(1)}%`,
+      title: statsLoading ? "EE" : `EE (${stats.eeBMM.toFixed(2)}/${stats.eeCMM.toFixed(2)})`,
+      value: statsLoading ? "..." : `${(stats.ee.value * 100).toFixed(1)}%`,
       percentChange: stats.ee.percentChange,
-      change: stats.loading ? "--" : (typeof stats.ee.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.ee.percentChange === "number"
         ? `${stats.ee.percentChange > 0 ? "+" : ""}${stats.ee.percentChange.toFixed(1)}%`
         : "--"),
       icon: Activity,
@@ -142,9 +138,9 @@ const Index = () => {
     },
     {
       title: "Overhead",
-      value: stats.loading ? "..." : `${(stats.overheadRatio.value * 100).toFixed(1)}%`,
+      value: statsLoading ? "..." : `${(stats.overheadRatio.value * 100).toFixed(1)}%`,
       percentChange: stats.overheadRatio.percentChange,
-      change: stats.loading ? "--" : (typeof stats.overheadRatio.percentChange === "number"
+      change: statsLoading ? "--" : (typeof stats.overheadRatio.percentChange === "number"
         ? `${stats.overheadRatio.percentChange > 0 ? "+" : ""}${stats.overheadRatio.percentChange.toFixed(1)}%`
         : "--"),
       icon: ChartPie,
@@ -161,8 +157,6 @@ const Index = () => {
       />
 
       <div className="p-6">
-        <StatCards stats={statCardsData} />
-
         <DashboardFilter
           selectedYear={selectedYear}
           setSelectedYear={setSelectedYear}
@@ -171,11 +165,12 @@ const Index = () => {
           selectedMonths={selectedMonths}
           setSelectedMonths={setSelectedMonths}
           onMonthToggle={handleMonthToggle}
-          incomeTaxRate={incomeTaxRate ?? 5}
-          setIncomeTaxRate={setIncomeTaxRate}
-          bonusRate={bonusRate ?? 15}
-          setBonusRate={setBonusRate}
         />
+
+        <StatCards groups={[
+          { label: "Business Performance", stats: businessStats },
+          { label: "KPIs", stats: kpiStats },
+        ]} />
 
         <DashboardWidgets selectedYear={selectedYear} selectedMonths={selectedMonths} />
       </div>

@@ -1,5 +1,4 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export interface BonusByDivision {
   id: string;
@@ -20,12 +19,7 @@ export type BonusByDivisionCreate = {
 
 export const bonusByDivisionService = {
   getAll: async (): Promise<BonusByDivision[]> => {
-    const { data, error } = await supabase
-      .from("bonus_by_d")
-      .select("*")
-      .order("year", { ascending: false });
-    if (error) throw error;
-    return data || [];
+    return api.get<BonusByDivision[]>("/bonus-by-d");
   },
   add: async (row: BonusByDivisionCreate): Promise<BonusByDivision> => {
     if (
@@ -35,26 +29,15 @@ export const bonusByDivisionService = {
     ) {
       throw new Error("Missing required fields for creating bonus_by_d row.");
     }
-    const { data, error } = await supabase
-      .from("bonus_by_d")
-      .insert([row])
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return api.post<BonusByDivision>("/bonus-by-d", row);
   },
-  update: async (id: string, updates: Partial<BonusByDivision>): Promise<BonusByDivision> => {
-    const { data, error } = await supabase
-      .from("bonus_by_d")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+  update: async (
+    id: string,
+    updates: Partial<BonusByDivision>,
+  ): Promise<BonusByDivision> => {
+    return api.put<BonusByDivision>(`/bonus-by-d/${id}`, updates);
   },
   delete: async (id: string): Promise<void> => {
-    const { error } = await supabase.from("bonus_by_d").delete().eq("id", id);
-    if (error) throw error;
+    await api.delete<void>(`/bonus-by-d/${id}`);
   },
 };

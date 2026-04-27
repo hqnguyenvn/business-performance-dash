@@ -3,24 +3,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput, PasswordStrengthBar } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { User, Lock, Upload, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 
-interface ProfileData {
-  id: string;
-  email: string;
-  full_name: string;
-  avatar_url: string;
+interface MeResponse {
+  user: { id: string; email: string };
+  role: "Admin" | "Manager" | "User" | null;
+  profile?: {
+    fullName: string | null;
+    avatarUrl: string | null;
+  } | null;
 }
 
 export default function Profile() {
-  const { user, session } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const { user, refresh } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -29,6 +31,7 @@ export default function Profile() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [originalEmail, setOriginalEmail] = useState("");
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -37,26 +40,20 @@ export default function Profile() {
 
   useEffect(() => {
     fetchProfile();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const fetchProfile = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      setProfile(data);
-      setFullName(data.full_name || "");
-      setEmail(data.email || "");
-      setAvatarUrl(data.avatar_url || "");
+      const me = await api.get<MeResponse>("/auth/me");
+      setFullName(me.profile?.fullName || "");
+      setEmail(me.user.email || "");
+      setOriginalEmail(me.user.email || "");
+      setAvatarUrl(me.profile?.avatarUrl || "");
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
       toast({
         title: "Error",
         description: "Failed to load profile information",
@@ -68,50 +65,27 @@ export default function Profile() {
   };
 
   const updateProfile = async () => {
-    if (!user || !profile) return;
+    if (!user) return;
 
     setSaving(true);
     try {
-      // Update profile in database
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // Update email in auth if changed
-      if (email !== profile.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: email,
-        });
-
-        if (emailError) throw emailError;
-
-        toast({
-          title: "Email Update",
-          description: "Please check your new email address for a confirmation link.",
-        });
-      }
-
-      // Update local state
-      setProfile({
-        ...profile,
+      await api.put("/auth/profile", {
         full_name: fullName,
-        email: email,
         avatar_url: avatarUrl,
+        email: email !== originalEmail ? email : undefined,
       });
+
+      if (email !== originalEmail) {
+        setOriginalEmail(email);
+        await refresh();
+      }
 
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
@@ -132,10 +106,18 @@ export default function Profile() {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 10) {
       toast({
         title: "Error",
-        description: "Password must be at least 6 characters long",
+        description: "Password must be at least 10 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!/[A-Za-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      toast({
+        title: "Error",
+        description: "Password must contain both letters and digits",
         variant: "destructive",
       });
       return;
@@ -143,13 +125,11 @@ export default function Profile() {
 
     setChangingPassword(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
+      await api.post("/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
       });
 
-      if (error) throw error;
-
-      // Clear form
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -159,7 +139,7 @@ export default function Profile() {
         description: "Password changed successfully",
       });
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      console.error("Error changing password:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to change password",
@@ -170,11 +150,46 @@ export default function Profile() {
     }
   };
 
+  /**
+   * Downscale an image file to a 128×128 centered-square thumbnail encoded
+   * as JPEG data URL. Keeps the /auth/me payload small even if the user
+   * uploads a 4K photo, and avoids storing multi-megabyte strings in the
+   * profiles table.
+   */
+  const downscaleToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onloadend = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Failed to decode image"));
+        img.onload = () => {
+          const SIZE = 128;
+          // Centered-square crop → scale
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2;
+          const sy = (img.height - side) / 2;
+          const canvas = document.createElement("canvas");
+          canvas.width = SIZE;
+          canvas.height = SIZE;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Canvas not supported"));
+            return;
+          }
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Error",
@@ -184,8 +199,7 @@ export default function Profile() {
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Error",
         description: "Please upload an image file",
@@ -195,22 +209,17 @@ export default function Profile() {
     }
 
     try {
-      // Create a data URL for immediate preview (fallback if storage fails)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
+      const thumb = await downscaleToDataUrl(file);
+      setAvatarUrl(thumb);
       toast({
-        title: "Success",
-        description: "Avatar updated successfully",
+        title: "Avatar ready",
+        description: "Click Save Changes to persist.",
       });
-    } catch (error: any) {
-      console.error('Error uploading avatar:', error);
+    } catch (err) {
+      console.error("Avatar downscale failed:", err);
       toast({
         title: "Error",
-        description: "Failed to upload avatar",
+        description: "Failed to process image",
         variant: "destructive",
       });
     }
@@ -250,7 +259,6 @@ export default function Profile() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Avatar Section */}
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={avatarUrl} alt="Profile" />
@@ -280,7 +288,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Profile Fields */}
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
@@ -301,9 +308,6 @@ export default function Profile() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
                   />
-                  <p className="text-sm text-gray-500">
-                    Changing your email will require verification
-                  </p>
                 </div>
               </div>
 
@@ -335,9 +339,9 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
+                <PasswordInput
                   id="currentPassword"
-                  type="password"
+                  autoComplete="current-password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="Enter your current password"
@@ -346,20 +350,21 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input
+                <PasswordInput
                   id="newPassword"
-                  type="password"
+                  autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter your new password"
+                  placeholder="At least 10 characters with letters and digits"
                 />
+                <PasswordStrengthBar password={newPassword} />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your new password"
@@ -368,7 +373,7 @@ export default function Profile() {
 
               <Button
                 onClick={changePassword}
-                disabled={changingPassword || !newPassword || !confirmPassword}
+                disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
               >
                 {changingPassword ? (
                   <>

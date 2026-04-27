@@ -16,8 +16,9 @@ import { roleService } from "@/services/roleService";
 import { Role } from "@/types/role";
 import { useTableFilter } from "@/hooks/useTableFilter";
 import { useState, useCallback, useRef, useMemo } from "react";
-import { exportToCsv } from "@/utils/exportCsv";
-import ImportCsvDialog from "./ImportCsvDialog";
+import { exportExcel, type ImportError, type ExcelSchema } from "@/utils/excelIO";
+import ExcelImportDialog, { type ImportResult, type ImportProgress } from "./ExcelImportDialog";
+import { reportRowProgress } from "@/utils/importProgress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface RolesTableProps {
@@ -292,23 +293,44 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
 
   const [importOpen, setImportOpen] = useState(false);
 
-  const handleExport = () => {
-    exportToCsv(data, "Roles", [
-      { key: "code", header: "Code" },
-      { key: "description", header: "Description" },
-    ]);
+  const schema: ExcelSchema = {
+    sheetName: "Roles",
+    columns: [
+      { key: "code", header: "Code", required: true, width: 18 },
+      { key: "description", header: "Description", width: 40 },
+    ],
   };
 
-  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+  const handleExport = async () => {
+    try {
+      const rows = data.map((r) => ({ code: r.code, description: r.description || "" }));
+      await exportExcel({ schema, rows, fileName: "roles.xlsx" });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng.` });
+    } catch (err: any) {
+      toast({ title: "Export thất bại", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleImport = useCallback(async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
     let created = 0;
     let updated = 0;
-    const errors: string[] = [];
+    const errors: ImportError[] = [];
+    const total = rows.length;
+    onProgress?.(0, total);
 
-    for (const row of rows) {
-      const code = (row["Code"] || "").trim();
-      if (!code) { errors.push("Skipped row with empty Code."); continue; }
-      const description = (row["Description"] || "").trim();
-
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber: number = row.__rowNumber || 0;
+      const code = String(row.code || "").trim();
+      if (!code) {
+        errors.push({ rowIndex: rowNumber, columns: ["Code"], reason: "Code bắt buộc" });
+        reportRowProgress(i + 1, total, onProgress);
+        continue;
+      }
+      const description = String(row.description || "").trim();
       const existing = data.find((item) => item.code.toLowerCase() === code.toLowerCase());
 
       try {
@@ -322,8 +344,9 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
           created++;
         }
       } catch (error: any) {
-        errors.push(`Code "${code}": ${error.message || "Unknown error"}`);
+        errors.push({ rowIndex: rowNumber, columns: [], reason: `Code "${code}": ${error.message || "Lỗi"}` });
       }
+      reportRowProgress(i + 1, total, onProgress);
     }
     return { created, updated, errors };
   }, [data, setter]);
@@ -349,11 +372,13 @@ const RolesTable: React.FC<RolesTableProps> = ({ data, setter }) => {
           </div>
         </div>
       </CardHeader>
-      <ImportCsvDialog
+      <ExcelImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Roles"
-        expectedColumns={["Code", "Description"]}
+        schema={schema}
+        templateFileName="roles-template.xlsx"
+        errorFileName="roles-errors.xlsx"
         onImport={handleImport}
       />
       <CardContent>

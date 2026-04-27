@@ -4,13 +4,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building, Loader2, Search, Download } from "lucide-react";
+import { Building, Loader2, Search, Download, DollarSign, Receipt, TrendingUp, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ReportFilter } from "@/components/customer-report/ReportFilter";
-import { ReportSummary } from "@/components/customer-report/ReportSummary";
 import { ReportTable } from "@/components/customer-report/ReportTable";
+import { StatCards } from "@/components/dashboard/StatCards";
 import { exportCustomerReportCSV } from "@/utils/customerReportExport";
 import { useCompanyReportData, MONTHS, YEARS, GroupedCompanyData } from "@/hooks/useCompanyReportData";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useParameterValues } from "@/hooks/useParameterValues";
+import { formatNumber } from "@/lib/format";
 import PaginationControls from "@/components/PaginationControls";
 
 const CompanyReport = () => {
@@ -90,15 +93,53 @@ const CompanyReport = () => {
     });
   };
 
-  // Use totals directly from state (calculated in ReportTable)
-  const {
-    totalRevenue,
-    totalBMM, 
-    totalBonus,
-    totalCost,
-    totalProfit,
-    totalProfitPercent
-  } = totals;
+  const { totalProfitPercent } = totals;
+
+  const { taxRate, bonusRate } = useParameterValues(parseInt(selectedYear));
+  const stats = useDashboardStats({
+    year: parseInt(selectedYear),
+    months: selectedMonths,
+    incomeTaxRate: taxRate !== null ? taxRate * 100 : 0,
+    bonusRate: bonusRate !== null ? bonusRate * 100 : 0,
+  });
+
+  const fmtChange = (p: number | null | undefined) =>
+    typeof p === "number" ? `${p > 0 ? "+" : ""}${p.toFixed(1)}%` : "--";
+
+  const summaryStats = [
+    {
+      title: "Revenue (VND)",
+      value: formatNumber(stats.totalRevenue.value),
+      percentChange: stats.totalRevenue.percentChange,
+      change: fmtChange(stats.totalRevenue.percentChange),
+      icon: DollarSign,
+      color: "text-blue-600",
+    },
+    {
+      title: "Total Cost (VND)",
+      value: formatNumber(stats.totalCost.value),
+      percentChange: stats.totalCost.percentChange,
+      change: fmtChange(stats.totalCost.percentChange),
+      icon: Receipt,
+      color: "text-red-600",
+    },
+    {
+      title: `Net Profit (VND — ${totalProfitPercent.toFixed(1)}%)`,
+      value: formatNumber(stats.netProfit.value),
+      percentChange: stats.netProfit.percentChange,
+      change: fmtChange(stats.netProfit.percentChange),
+      icon: TrendingUp,
+      color: "text-purple-600",
+    },
+    {
+      title: "Total BMM",
+      value: formatNumber(stats.totalBMM.value),
+      percentChange: stats.totalBMM.percentChange,
+      change: fmtChange(stats.totalBMM.percentChange),
+      icon: Users,
+      color: "text-orange-600",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -108,13 +149,7 @@ const CompanyReport = () => {
         icon={Building}
       />
       <div className="p-6">
-        <ReportSummary
-          totalRevenue={totalRevenue}
-          totalBMM={totalBMM}
-          totalCost={totalCost}
-          totalProfit={totalProfit}
-          totalProfitPercent={totalProfitPercent}
-        />
+        <StatCards groups={[{ label: `Company Performance ${selectedYear}`, stats: summaryStats }]} />
 
         <ReportFilter
           selectedYear={selectedYear}

@@ -1,7 +1,6 @@
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { costService, NewCost } from "@/services/costService";
-import { getCosts } from "@/services/costApi";
+import { getCosts, type NewCost } from "@/services/costApi";
 import type { Cost } from "./useCostsState";
 import type { MasterData } from "@/services/masterDataService";
 import { exportCostsCSV as exportCSVUtil } from "@/utils/csvExport";
@@ -28,14 +27,14 @@ export const useCostsIO = ({ filteredCosts, costTypes, createCostMutation, batch
 
     const cloneCosts = async (sourceYear: number, sourceMonth: number, targetYear: number, targetMonth: number) => {
         try {
-            const costsToClone = await costService.getByFilters({ year: sourceYear, month: sourceMonth });
+            const costsToClone = await getCosts({ year: sourceYear, months: [sourceMonth], pageSize: "all" }).then((r) => r.data);
 
             if (costsToClone.length === 0) {
                 toast({ title: "No Data", description: "No cost data found for the source period to clone." });
                 return;
             }
 
-            const costsForTargetPeriod = await costService.getByFilters({ year: targetYear, month: targetMonth });
+            const costsForTargetPeriod = await getCosts({ year: targetYear, months: [targetMonth], pageSize: "all" }).then((r) => r.data);
             if (costsForTargetPeriod.length > 0) {
                 toast({ 
                     title: "Data Exists", 

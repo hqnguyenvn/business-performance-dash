@@ -7,6 +7,8 @@ export interface MasterDataService {
   create: (item: Omit<MasterData, 'id'>) => Promise<MasterData>;
   update: (id: string, item: Partial<MasterData>) => Promise<MasterData>;
   delete: (id: string) => Promise<void>;
+  /** Optional bulk-reset — only implemented by ProjectsService for now. */
+  deleteAll?: () => Promise<{ deleted: number }>;
 }
 
 interface MasterDataTableLogicProps {
@@ -78,7 +80,7 @@ export const useMasterDataTableLogic = ({
     async (id: string, field: keyof MasterData, value: string) => {
       const oldItem: MasterData | undefined = data.find(item => item.id === id);
       if (!oldItem) return;
-      setter(prev => prev.map(item => 
+      setter(prev => prev.map(item =>
         item.id === id ? { ...item, [field]: value } : item
       ));
 
@@ -91,8 +93,30 @@ export const useMasterDataTableLogic = ({
             description: "Data saved successfully.",
           });
         } else {
-          const { id: _, ...toCreate } = { ...oldItem, [field]: value };
-          const created = await service.create(toCreate);
+          // For a new (tmp-) row we need BOTH `code` and `name` filled before
+          // calling create — otherwise the server rejects (both are required)
+          // and our catch below would revert the user's typed value, making it
+          // impossible to ever add a row by editing fields one at a time.
+          const merged = { ...oldItem, [field]: value };
+          const codeOk = String(merged.code ?? "").trim().length > 0;
+          const nameOk = String(merged.name ?? "").trim().length > 0;
+          if (!codeOk || !nameOk) {
+            // Local state has the new value already; API call deferred until
+            // the other required field is also entered.
+            return;
+          }
+          const { id: _, ...rest } = merged;
+          // Drop empty-string FK fields — the server's optional-UUID validator
+          // would otherwise reject "". Users that haven't picked a Company /
+          // Customer yet can edit later via inline cell edit.
+          const toCreate: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(rest)) {
+            if (v === "" && (k === "company_id" || k === "customer_id" || k === "group_code")) {
+              continue;
+            }
+            toCreate[k] = v;
+          }
+          const created = await service.create(toCreate as Omit<MasterData, "id">);
           setter(prev =>
             prev.map(item =>
               item.id === id ? created : item
@@ -103,10 +127,10 @@ export const useMasterDataTableLogic = ({
             description: "New item added and saved.",
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to save data.",
+          description: error?.message || "Failed to save data.",
           variant: "destructive"
         });
         setter(prev => prev.map(item =>

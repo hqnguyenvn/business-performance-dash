@@ -26,19 +26,25 @@ export const useRevenueCalculations = (currencies: MasterData[], exchangeRates: 
     
     const currency = currencies.find(c => c.id === revenue.currency_id);
     if (!currency) return 0;
-    
+
+    // VND is treated as a constant rate of 1 — any VND row in the master
+    // exchange_rates table is ignored to avoid stale-1.0001 style noise.
+    if (currency.code.toUpperCase() === "VND") {
+      return Number(revenue.original_amount) || 0;
+    }
+
     const monthName = getMonthName(revenue.month); // Ensure month is valid before calling getMonthName
-    
-    const exchangeRate = exchangeRates.find(rate => 
-      rate.year === revenue.year && 
+
+    const exchangeRate = exchangeRates.find(rate =>
+      rate.year === revenue.year &&
       rate.month === monthName &&
       rate.currencyID === currency.code
     );
-    
+
     if (exchangeRate && typeof exchangeRate.exchangeRate === 'number') {
       return revenue.original_amount * exchangeRate.exchangeRate;
     }
-    
+
     return 0;
   };
 

@@ -10,8 +10,9 @@ import { ParameterRow } from "./ParameterRow";
 import { useParameterEdit } from "./useParameterEdit";
 import { useParameterFilter } from "./useParameterFilter";
 import { TableFilter } from "@/components/ui/table-filter";
-import { exportToCsv } from "@/utils/exportCsv";
-import ImportCsvDialog from "@/components/ImportCsvDialog";
+import { exportExcel, type ImportError, type ExcelSchema } from "@/utils/excelIO";
+import ExcelImportDialog, { type ImportResult, type ImportProgress } from "@/components/ExcelImportDialog";
+import { reportRowProgress } from "@/utils/importProgress";
 
 interface ParameterTableProps {
   data: Parameter[];
@@ -142,19 +143,65 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
 
   const [importOpen, setImportOpen] = useState(false);
 
-  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+  const schema = useMemo<ExcelSchema>(() => ({
+    sheetName: "Parameters",
+    columns: [
+      { key: "year", header: "Year", type: "integer", required: true, width: 8 },
+      { key: "code", header: "Code", required: true, width: 20 },
+      { key: "value", header: "Value", type: "number", width: 14 },
+      { key: "descriptions", header: "Descriptions", width: 40 },
+    ],
+  }), []);
+
+  const handleExport = async () => {
+    try {
+      const rows = data.map((r) => ({
+        year: r.year,
+        code: r.code,
+        value: r.value,
+        descriptions: r.descriptions || "",
+      }));
+      await exportExcel({ schema, rows, fileName: "parameters.xlsx" });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng.` });
+    } catch (err: any) {
+      toast({ title: "Export thất bại", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleImport = useCallback(async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
     let created = 0;
     let updated = 0;
-    const errors: string[] = [];
+    const errors: ImportError[] = [];
+    const total = rows.length;
+    onProgress?.(0, total);
 
-    for (const row of rows) {
-      const year = parseInt(row["Year"] || "");
-      const code = (row["Code"] || "").trim();
-      const value = parseFloat(row["Value"] || "0");
-      const descriptions = (row["Descriptions"] || "").trim();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber: number = row.__rowNumber || 0;
+      const errCols: string[] = [];
+      const reasons: string[] = [];
 
-      if (!year || !code) {
-        errors.push(`Skipped invalid row: Year=${row["Year"]}, Code=${code}`);
+      const year = Number(row.year);
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        errCols.push("Year"); reasons.push(`Năm không hợp lệ: "${row.year ?? ""}"`);
+      }
+      const code = String(row.code || "").trim();
+      if (!code) {
+        errCols.push("Code"); reasons.push("Code bắt buộc");
+      }
+      const valueRaw = row.value;
+      const value = valueRaw != null && valueRaw !== "" ? Number(valueRaw) : 0;
+      if (valueRaw != null && valueRaw !== "" && !Number.isFinite(value)) {
+        errCols.push("Value"); reasons.push("Value phải là số");
+      }
+      const descriptions = String(row.descriptions || "").trim();
+
+      if (errCols.length > 0) {
+        errors.push({ rowIndex: rowNumber, columns: errCols, reason: reasons.join("; ") });
+        reportRowProgress(i + 1, total, onProgress);
         continue;
       }
 
@@ -173,8 +220,9 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
           created++;
         }
       } catch (error: any) {
-        errors.push(`Year=${year}, Code=${code}: ${error.message || "Unknown error"}`);
+        errors.push({ rowIndex: rowNumber, columns: [], reason: `${year}/${code}: ${error.message || "Lỗi"}` });
       }
+      reportRowProgress(i + 1, total, onProgress);
     }
     return { created, updated, errors };
   }, [data, setter]);
@@ -185,14 +233,7 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
         <div className="flex items-center justify-between">
           <CardTitle>Parameter List</CardTitle>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
-              exportToCsv(data, "Parameters", [
-                { key: "year", header: "Year" },
-                { key: "code", header: "Code" },
-                { key: "value", header: "Value" },
-                { key: "descriptions", header: "Descriptions" },
-              ]);
-            }} className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={handleExport} className="flex items-center gap-1">
               <Download className="h-4 w-4" />
               Export
             </Button>
@@ -207,11 +248,13 @@ export const ParameterTable: React.FC<ParameterTableProps> = ({ data, setter }) 
           </div>
         </div>
       </CardHeader>
-      <ImportCsvDialog
+      <ExcelImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Parameters"
-        expectedColumns={["Year", "Code", "Value", "Descriptions"]}
+        schema={schema}
+        templateFileName="parameters-template.xlsx"
+        errorFileName="parameters-errors.xlsx"
         onImport={handleImport}
       />
       <CardContent>

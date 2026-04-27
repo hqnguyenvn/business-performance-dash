@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export interface MasterData {
   id: string;
@@ -9,484 +9,40 @@ export interface MasterData {
   customer_id?: string;
 }
 
-// Customers Service
-export class CustomersService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching customers:', error);
-      throw error;
+/**
+ * Factory tạo service CRUD cho 1 master data entity.
+ * Giữ signature getAll / create / update / delete để consumer không cần đổi.
+ */
+function createMasterService(resource: string) {
+  return class {
+    async getAll(): Promise<MasterData[]> {
+      return api.get<MasterData[]>(`/${resource}`);
     }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('customers')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating customer:', error);
-      throw error;
+    async create(item: Omit<MasterData, "id">): Promise<MasterData> {
+      return api.post<MasterData>(`/${resource}`, item);
     }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('customers')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating customer:', error);
-      throw error;
+    async update(id: string, item: Partial<MasterData>): Promise<MasterData> {
+      return api.put<MasterData>(`/${resource}/${id}`, item);
     }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('customers')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting customer:', error);
-      throw error;
+    async delete(id: string): Promise<void> {
+      await api.delete<void>(`/${resource}/${id}`);
     }
-  }
+  };
 }
 
-// Companies Service
-export class CompaniesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching companies:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('companies')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating company:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('companies')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating company:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('companies')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting company:', error);
-      throw error;
-    }
+export const CustomersService = createMasterService("customers");
+export const CompaniesService = createMasterService("companies");
+export const DivisionsService = createMasterService("divisions");
+class ProjectsServiceClass extends createMasterService("projects") {
+  async deleteAll(): Promise<{ deleted: number }> {
+    return api.post<{ deleted: number }>("/projects/delete-all", {});
   }
 }
-
-// Divisions Service
-export class DivisionsService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('divisions')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching divisions:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('divisions')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating division:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('divisions')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating division:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('divisions')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting division:', error);
-      throw error;
-    }
-  }
-}
-
-// Projects Service
-export class ProjectsService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching projects:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('projects')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating project:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('projects')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating project:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting project:', error);
-      throw error;
-    }
-  }
-}
-
-// Project Types Service
-export class ProjectTypesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('project_types')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching project types:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('project_types')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating project type:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('project_types')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating project type:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('project_types')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting project type:', error);
-      throw error;
-    }
-  }
-}
-
-// Resources Service
-export class ResourcesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('resources')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching resources:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('resources')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating resource:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('resources')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating resource:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('resources')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting resource:', error);
-      throw error;
-    }
-  }
-}
-
-// Currencies Service
-export class CurrenciesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('currencies')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching currencies:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('currencies')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating currency:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('currencies')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating currency:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('currencies')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting currency:', error);
-      throw error;
-    }
-  }
-}
-
-// Cost Types Service
-export class CostTypesService {
-  async getAll() {
-    const { data, error } = await supabase
-      .from('cost_types')
-      .select('*')
-      .order('code');
-    
-    if (error) {
-      console.error('Error fetching cost types:', error);
-      throw error;
-    }
-    
-    return data || [];
-  }
-
-  async create(item: Omit<MasterData, 'id'>) {
-    const { data, error } = await supabase
-      .from('cost_types')
-      .insert(item)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating cost type:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async update(id: string, item: Partial<MasterData>) {
-    const { data, error } = await supabase
-      .from('cost_types')
-      .update(item)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating cost type:', error);
-      throw error;
-    }
-    
-    return data;
-  }
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('cost_types')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting cost type:', error);
-      throw error;
-    }
-  }
-}
+export const ProjectsService = ProjectsServiceClass;
+export const ProjectTypesService = createMasterService("project-types");
+export const ResourcesService = createMasterService("resources");
+export const CurrenciesService = createMasterService("currencies");
+export const CostTypesService = createMasterService("cost-types");
 
 // Service instances
 export const customersService = new CustomersService();
@@ -501,21 +57,21 @@ export const costTypesService = new CostTypesService();
 // Utility function to get master data by type
 export const getMasterDatas = async (type: string): Promise<MasterData[]> => {
   switch (type) {
-    case 'customers':
+    case "customers":
       return customersService.getAll();
-    case 'companies':
+    case "companies":
       return companiesService.getAll();
-    case 'divisions':
+    case "divisions":
       return divisionsService.getAll();
-    case 'projects':
+    case "projects":
       return projectsService.getAll();
-    case 'project_types':
+    case "project_types":
       return projectTypesService.getAll();
-    case 'resources':
+    case "resources":
       return resourcesService.getAll();
-    case 'currencies':
+    case "currencies":
       return currenciesService.getAll();
-    case 'cost_types':
+    case "cost_types":
       return costTypesService.getAll();
     default:
       throw new Error(`Unknown master data type: ${type}`);

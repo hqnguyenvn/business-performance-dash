@@ -50,7 +50,6 @@ function getCellConfigs(
       },
       cellClassName: "font-medium",
     },
-    { field: 'year', type: 'number', step: "1" },
     { field: 'month', type: 'month' },
     {
       field: 'customer_id',
@@ -63,25 +62,14 @@ function getCellConfigs(
       options: companies ?? [],
     },
     {
-      field: 'division_id',
-      type: 'select',
-      options: divisions ?? [],
-    },
-    {
       field: 'project_id',
       type: 'select',
       options: projects ?? [],
     },
-    { field: 'project_name', type: 'text', maxLength: 50 },
     {
       field: 'project_type_id',
       type: 'select',
       options: projectTypes ?? [],
-    },
-    {
-      field: 'resource_id',
-      type: 'select',
-      options: resources ?? [],
     },
     {
       field: 'currency_id',
@@ -170,7 +158,7 @@ const RevenueTableRow: React.FC<RevenueTableRowProps> = ({
           setEditingCell={setEditingCell}
         />
       ))}
-      <TableCell className="border-r p-1">
+      <TableCell className="border-r p-1 sticky right-0 bg-white z-10 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.12)]">
         <div className="flex gap-1 justify-center">
           {isTempRow ? (
             <button

@@ -1,5 +1,4 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export interface BonusByCompany {
   id: string;
@@ -19,62 +18,27 @@ export interface BonusByCompanyInsert {
 }
 
 export interface BonusByCompanyUpdate {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class BonusByCompanyService {
   async getAll(): Promise<BonusByCompany[]> {
-    const { data, error } = await supabase
-      .from('bonus_by_c')
-      .select('*')
-      .order('year', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch bonus by company: ${error.message}`);
-    }
-
-    return data || [];
+    return api.get<BonusByCompany[]>("/bonus-by-c");
   }
 
   async add(bonus: BonusByCompanyInsert): Promise<BonusByCompany> {
-    const { data, error } = await supabase
-      .from('bonus_by_c')
-      .insert(bonus)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to create bonus by company: ${error.message}`);
-    }
-
-    return data;
+    return api.post<BonusByCompany>("/bonus-by-c", bonus);
   }
 
-  async update(id: string, updates: BonusByCompanyUpdate): Promise<BonusByCompany> {
-    const { data, error } = await supabase
-      .from('bonus_by_c')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update bonus by company: ${error.message}`);
-    }
-
-    return data;
+  async update(
+    id: string,
+    updates: BonusByCompanyUpdate,
+  ): Promise<BonusByCompany> {
+    return api.put<BonusByCompany>(`/bonus-by-c/${id}`, updates);
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('bonus_by_c')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw new Error(`Failed to delete bonus by company: ${error.message}`);
-    }
+    await api.delete<void>(`/bonus-by-c/${id}`);
   }
 }
 

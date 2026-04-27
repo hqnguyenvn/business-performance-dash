@@ -121,17 +121,7 @@ export const SalaryCostsTable = ({
         <TableHeader>
           <TableRow className="bg-red-50">
             <TableHead className="border border-gray-300 w-12 text-center">No.</TableHead>
-            <TableHead 
-              className="border border-gray-300 text-center"
-              showFilter={true}
-              filterData={getFilterData('year')}
-              filterField="year"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('year')}
-            >
-              Year
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="border border-gray-300 text-center"
               showFilter={true}
               filterData={getFilterData('month')}
@@ -197,7 +187,7 @@ export const SalaryCostsTable = ({
         <TableBody>
           {tableFilteredCosts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="border border-gray-300 text-center py-8 text-gray-500">
+              <TableCell colSpan={8} className="border border-gray-300 text-center py-8 text-gray-500">
                 {costs.length === 0
                   ? "No data available. Click \"Add Row\" to start entering data."
                   : "No data matches the selected filters. Try adjusting the year or month selection."
@@ -208,16 +198,6 @@ export const SalaryCostsTable = ({
             tableFilteredCosts.map((cost, index) => (
               <TableRow key={cost.id} className="hover:bg-gray-50">
                 <TableCell className="border border-gray-300 text-center p-1">{index + 1}</TableCell>
-                <TableCell className="border border-gray-300 p-1">
-                  <Input
-                    value={getInputValue(cost.id, 'year', cost.year).toString()}
-                    onChange={(e) => handleInputChange(cost.id, 'year', parseInt(e.target.value) || currentYear)}
-                    onBlur={() => handleInputBlur(cost.id, 'year')}
-                    onKeyDown={(e) => handleInputKeyDown(e, cost.id, 'year')}
-                    className="border-0 p-1 h-8 text-center"
-                    type="number"
-                  />
-                </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Select value={String(cost.month)} onValueChange={(v) => updateCost(cost.id, 'month', Number(v))}>
                     <SelectTrigger className="border-0 p-1 h-8"><SelectValue /></SelectTrigger>

@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useBusinessReport } from "@/hooks/useBusinessReport";
 import { BusinessReportHeader } from "@/components/business-report/BusinessReportHeader";
 import { BusinessReportFilters } from "@/components/business-report/BusinessReportFilters";
-import { BusinessReportSummary } from "@/components/business-report/BusinessReportSummary";
 import { BusinessReportTable } from "@/components/business-report/BusinessReportTable";
+import { StatCards } from "@/components/dashboard/StatCards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download } from "lucide-react";
+import { Search, Download, DollarSign, Receipt, TrendingUp } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 import PaginationControls from "@/components/PaginationControls";
 
 const BusinessReport = () => {
@@ -20,19 +21,56 @@ const BusinessReport = () => {
     selectedMonths,
     setSelectedMonths,
     handleMonthToggle,
-    incomeTaxRate,
-    setIncomeTaxRate,
-    bonusRate,
-    setBonusRate,
     businessData,
     totals,
+    stats,
     exportToCSV,
     MONTHS,
   } = useBusinessReport();
 
+  const fmtChange = (p: number | null | undefined) =>
+    typeof p === "number"
+      ? `${p > 0 ? "+" : ""}${p.toFixed(1)}%`
+      : "--";
+
+  const businessStats = [
+    {
+      title: "Revenue (VND)",
+      value: formatNumber(stats.totalRevenue.value),
+      percentChange: stats.totalRevenue.percentChange,
+      change: fmtChange(stats.totalRevenue.percentChange),
+      icon: DollarSign,
+      color: "text-blue-600",
+    },
+    {
+      title: `Gross Profit (VND — ${totals.grossProfitPercent.toFixed(1)}%)`,
+      value: formatNumber(stats.grossProfit.value),
+      percentChange: stats.grossProfit.percentChange,
+      change: fmtChange(stats.grossProfit.percentChange),
+      icon: TrendingUp,
+      color: "text-green-600",
+    },
+    {
+      title: "Total Cost (VND)",
+      value: formatNumber(stats.totalCost.value),
+      percentChange: stats.totalCost.percentChange,
+      change: fmtChange(stats.totalCost.percentChange),
+      icon: Receipt,
+      color: "text-red-600",
+    },
+    {
+      title: `Net Profit (VND — ${totals.netProfitPercent.toFixed(1)}%)`,
+      value: formatNumber(stats.netProfit.value),
+      percentChange: stats.netProfit.percentChange,
+      change: fmtChange(stats.netProfit.percentChange),
+      icon: TrendingUp,
+      color: "text-purple-600",
+    },
+  ];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number | 'all'>(25);
+  const [pageSize, setPageSize] = useState<number | 'all'>('all');
 
   const filteredBusinessData = searchTerm.trim()
     ? businessData.filter((row) => {
@@ -69,15 +107,7 @@ const BusinessReport = () => {
       <BusinessReportHeader />
 
       <div className="p-6">
-        <BusinessReportSummary
-          totalRevenue={totals.totalRevenue}
-          totalGrossProfit={totals.totalGrossProfit}
-          totalCost={totals.totalCost}
-          totalNetProfit={totals.totalNetProfit}
-          grossProfitPercent={totals.grossProfitPercent}
-          netProfitPercent={totals.netProfitPercent}
-          selectedYear={selectedYear}
-        />
+        <StatCards groups={[{ label: `Business Performance ${selectedYear}`, stats: businessStats }]} />
 
         <BusinessReportFilters
           selectedYear={selectedYear}
@@ -86,10 +116,6 @@ const BusinessReport = () => {
           selectedMonths={selectedMonths}
           onMonthToggle={handleMonthToggle}
           setSelectedMonths={setSelectedMonths}
-          incomeTaxRate={incomeTaxRate ?? 5}
-          onIncomeTaxRateChange={setIncomeTaxRate}
-          bonusRate={bonusRate ?? 15}
-          onBonusRateChange={setBonusRate}
           months={MONTHS}
         />
 

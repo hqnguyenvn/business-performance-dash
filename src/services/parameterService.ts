@@ -1,5 +1,4 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export interface Parameter {
   id: string;
@@ -20,12 +19,7 @@ export type ParameterCreate = {
 
 export const parameterService = {
   getAll: async (): Promise<Parameter[]> => {
-    const { data, error } = await supabase
-      .from("parameter")
-      .select("*")
-      .order("year", { ascending: false });
-    if (error) throw error;
-    return data || [];
+    return api.get<Parameter[]>("/parameters");
   },
   add: async (row: ParameterCreate): Promise<Parameter> => {
     if (
@@ -35,34 +29,21 @@ export const parameterService = {
     ) {
       throw new Error("Missing required fields for creating parameter row.");
     }
-    const { data, error } = await supabase
-      .from("parameter")
-      .insert([row])
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return api.post<Parameter>("/parameters", row);
   },
-  update: async (id: string, updates: Partial<Parameter>): Promise<Parameter> => {
-    // Đảm bảo value là số thập phân hợp lệ
+  update: async (
+    id: string,
+    updates: Partial<Parameter>,
+  ): Promise<Parameter> => {
     if (updates.value !== undefined) {
       updates.value = Number(updates.value);
       if (isNaN(updates.value)) {
         throw new Error("Invalid decimal value for parameter");
       }
     }
-    
-    const { data, error } = await supabase
-      .from("parameter")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    return api.put<Parameter>(`/parameters/${id}`, updates);
   },
   delete: async (id: string): Promise<void> => {
-    const { error } = await supabase.from("parameter").delete().eq("id", id);
-    if (error) throw error;
+    await api.delete<void>(`/parameters/${id}`);
   },
 };

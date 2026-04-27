@@ -9,6 +9,7 @@ interface MasterDataTableBodyProps {
   customers: MasterData[];
   showCompanyColumn: boolean;
   showCustomerColumn: boolean;
+  showGroupCodeColumn?: boolean;
   handleCellEdit: (id: string, field: keyof MasterData, value: string) => void;
   deleteItem: (id: string) => void;
   addRowBelow: (index: number) => void;
@@ -21,6 +22,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
   customers,
   showCompanyColumn,
   showCustomerColumn,
+  showGroupCodeColumn = false,
   handleCellEdit,
   deleteItem,
   addRowBelow,
@@ -37,6 +39,7 @@ const MasterDataTableBody: React.FC<MasterDataTableBodyProps> = ({
           customers={customers}
           showCompanyColumn={showCompanyColumn}
           showCustomerColumn={showCustomerColumn}
+          showGroupCodeColumn={showGroupCodeColumn}
           handleCellEdit={handleCellEdit}
           deleteItem={deleteItem}
           addRowBelow={addRowBelow}

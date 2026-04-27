@@ -1,5 +1,5 @@
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Revenue, RevenueSearchParams } from "@/types/revenue";
 import {
@@ -8,108 +8,115 @@ import {
   deleteRevenue,
   getRevenues,
 } from "@/services/revenueApi";
-import {
-  MasterData,
-  getMasterDatas,
-} from "@/services/masterDataService";
+import { useMasterData } from "@/hooks/useMasterData";
 import { exchangeRateService } from "@/services/exchangeRateService";
 
+/**
+ * Data layer for the Revenues page.
+ *
+ * - Revenues use React Query keyed on searchParams, with a dedicated cache
+ *   that invalidates on mutation (no manual re-fetch).
+ * - Master data use `useMasterData` so each table is fetched once and shared
+ *   with every other hook that needs it (dashboard, reports, salary costs).
+ *   Previously every filter-change refetched all 8 master tables.
+ */
 export const useRevenueData = () => {
   const { toast } = useToast();
-  const [revenues, setRevenues] = useState<Revenue[]>([]);
-  const [customers, setCustomers] = useState<MasterData[]>([]);
-  const [companies, setCompanies] = useState<MasterData[]>([]);
-  const [divisions, setDivisions] = useState<MasterData[]>([]);
-  const [projects, setProjects] = useState<MasterData[]>([]);
-  const [projectTypes, setProjectTypes] = useState<MasterData[]>([]);
-  const [resources, setResources] = useState<MasterData[]>([]);
-  const [currencies, setCurrencies] = useState<MasterData[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<any[]>([]);
-  
+  const queryClient = useQueryClient();
+
+  // Master data — cached across pages/hooks via useMasterData
+  const { data: customers = [] } = useMasterData("customers");
+  const { data: companies = [] } = useMasterData("companies");
+  const { data: divisions = [] } = useMasterData("divisions");
+  const { data: projects = [] } = useMasterData("projects");
+  const { data: projectTypes = [] } = useMasterData("project_types");
+  const { data: resources = [] } = useMasterData("resources");
+  const { data: currencies = [] } = useMasterData("currencies");
+
+  // Exchange rates: moderate-churn reference data
+  const { data: exchangeRates = [] } = useQuery({
+    queryKey: ["exchange-rates"],
+    queryFn: () => exchangeRateService.getAll(),
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   // Default to months 1 to previous month
   const currentMonth = new Date().getMonth() + 1;
-  const defaultMonths = Array.from({ length: Math.max(currentMonth - 1, 0) }, (_, i) => i + 1);
-  
+  const defaultMonths = Array.from(
+    { length: Math.max(currentMonth - 1, 0) },
+    (_, i) => i + 1,
+  );
+
   const [searchParams, setSearchParams] = useState<RevenueSearchParams>({
     year: new Date().getFullYear(),
     months: defaultMonths,
     page: 1,
     pageSize: 25,
   });
-  const [total, setTotal] = useState(0);
 
-  const fetchData = useCallback(async () => {
-    try {
-      console.log('Fetching data with params:', searchParams);
-      
-      // Prepare params for API call
+  const monthsKey = [...(searchParams.months ?? [])]
+    .sort((a, b) => a - b)
+    .join(",");
+
+  const {
+    data: revenuesResult,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "revenues-list",
+      searchParams.year,
+      monthsKey,
+      searchParams.page,
+      searchParams.pageSize,
+      searchParams.customer_id,
+      searchParams.company_id,
+      searchParams.division_id,
+      searchParams.project_id,
+      searchParams.project_type_id,
+      searchParams.resource_id,
+      searchParams.currency_id,
+      searchParams.q,
+    ],
+    queryFn: () => {
+      // If pageSize is 'all', don't send page — get all records
       const apiParams = { ...searchParams };
-      
-      // If pageSize is 'all', don't send pageSize and page to get all records
-      if (searchParams.pageSize === 'all') {
+      if (searchParams.pageSize === "all") {
         delete apiParams.pageSize;
         delete apiParams.page;
+        apiParams.pageSize = "all";
       }
-      
-      const [
-        revenuesData,
-        customersData,
-        companiesData,
-        divisionsData,
-        projectsData,
-        projectTypesData,
-        resourcesData,
-        currenciesData,
-        exchangeRatesData,
-      ] = await Promise.all([
-        getRevenues(apiParams),
-        getMasterDatas('customers'),
-        getMasterDatas('companies'),
-        getMasterDatas('divisions'),
-        getMasterDatas('projects'),
-        getMasterDatas('project_types'),
-        getMasterDatas('resources'),
-        getMasterDatas('currencies'),
-        exchangeRateService.getAll(),
-      ]);
-      setRevenues(revenuesData.data);
-      setTotal(revenuesData.total);
-      setCustomers(customersData);
-      setCompanies(companiesData);
-      setDivisions(divisionsData);
-      setProjects(projectsData);
-      setProjectTypes(projectTypesData);
-      setResources(resourcesData);
-      setCurrencies(currenciesData);
-      setExchangeRates(exchangeRatesData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem fetching data.",
-      });
-    }
-  }, [searchParams, toast]);
+      return getRevenues(apiParams);
+    },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const revenues = revenuesResult?.data ?? [];
+  const total = revenuesResult?.total ?? 0;
+
+  // Keep a setter for consumers that previously mutated revenues locally.
+  // It now just invalidates the query so the cache is the source of truth.
+  const setRevenues = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["revenues-list"] });
+  }, [queryClient]);
+
+  const fetchData = useCallback(() => refetch(), [refetch]);
 
   const handleSaveRevenue = async (revenue: Revenue) => {
     try {
       if (revenue.id) {
-        await updateRevenue(revenue.id, revenue);
-        toast({
-          title: "Revenue record updated successfully!",
-        });
+        const { id, ...patch } = revenue;
+        await updateRevenue(id, patch);
+        toast({ title: "Revenue record updated successfully!" });
       } else {
         await createRevenue(revenue);
-        toast({
-          title: "Revenue record created successfully!",
-        });
+        toast({ title: "Revenue record created successfully!" });
       }
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ["revenues-list"] });
     } catch (error) {
       console.error("Error saving revenue:", error);
       toast({
@@ -123,10 +130,8 @@ export const useRevenueData = () => {
   const handleDeleteRevenue = async (id: string) => {
     try {
       await deleteRevenue(id);
-      setRevenues(revenues.filter((revenue) => revenue.id !== id));
-      toast({
-        title: "Revenue record deleted successfully!",
-      });
+      queryClient.invalidateQueries({ queryKey: ["revenues-list"] });
+      toast({ title: "Revenue record deleted successfully!" });
     } catch (error) {
       console.error("Error deleting revenue:", error);
       toast({
@@ -151,6 +156,8 @@ export const useRevenueData = () => {
     searchParams,
     setSearchParams,
     total,
+    loading: isLoading,
+    fetching: isFetching,
     fetchData,
     handleSaveRevenue,
     handleDeleteRevenue,

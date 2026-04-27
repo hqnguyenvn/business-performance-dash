@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Claude Code session/agent files
+.claude/
+
+# Editor snapshots
+.snapshots/
+
+# Code archives
+*.zip

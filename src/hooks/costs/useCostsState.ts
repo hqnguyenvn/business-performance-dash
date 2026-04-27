@@ -3,15 +3,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCosts, Cost as DbCost, CostSearchParams, CostResponse } from "@/services/costApi";
 import { costTypesService, MasterData } from "@/services/masterDataService";
+import { MONTHS } from "@/lib/months";
 
 export type Cost = DbCost;
-
-export const MONTHS = [
-  { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
-  { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
-  { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
-  { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" }
-];
+export { MONTHS };
 
 export const useCostsState = () => {
   const [costs, setCosts] = useState<Cost[]>([]);

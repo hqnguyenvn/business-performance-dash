@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatNumber, parseFormattedNumber } from "@/lib/format";
 import { Cost } from "@/hooks/useCosts";
 import { MasterData } from "@/services/masterDataService";
+import { useToast } from "@/hooks/use-toast";
 
 interface CostEditorDialogProps {
   isOpen: boolean;
@@ -21,10 +22,50 @@ interface CostEditorDialogProps {
   getCostTypeName: (id: string) => string;
 }
 
+/**
+ * Validate a cost row before save. Returns an array of user-facing
+ * error messages; empty array means the row is valid.
+ */
+function validateCost(cost: Cost): string[] {
+  const errs: string[] = [];
+  if (!cost.description || String(cost.description).trim() === "") {
+    errs.push("Description is required.");
+  }
+  if (!cost.cost_type) {
+    errs.push("Cost category is required.");
+  }
+  const costValue = Number(cost.cost) || 0;
+  if (costValue < 0) {
+    errs.push("Cost must be >= 0.");
+  }
+  if (cost.price != null && Number(cost.price) < 0) {
+    errs.push("Unit price must be >= 0.");
+  }
+  if (cost.volume != null && Number(cost.volume) < 0) {
+    errs.push("Volume must be >= 0.");
+  }
+  return errs;
+}
+
 export const CostEditorDialog = ({
   isOpen, onOpenChange, mode, cost, onCostChange, onSave,
   costTypes, getMonthName, getCostTypeName
 }: CostEditorDialogProps) => {
+  const { toast } = useToast();
+
+  const handleSave = () => {
+    if (!cost) return;
+    const errs = validateCost(cost);
+    if (errs.length > 0) {
+      toast({
+        title: "Invalid cost",
+        description: errs.join(" "),
+        variant: "destructive",
+      });
+      return;
+    }
+    onSave();
+  };
 
   if (!cost) return null;
 
@@ -161,7 +202,7 @@ export const CostEditorDialog = ({
           {mode === 'edit' && (
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={onSave}>Save</Button>
+              <Button onClick={handleSave}>Save</Button>
             </div>
           )}
         </div>

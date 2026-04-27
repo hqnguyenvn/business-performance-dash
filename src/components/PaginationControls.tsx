@@ -87,57 +87,50 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     return rangeWithDots;
   };
 
+  if (position === 'top') {
+    if (!onPageSizeChange) return null;
+    return (
+      <div className="flex items-center gap-2">
+        <Select
+          value={pageSize === 'all' ? 'all' : pageSize?.toString() || '25'}
+          onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
+        >
+          <SelectTrigger className="w-[70px] h-9">
+            <SelectValue>
+              {pageSize === 'all' ? 'All' : pageSize?.toString() || '25'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="25">25</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+            <SelectItem value="100">100</SelectItem>
+            <SelectItem value="250">250</SelectItem>
+            <SelectItem value="500">500</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">/ page</span>
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex items-center ${position === 'top' ? 'justify-start gap-4' : 'justify-between'} ${position === 'top' ? '' : 'mt-4'}`}>
-      {position === 'top' && onPageSizeChange && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-700">Show</span>
-          <Select
-            value={pageSize === 'all' ? 'all' : pageSize?.toString() || '25'}
-            onValueChange={(value) => onPageSizeChange(value === 'all' ? 'all' : parseInt(value))}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue>
-                {pageSize === 'all'
-                  ? 'All'
-                  : pageSize?.toString() || '25'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="75">75</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-gray-700">entries</span>
-        </div>
-      )}
+    <div className="flex items-center justify-between gap-4 mt-3 flex-wrap">
+      <div className="text-sm text-muted-foreground">
+        Showing <span className="font-medium text-foreground">{calculatedStartIndex}</span>–<span className="font-medium text-foreground">{calculatedEndIndex}</span> of <span className="font-medium text-foreground">{totalItems}</span>
+      </div>
 
-      {position === 'bottom' && (
-        <div className="text-sm text-gray-700">
-          Showing {calculatedStartIndex} to {calculatedEndIndex} of {totalItems} entries
-        </div>
-      )}
-
-      <Pagination>
+      <Pagination className="mx-0 w-auto">
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious 
+            <PaginationPrevious
               onClick={pageSize === 'all' || currentPage <= 1 ? undefined : handlePreviousPage}
               className={pageSize === 'all' || currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
             />
           </PaginationItem>
           {pageSize === 'all' ? (
             <PaginationItem>
-              <PaginationLink 
-                isActive 
-                className="cursor-default font-semibold"
-                size="default"
-              >
-                All
-              </PaginationLink>
+              <PaginationLink isActive className="cursor-default font-semibold" size="default">All</PaginationLink>
             </PaginationItem>
           ) : (
             getVisiblePages().map((page, index) => (

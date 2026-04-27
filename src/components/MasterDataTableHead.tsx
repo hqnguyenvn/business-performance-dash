@@ -9,7 +9,8 @@ import {
 interface MasterDataTableHeadProps {
   showCompanyColumn: boolean;
   showCustomerColumn: boolean;
-  data: any[];  
+  showGroupCodeColumn?: boolean;
+  data: any[];
   setFilter: (field: string, values: string[]) => void;
   getActiveFilters: (field: string) => string[];
   title?: string;
@@ -18,10 +19,11 @@ interface MasterDataTableHeadProps {
 const MasterDataTableHead: React.FC<MasterDataTableHeadProps> = ({
   showCompanyColumn,
   showCustomerColumn,
+  showGroupCodeColumn = false,
   data,
   setFilter,
   getActiveFilters,
-  title
+  title,
 }) => {
   const getColumnName = (field: string) => {
     if (title === "Project List") {
@@ -71,7 +73,7 @@ const MasterDataTableHead: React.FC<MasterDataTableHeadProps> = ({
       >
         {getColumnName("code")}
       </TableHead>
-      <TableHead 
+      <TableHead
         className="border border-gray-300"
         showFilter={true}
         filterData={data}
@@ -81,7 +83,19 @@ const MasterDataTableHead: React.FC<MasterDataTableHeadProps> = ({
       >
         {getColumnName("name")}
       </TableHead>
-      <TableHead 
+      {showGroupCodeColumn && (
+        <TableHead
+          className="border border-gray-300"
+          showFilter={true}
+          filterData={data}
+          filterField="group_code"
+          onFilter={setFilter}
+          activeFilters={getActiveFilters("group_code")}
+        >
+          Project Group
+        </TableHead>
+      )}
+      <TableHead
         className="border border-gray-300"
         showFilter={true}
         filterData={data}

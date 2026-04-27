@@ -50,6 +50,7 @@ interface ReportTableProps {
   }) => void;
   onFilteredCountChange?: (count: number) => void;
   hideCompanyColumn?: boolean;
+  hideBonusColumn?: boolean;
 }
 
 function getFilterData(data: GroupedCustomerData[], field: string) {
@@ -85,6 +86,7 @@ export function ReportTable({
   onTotalsChange,
   onFilteredCountChange,
   hideCompanyColumn = false,
+  hideBonusColumn = false,
 }: ReportTableProps) {
   const {
     filteredData: columnFilteredData,
@@ -111,7 +113,7 @@ export function ReportTable({
   const showCompanyColumn = !hideCompanyColumn;
 
   // Calculate column count for colSpan
-  const colCount = 10 + (showCompanyColumn ? 1 : 0) + (!isCompanyReport ? 1 : 0);
+  const colCount = 10 + (showCompanyColumn ? 1 : 0) + (!isCompanyReport ? 1 : 0) - (hideBonusColumn ? 1 : 0);
 
   const totals = useMemo(() => {
     const revenue = filteredData.reduce((sum, d) => sum + (d.revenue || 0), 0);
@@ -198,7 +200,9 @@ export function ReportTable({
             <TableHead className="border border-gray-300 p-2 text-right font-medium">BMM</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Revenue</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Salary Cost</TableHead>
-            <TableHead className="border border-gray-300 p-2 text-right font-medium">Bonus</TableHead>
+            {!hideBonusColumn && (
+              <TableHead className="border border-gray-300 p-2 text-right font-medium">Bonus</TableHead>
+            )}
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Overhead Cost</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Total Cost</TableHead>
             <TableHead className="border border-gray-300 p-2 text-right font-medium">Profit</TableHead>
@@ -243,7 +247,9 @@ export function ReportTable({
                   <TableCell className="border border-gray-300 p-2 text-right">{data.bmm.toFixed(1)}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(revenue).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(salaryCost).toLocaleString()}</TableCell>
-                  <TableCell className="border border-gray-300 p-2 text-right">{Math.round(bonusValue).toLocaleString()}</TableCell>
+                  {!hideBonusColumn && (
+                    <TableCell className="border border-gray-300 p-2 text-right">{Math.round(bonusValue).toLocaleString()}</TableCell>
+                  )}
                   <TableCell className="border border-gray-300 p-2 text-right">{Math.round(overheadCost).toLocaleString()}</TableCell>
                   <TableCell className="border border-gray-300 p-2 text-right font-semibold">{Math.round(totalCost).toLocaleString()}</TableCell>
                   <TableCell

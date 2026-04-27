@@ -1,5 +1,5 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
+import { currenciesService, type MasterData } from "@/services/masterDataService";
 
 export interface ExchangeRate {
   id: string;
@@ -17,156 +17,95 @@ export interface ExchangeRateDisplay {
   exchangeRate: number;
 }
 
+// Shape backend trả về (snake_case, join currencies.code)
+interface ExchangeRateRow {
+  id: string;
+  year: number;
+  month: number;
+  currency_id: string;
+  currency_code: string | null;
+  exchange_rate: string | number;
+}
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const MONTH_MAP: Record<string, number> = Object.fromEntries(
+  MONTH_NAMES.map((n, i) => [n, i + 1]),
+);
+
+function monthName(n: number): string {
+  return MONTH_NAMES[n - 1] || "Jan";
+}
+function monthNumber(name: string): number {
+  return MONTH_MAP[name] || 1;
+}
+
+/**
+ * Resolve currencyID (có thể là code "USD" hoặc uuid) → uuid.
+ * Nếu đã là uuid (có dấu "-") thì trả nguyên.
+ */
+async function resolveCurrencyId(currencyID: string): Promise<string> {
+  if (currencyID.includes("-")) return currencyID;
+  const list = (await currenciesService.getAll()) as MasterData[];
+  const match = list.find((c) => c.code === currencyID);
+  if (!match) throw new Error(`Currency code not found: ${currencyID}`);
+  return match.id;
+}
+
 export class ExchangeRateService {
   async getAll(): Promise<ExchangeRateDisplay[]> {
-    const { data, error } = await supabase
-      .from('exchange_rates')
-      .select('*, currencies:currency_id(code)')
-      .order('year', { ascending: false })
-      .order('month', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching exchange rates:', error);
-      throw error;
-    }
-    
-    // Transform to display format
-    return (data || []).map(rate => ({
-      id: rate.id,
-      year: rate.year,
-      month: this.getMonthName(rate.month),
-      currencyID: rate.currencies?.code || rate.currency_id,
-      exchangeRate: rate.exchange_rate
+    const rows = await api.get<ExchangeRateRow[]>("/exchange-rates");
+    return rows.map((r) => ({
+      id: r.id,
+      year: r.year,
+      month: monthName(r.month),
+      currencyID: r.currency_code || r.currency_id,
+      exchangeRate: Number(r.exchange_rate),
     }));
   }
 
-  async create(item: Omit<ExchangeRateDisplay, 'id'>): Promise<ExchangeRateDisplay> {
-    // First, we need to get the currency_id from the currency code
-    let currency_id = item.currencyID;
-    
-    // If the currencyID is a code, we need to find the corresponding ID
-    if (item.currencyID && !item.currencyID.includes('-')) {
-      const { data, error } = await supabase
-        .from('currencies')
-        .select('id')
-        .eq('code', item.currencyID)
-        .single();
-      
-      if (error) {
-        console.error('Error finding currency by code:', error);
-        throw error;
-      }
-      
-      if (data) {
-        currency_id = data.id;
-      }
-    }
-
-    const dbItem = {
+  async create(item: Omit<ExchangeRateDisplay, "id">): Promise<ExchangeRateDisplay> {
+    const currency_id = await resolveCurrencyId(item.currencyID);
+    const row = await api.post<ExchangeRateRow>("/exchange-rates", {
       year: item.year,
-      month: this.getMonthNumber(item.month),
-      currency_id: currency_id,
-      exchange_rate: item.exchangeRate
-    };
-
-    const { data, error } = await supabase
-      .from('exchange_rates')
-      .insert(dbItem)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating exchange rate:', error);
-      throw error;
-    }
-    
+      month: monthNumber(item.month),
+      currency_id,
+      exchange_rate: item.exchangeRate,
+    });
     return {
-      id: data.id,
-      year: data.year,
-      month: this.getMonthName(data.month),
-      currencyID: item.currencyID, // Use the original currencyID for consistency
-      exchangeRate: data.exchange_rate
+      id: row.id,
+      year: row.year,
+      month: monthName(row.month),
+      currencyID: item.currencyID,
+      exchangeRate: Number(row.exchange_rate),
     };
   }
 
-  async update(id: string, item: Partial<ExchangeRateDisplay>): Promise<ExchangeRateDisplay> {
-    const dbItem: any = {};
-    
-    if (item.year !== undefined) dbItem.year = item.year;
-    if (item.month !== undefined) dbItem.month = this.getMonthNumber(item.month);
-    if (item.exchangeRate !== undefined) dbItem.exchange_rate = item.exchangeRate;
-    
-    // If currencyID is provided, find the corresponding ID
+  async update(
+    id: string,
+    item: Partial<ExchangeRateDisplay>,
+  ): Promise<ExchangeRateDisplay> {
+    const patch: Record<string, unknown> = {};
+    if (item.year !== undefined) patch.year = item.year;
+    if (item.month !== undefined) patch.month = monthNumber(item.month);
+    if (item.exchangeRate !== undefined) patch.exchange_rate = item.exchangeRate;
     if (item.currencyID !== undefined) {
-      // First, check if it's a currency code
-      if (!item.currencyID.includes('-')) {
-        const { data, error } = await supabase
-          .from('currencies')
-          .select('id')
-          .eq('code', item.currencyID)
-          .single();
-        
-        if (error) {
-          console.error('Error finding currency by code:', error);
-          throw error;
-        }
-        
-        if (data) {
-          dbItem.currency_id = data.id;
-        } else {
-          dbItem.currency_id = item.currencyID;
-        }
-      } else {
-        dbItem.currency_id = item.currencyID;
-      }
+      patch.currency_id = await resolveCurrencyId(item.currencyID);
     }
-
-    const { data, error } = await supabase
-      .from('exchange_rates')
-      .update(dbItem)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error updating exchange rate:', error);
-      throw error;
-    }
-    
+    const row = await api.put<ExchangeRateRow>(`/exchange-rates/${id}`, patch);
     return {
-      id: data.id,
-      year: data.year,
-      month: this.getMonthName(data.month),
-      currencyID: item.currencyID || "", // Keep the original currencyID for UI consistency
-      exchangeRate: data.exchange_rate
+      id: row.id,
+      year: row.year,
+      month: monthName(row.month),
+      currencyID: item.currencyID || row.currency_code || row.currency_id,
+      exchangeRate: Number(row.exchange_rate),
     };
   }
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('exchange_rates')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting exchange rate:', error);
-      throw error;
-    }
-  }
-
-  private getMonthName(monthNumber: number): string {
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return monthNames[monthNumber - 1] || "Jan";
-  }
-
-  private getMonthNumber(monthName: string): number {
-    const monthMap: { [key: string]: number } = {
-      'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4,
-      'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8,
-      'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
-    };
-    return monthMap[monthName] || 1;
+    await api.delete<void>(`/exchange-rates/${id}`);
   }
 }
 

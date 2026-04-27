@@ -1,153 +1,150 @@
-
-
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { processDivisionReportData } from "./division-report/dataProcessing";
-import { GroupedDivisionData, UseDivisionReportDataProps } from "./division-report/types";
-import { MONTHS, YEARS } from "./division-report/constants";
+import {
+  getDivisionSummary,
+  type DivisionSummaryResponse,
+} from "@/services/reportsService";
 import { useParameterValues } from "./useParameterValues";
+import type {
+  GroupedDivisionData,
+  UseDivisionReportDataProps,
+} from "./division-report/types";
 
-export { MONTHS, YEARS };
+export { MONTHS, YEARS } from "@/lib/months";
 export type { GroupedDivisionData };
 
-// Optimized data fetching function similar to Company Report
-const fetchDivisionReportDataOptimized = async (selectedYear: string, selectedMonths: number[]) => {
-  try {
-    // OPTIMIZATION 1: Reduce parallel queries by combining related queries
-    const [
-      { data: revenueData, error: revenueError },
-      { data: salaryData, error: salaryError },
-      { data: costData, error: costError },
-      { data: bonusData, error: bonusError }
-    ] = await Promise.all([
-      // Combined revenue query with divisions
-      supabase
-        .from('revenues')
-        .select(`
-          year, month, division_id, quantity, vnd_revenue,
-          divisions!revenues_division_id_fkey(code, company_id)
-        `)
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths),
+function buildGrouped(
+  data: DivisionSummaryResponse,
+  taxRate: number,
+  bonusRate: number,
+): GroupedDivisionData[] {
+  const periodKey = (year: number, month: number) => `${year}_${month}`;
+  const groupKey = (year: number, month: number, divisionId: string) =>
+    `${year}_${month}_${divisionId}`;
 
-      // Combined salary costs query (both with and without customer_id)
-      supabase
-        .from('salary_costs')
-        .select('year, month, division_id, customer_id, amount')
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths),
-
-      // Combined costs query with cost_types lookup
-      supabase
-        .from('costs')
-        .select(`
-          year, month, cost, is_cost,
-          cost_types!costs_cost_type_fkey(code)
-        `)
-        .eq('year', Number(selectedYear))
-        .in('month', selectedMonths)
-        .eq('is_cost', true),
-
-      // Bonus data
-      supabase
-        .from('bonus_by_d')
-        .select('year, division_id, bn_bmm')
-        .eq('year', Number(selectedYear))
-    ]);
-
-    // OPTIMIZATION 2: Early error handling
-    const errors = [
-      { data: revenueData, error: revenueError, name: 'revenues' },
-      { data: salaryData, error: salaryError, name: 'salary_costs' },
-      { data: costData, error: costError, name: 'costs' },
-      { data: bonusData, error: bonusError, name: 'bonus_by_d' }
-    ];
-
-    for (const { error, name } of errors) {
-      if (error) {
-        throw new Error(`Failed to fetch ${name} data: ${error.message}`);
-      }
-    }
-
-    return {
-      revenueData: revenueData || [],
-      salaryData: salaryData || [],
-      costData: costData || [],
-      bonusData: bonusData || [],
-      error: null
-    };
-  } catch (error) {
-    console.error("Error in fetchDivisionReportDataOptimized:", error);
-    throw error;
+  const revenueTotalByPeriod = new Map<string, number>();
+  const bmmTotalByPeriod = new Map<string, number>();
+  for (const t of data.revenue_totals) {
+    revenueTotalByPeriod.set(periodKey(t.year, t.month), t.total_revenue);
+    bmmTotalByPeriod.set(periodKey(t.year, t.month), t.total_bmm);
   }
-};
+  const totalCostByPeriod = new Map<string, number>();
+  const salaryCostByPeriod = new Map<string, number>();
+  for (const t of data.month_totals) {
+    totalCostByPeriod.set(periodKey(t.year, t.month), t.total_cost);
+    salaryCostByPeriod.set(
+      periodKey(t.year, t.month),
+      t.salary_cost_from_costs,
+    );
+  }
+  const totalSalaryByPeriod = new Map<string, number>();
+  for (const t of data.salary_totals) {
+    totalSalaryByPeriod.set(periodKey(t.year, t.month), t.total_salary);
+  }
+  const divisionSalary = new Map<string, number>();
+  for (const r of data.division_salary) {
+    if (!r.division_id) continue;
+    divisionSalary.set(groupKey(r.year, r.month, r.division_id), r.salary_cost);
+  }
+  const bonusMap = new Map<string, number>();
+  for (const b of data.bonus_by_division) bonusMap.set(b.division_id, b.bn_bmm);
 
-export const useDivisionReportData = ({ selectedYear, selectedMonths }: UseDivisionReportDataProps) => {
-  // Get parameter values for calculations
-  const { taxRate, bonusRate, loading: paramLoading } = useParameterValues(parseInt(selectedYear));
+  const salaryBonusByPeriod = new Map<string, number>();
+  for (const g of data.groups) {
+    if (!g.division_id) continue;
+    const bn = bonusMap.get(g.division_id) ?? 0;
+    const pKey = periodKey(g.year, g.month);
+    salaryBonusByPeriod.set(
+      pKey,
+      (salaryBonusByPeriod.get(pKey) ?? 0) + g.total_bmm * bn,
+    );
+  }
 
-  // OPTIMIZATION 3: Improved cache key with memoization
-  const cacheKey = useMemo(() => [
-    'division-report-optimized',
-    selectedYear,
-    [...selectedMonths].sort().join(','),
-    bonusRate,
-    taxRate
-  ], [selectedYear, selectedMonths, bonusRate, taxRate]);
+  const overheadPerBmmByPeriod = new Map<string, number>();
+  for (const [pKey, totalCostFromCosts] of totalCostByPeriod.entries()) {
+    const salaryCostFromCosts = salaryCostByPeriod.get(pKey) ?? 0;
+    const totalBmm = bmmTotalByPeriod.get(pKey) ?? 0;
+    const salaryBonus = salaryBonusByPeriod.get(pKey) ?? 0;
+    const totalRevenue = revenueTotalByPeriod.get(pKey) ?? 0;
+    const totalSalary = totalSalaryByPeriod.get(pKey) ?? 0;
 
-  // OPTIMIZATION 4: Improved fetch key to prevent unnecessary re-fetches
-  const fetchKey = useMemo(() => 
-    `${selectedYear}_${selectedMonths.join(',')}_${bonusRate}_${taxRate}`, 
-    [selectedYear, selectedMonths, bonusRate, taxRate]
-  );
+    const bonusCost = salaryCostFromCosts * bonusRate;
+    const profitBeforeTax = totalRevenue - totalCostFromCosts;
+    const taxCost = profitBeforeTax > 0 ? profitBeforeTax * taxRate : 0;
+    const totalOverhead =
+      totalCostFromCosts + bonusCost + taxCost - salaryBonus - totalSalary;
 
-  // Use React Query with optimized settings
+    overheadPerBmmByPeriod.set(
+      pKey,
+      totalBmm !== 0 ? totalOverhead / totalBmm : 0,
+    );
+  }
+
+  const out: GroupedDivisionData[] = [];
+  for (const g of data.groups) {
+    if (!g.division_id) continue;
+    const pKey = periodKey(g.year, g.month);
+    const overheadPerBmm = overheadPerBmmByPeriod.get(pKey) ?? 0;
+    const bn = bonusMap.get(g.division_id) ?? 0;
+    const salaryCost =
+      divisionSalary.get(groupKey(g.year, g.month, g.division_id)) ?? 0;
+
+    out.push({
+      year: g.year,
+      month: g.month,
+      division_id: g.division_id,
+      division_code: g.division_code,
+      bmm: g.total_bmm,
+      revenue: g.total_revenue,
+      salaryCost,
+      overheadCost: overheadPerBmm * g.total_bmm,
+      bonusValue: g.total_bmm * bn,
+    });
+  }
+  out.sort((a, b) => {
+    if (a.month !== b.month) return a.month - b.month;
+    return a.division_code.localeCompare(b.division_code);
+  });
+  return out;
+}
+
+export const useDivisionReportData = ({
+  selectedYear,
+  selectedMonths,
+}: UseDivisionReportDataProps) => {
+  const year = parseInt(selectedYear, 10);
+  const { taxRate, bonusRate, ready: paramsReady } = useParameterValues(year);
+
+  const monthsKey = [...selectedMonths].sort((a, b) => a - b).join(",");
+
   const {
-    data: groupedData = [],
+    data,
     isLoading,
+    isFetching,
     error,
-    isFetching
   } = useQuery({
-    queryKey: cacheKey,
-    queryFn: async () => {
-      const startTime = performance.now();
-      
-      const { revenueData, salaryData, costData, bonusData } = await fetchDivisionReportDataOptimized(
-        selectedYear, 
-        selectedMonths
-      );
-
-      const processedData = processDivisionReportData(
-        revenueData,
-        salaryData,
-        costData,
-        bonusData,
-        bonusRate,
-        taxRate
-      );
-
-      const endTime = performance.now();
-      // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Division report data processed in ${(endTime - startTime).toFixed(2)}ms`);
-      }
-
-      return processedData;
-    },
-    enabled: !paramLoading && !isNaN(bonusRate) && !isNaN(taxRate),
-    staleTime: 5 * 60 * 1000, // 5 minutes - data is considered fresh
-    gcTime: 10 * 60 * 1000, // 10 minutes - cache time
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    retry: 2, // Retry failed requests 2 times
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    queryKey: ["division-summary", year, monthsKey],
+    queryFn: () => getDivisionSummary(year, selectedMonths),
+    enabled:
+      paramsReady &&
+      Number.isFinite(year) &&
+      selectedMonths.length > 0 &&
+      taxRate !== null &&
+      bonusRate !== null,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 
-  return { 
-    groupedData, 
-    loading: isLoading || paramLoading || isFetching, 
-    error: error?.message || null
+  const groupedData = useMemo(() => {
+    if (!data || taxRate === null || bonusRate === null) return [];
+    return buildGrouped(data, taxRate, bonusRate);
+  }, [data, taxRate, bonusRate]);
+
+  return {
+    groupedData,
+    loading: isLoading || isFetching || !paramsReady,
+    error: error?.message || null,
   };
 };
-

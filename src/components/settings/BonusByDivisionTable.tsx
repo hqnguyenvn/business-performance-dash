@@ -15,8 +15,9 @@ import { BonusByDivision, bonusByDivisionService } from "@/services/bonusByDivis
 import { useBonusByDivisionFilter } from "./useBonusByDivisionFilter";
 import BonusByDivisionRow from "./BonusByDivisionRow";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCsv } from "@/utils/exportCsv";
-import ImportCsvDialog from "@/components/ImportCsvDialog";
+import { exportExcel, type ImportError, type ExcelSchema } from "@/utils/excelIO";
+import ExcelImportDialog, { type ImportResult, type ImportProgress } from "@/components/ExcelImportDialog";
+import { reportRowProgress } from "@/utils/importProgress";
 
 interface BonusByDivisionTableProps {
   data: BonusByDivision[];
@@ -149,60 +150,85 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
 
   const [importOpen, setImportOpen] = useState(false);
 
-  const handleExport = () => {
-    const exportData = data.map((row) => ({
-      ...row,
-      division_name: divisions.find((d) => d.id === row.division_id)?.name || "",
-    }));
-    exportToCsv(exportData, "Bonus_by_Division", [
-      { key: "year", header: "Year" },
-      { key: "division_name", header: "Division" },
-      { key: "bn_bmm", header: "BN_BMM" },
-      { key: "notes", header: "Notes" },
-    ]);
+  const schema = useMemo<ExcelSchema>(() => ({
+    sheetName: "Bonus by Division",
+    lookups: { divisions: divisions.map((d) => ({ code: d.code, name: d.name })) },
+    columns: [
+      { key: "year", header: "Year", type: "integer", required: true, width: 8 },
+      { key: "division_code", header: "Division", lookup: "divisions", required: true, width: 14 },
+      { key: "bn_bmm", header: "BN_BMM", type: "number", width: 12 },
+      { key: "notes", header: "Notes", width: 40 },
+    ],
+  }), [divisions]);
+
+  const handleExport = async () => {
+    try {
+      const rows = data.map((r) => ({
+        year: r.year,
+        division_code: divisions.find((d) => d.id === r.division_id)?.code || "",
+        bn_bmm: r.bn_bmm,
+        notes: r.notes || "",
+      }));
+      await exportExcel({ schema, rows, fileName: "bonus-by-division.xlsx" });
+      toast({ title: "Export thành công", description: `Đã xuất ${rows.length} dòng.` });
+    } catch (err: any) {
+      toast({ title: "Export thất bại", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleImport = useCallback(async (rows: Record<string, string>[]) => {
+  const handleImport = useCallback(async (
+    rows: Record<string, any>[],
+    onProgress?: ImportProgress,
+  ): Promise<ImportResult> => {
     let created = 0;
     let updated = 0;
-    const errors: string[] = [];
+    const errors: ImportError[] = [];
+    const total = rows.length;
+    onProgress?.(0, total);
 
-    for (const row of rows) {
-      const year = parseInt(row["Year"] || "");
-      const divisionName = (row["Division"] || "").trim();
-      const bn_bmm = parseFloat(row["BN_BMM"] || "0");
-      const notes = (row["Notes"] || "").trim();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber: number = row.__rowNumber || 0;
+      const errCols: string[] = [];
+      const reasons: string[] = [];
 
-      if (!year || !divisionName) {
-        errors.push(`Skipped invalid row: Year=${row["Year"]}, Division=${divisionName}`);
-        continue;
+      const year = Number(row.year);
+      if (!Number.isFinite(year) || year < 2000 || year > 2100) {
+        errCols.push("Year"); reasons.push(`Năm không hợp lệ: "${row.year ?? ""}"`);
       }
-
-      const division = divisions.find(
-        (d) => d.name.toLowerCase() === divisionName.toLowerCase() || d.code.toLowerCase() === divisionName.toLowerCase()
-      );
+      const divisionCode = String(row.division_code || "").trim();
+      const division = divisions.find((d) => d.code.toLowerCase() === divisionCode.toLowerCase());
       if (!division) {
-        errors.push(`Division "${divisionName}" not found.`);
+        errCols.push("Division"); reasons.push(`Không tìm thấy Division: "${divisionCode}"`);
+      }
+      const bn_bmm_raw = row.bn_bmm;
+      const bn_bmm = bn_bmm_raw != null && bn_bmm_raw !== "" ? Number(bn_bmm_raw) : 0;
+      if (bn_bmm_raw != null && bn_bmm_raw !== "" && !Number.isFinite(bn_bmm)) {
+        errCols.push("BN_BMM"); reasons.push("BN_BMM phải là số");
+      }
+      const notes = String(row.notes || "").trim();
+
+      if (errCols.length > 0) {
+        errors.push({ rowIndex: rowNumber, columns: errCols, reason: reasons.join("; ") });
+        reportRowProgress(i + 1, total, onProgress);
         continue;
       }
 
-      const existing = data.find(
-        (item) => item.year === year && item.division_id === division.id
-      );
-
+      const existing = data.find((item) => item.year === year && item.division_id === division!.id);
       try {
         if (existing) {
           const updatedItem = await bonusByDivisionService.update(existing.id, { bn_bmm, notes });
           setter((prev) => prev.map((item) => (item.id === existing.id ? { ...item, ...updatedItem } : item)));
           updated++;
         } else {
-          const newItem = await bonusByDivisionService.add({ year, division_id: division.id, bn_bmm, notes });
+          const newItem = await bonusByDivisionService.add({ year, division_id: division!.id, bn_bmm, notes });
           setter((prev) => [newItem, ...prev]);
           created++;
         }
       } catch (error: any) {
-        errors.push(`Year=${year}, Division=${divisionName}: ${error.message || "Unknown error"}`);
+        errors.push({ rowIndex: rowNumber, columns: [], reason: `${year}/${divisionCode}: ${error.message || "Lỗi"}` });
       }
+      reportRowProgress(i + 1, total, onProgress);
     }
     return { created, updated, errors };
   }, [data, divisions, setter]);
@@ -228,11 +254,13 @@ const BonusByDivisionTable: React.FC<BonusByDivisionTableProps> = ({
           </div>
         </div>
       </CardHeader>
-      <ImportCsvDialog
+      <ExcelImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Bonus by Division"
-        expectedColumns={["Year", "Division", "BN_BMM", "Notes"]}
+        schema={schema}
+        templateFileName="bonus-by-division-template.xlsx"
+        errorFileName="bonus-by-division-errors.xlsx"
         onImport={handleImport}
       />
       <CardContent>

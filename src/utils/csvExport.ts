@@ -1,6 +1,6 @@
 import { Revenue } from "@/types/revenue";
 import { MasterData } from "@/services/masterDataService";
-import { Cost } from "@/services/costService";
+import { Cost } from "@/services/costApi";
 import { BusinessData } from "@/hooks/useBusinessReport";
 
 interface CostsCSVExportOptions {

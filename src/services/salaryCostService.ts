@@ -1,5 +1,4 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 export interface SalaryCost {
   id: string;
@@ -31,7 +30,7 @@ export interface SalaryCostFilters {
 
 export interface SalaryCostSearchParams extends SalaryCostFilters {
   page?: number;
-  pageSize?: number | 'all';
+  pageSize?: number | "all";
 }
 
 export interface SalaryCostResponse {
@@ -39,107 +38,50 @@ export interface SalaryCostResponse {
   total: number;
 }
 
-export const getSalaryCosts = async (params: SalaryCostSearchParams): Promise<SalaryCostResponse> => {
-  let query = supabase.from('salary_costs').select('*', { count: 'exact' });
-  
-  if (params.year) {
-    query = query.eq('year', params.year);
-  }
-  
+export const getSalaryCosts = async (
+  params: SalaryCostSearchParams,
+): Promise<SalaryCostResponse> => {
+  const qs = new URLSearchParams();
+  if (params.year) qs.set("year", String(params.year));
   if (params.months && params.months.length > 0) {
-    query = query.in('month', params.months);
+    qs.set("months", params.months.join(","));
   }
-  
-  if (params.pageSize && params.pageSize !== 'all' && params.page) {
-    const from = (params.page - 1) * params.pageSize;
-    const to = from + params.pageSize - 1;
-    query = query.range(from, to);
+  if (params.pageSize) {
+    qs.set("page_size", String(params.pageSize));
+    if (params.pageSize !== "all" && params.page) {
+      qs.set("page", String(params.page));
+    }
   }
-  
-  query = query.order('year', { ascending: false }).order('month', { ascending: false });
-  
-  const { data, error, count } = await query;
-  
-  if (error) {
-    console.error('Error fetching salary costs:', error);
-    throw error;
-  }
-  
-  return {
-    data: data || [],
-    total: count || 0
-  };
+  return api.get<SalaryCostResponse>(`/salary-costs?${qs.toString()}`);
 };
 
-export const createSalaryCost = async (salaryCost: SalaryCostInsert): Promise<SalaryCost> => {
-  const { data, error } = await supabase
-    .from('salary_costs')
-    .insert(salaryCost)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating salary cost:', error);
-    throw error;
-  }
-  
-  return data as SalaryCost;
+export const createSalaryCost = async (
+  salaryCost: SalaryCostInsert,
+): Promise<SalaryCost> => {
+  return api.post<SalaryCost>("/salary-costs", salaryCost);
 };
 
-export const updateSalaryCost = async (id: string, salaryCost: Partial<SalaryCost>): Promise<SalaryCost> => {
-  const { data, error } = await supabase
-    .from('salary_costs')
-    .update(salaryCost)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating salary cost:', error);
-    throw error;
-  }
-  
-  return data as SalaryCost;
+export const updateSalaryCost = async (
+  id: string,
+  salaryCost: Partial<SalaryCost>,
+): Promise<SalaryCost> => {
+  return api.put<SalaryCost>(`/salary-costs/${id}`, salaryCost);
 };
 
 export const deleteSalaryCost = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('salary_costs')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting salary cost:', error);
-    throw error;
-  }
+  await api.delete<void>(`/salary-costs/${id}`);
 };
 
-export const batchCreateSalaryCosts = async (salaryCosts: SalaryCostInsert[]): Promise<SalaryCost[]> => {
-  try {
-    const batchSize = 100;
-    const results: SalaryCost[] = [];
-    
-    for (let i = 0; i < salaryCosts.length; i += batchSize) {
-      const batch = salaryCosts.slice(i, i + batchSize);
-      
-      const { data, error } = await supabase
-        .from('salary_costs')
-        .insert(batch)
-        .select();
+export const bulkDeleteSalaryCosts = async (
+  year: number,
+  months: number[],
+): Promise<{ deleted: number }> => {
+  return api.post<{ deleted: number }>("/salary-costs/bulk-delete", { year, months });
+};
 
-      if (error) {
-        console.error('Batch insert error:', error);
-        throw error;
-      }
-      
-      if (data) {
-        results.push(...data);
-      }
-    }
-
-    return results;
-  } catch (error) {
-    console.error('Error in batch import:', error);
-    throw error;
-  }
+export const batchCreateSalaryCosts = async (
+  salaryCosts: SalaryCostInsert[],
+): Promise<SalaryCost[]> => {
+  if (salaryCosts.length === 0) return [];
+  return api.post<SalaryCost[]>("/salary-costs/batch", salaryCosts);
 };

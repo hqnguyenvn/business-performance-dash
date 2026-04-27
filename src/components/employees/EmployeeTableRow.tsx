@@ -71,15 +71,6 @@ export const EmployeeTableRow: React.FC<EmployeeTableRowProps> = ({
         {index + 1}
       </td>
       <td className="border border-gray-300 p-1">
-        <input
-          type="number"
-          className="border-0 p-1 h-8 w-full"
-          value={getValue("year")}
-          onChange={(e) => handleChange("year", e.target.value)}
-          onBlur={() => handleBlur("year")}
-        />
-      </td>
-      <td className="border border-gray-300 p-1">
         <select
           className="border-0 p-1 h-8 w-full"
           value={item.month || 1}

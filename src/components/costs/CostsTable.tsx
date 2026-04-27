@@ -78,17 +78,7 @@ export const CostsTable = ({
             <TableHead className="border border-gray-300 text-center w-16">
               No.
             </TableHead>
-            <TableHead 
-              className="border border-gray-300"
-              showFilter={true}
-              filterData={getFilterData('year')}
-              filterField="year"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('year')}
-            >
-              Year
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="border border-gray-300"
               showFilter={true}
               filterData={getFilterData('month')}
@@ -120,27 +110,7 @@ export const CostsTable = ({
             >
               Category
             </TableHead>
-            <TableHead 
-              className="border border-gray-300 text-center"
-              showFilter={true}
-              filterData={getFilterData('is_cost')}
-              filterField="is_cost"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('is_cost')}
-            >
-              Is Cost
-            </TableHead>
-            <TableHead 
-              className="border border-gray-300 text-center"
-              showFilter={true}
-              filterData={getFilterData('is_checked')}
-              filterField="is_checked"
-              onFilter={setFilter}
-              activeFilters={getActiveFilters('is_checked')}
-            >
-              Checked
-            </TableHead>
-            <TableHead 
+            <TableHead
               className="border border-gray-300"
               showFilter={true}
               filterData={getFilterData('notes')}
@@ -167,7 +137,7 @@ export const CostsTable = ({
         <TableBody>
           {tableFilteredCosts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="border border-gray-300 p-8 text-center text-gray-500">
+              <TableCell colSpan={7} className="border border-gray-300 p-8 text-center text-gray-500">
                 {costs.length === 0
                   ? "No data available. Click \"Add Row\" to start entering data."
                   : "No data matches the selected filters. Try adjusting the year or month selection."
@@ -179,23 +149,6 @@ export const CostsTable = ({
               <TableRow key={cost.id} className="hover:bg-gray-50">
                 <TableCell className="border border-gray-300 p-2 text-center">
                   {index + 1}
-                </TableCell>
-                <TableCell className="border border-gray-300 p-1">
-                  <Select
-                    value={cost.year.toString()}
-                    onValueChange={(value) => updateCost(cost.id, 'year', parseInt(value))}
-                  >
-                    <SelectTrigger className="border-0 p-1 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 16 }, (_, i) => 2020 + i).map(year => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Select
@@ -243,18 +196,6 @@ export const CostsTable = ({
                       ))}
                     </SelectContent>
                   </Select>
-                </TableCell>
-                <TableCell className="border border-gray-300 p-2 text-center">
-                  <Checkbox
-                    checked={cost.is_cost}
-                    onCheckedChange={(checked) => updateCost(cost.id, 'is_cost', checked)}
-                  />
-                </TableCell>
-                <TableCell className="border border-gray-300 p-2 text-center">
-                  <Checkbox
-                    checked={cost.is_checked}
-                    onCheckedChange={(checked) => updateCost(cost.id, 'is_checked', checked)}
-                  />
                 </TableCell>
                 <TableCell className="border border-gray-300 p-1">
                   <Input
